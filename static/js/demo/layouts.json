@@ -1,0 +1,56 @@
+{
+   "random0":[
+      "XXXPX",
+      "O X1P",
+      "O2X X",
+      "D X X",
+      "XXXSX"
+   ],
+   "random1":[
+      "XXXPX",
+      "X 1 P",
+      "D2X X",
+      "O   X",
+      "XOSXX"
+   ],
+   "random2":[
+      "XXXXSXXXX",
+      "X       X",
+      "X  X X  X",
+      "P2 X X 1O",
+      "XPXXDXXOX"
+   ],
+   "random3":[
+      "XXXPPXXX",
+      "X      X",
+      "D XXXX S",
+      "X2    1X",
+      "XXXOOXXX"
+   ],
+   "scenario1_s":[
+      "XXOXDXX",
+      "X 1X2 X",
+      "X  X  X",
+      "X     X",
+      "XSXXPPX"
+   ],
+   "scenario2":[
+      "XXXXXOXXXX",
+      "S        O",
+      "D    1 2 X",
+      "XXXXXXPXXX"
+   ],
+   "simple":[
+      "XXPXX",
+      "O  2O",
+      "X1  X",
+      "XDXSX"
+   ],
+   "unident":[
+      "XXXXXXXXX",
+      "O XSXOX S",
+      "X   P 1 X",
+      "X2  P   X",
+      "XXXDXDXXX"
+   ]
+}
