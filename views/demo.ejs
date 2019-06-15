@@ -15,8 +15,21 @@
         <link rel="stylesheet" href="css/style.css" type="text/css" />
     </head>
     <body>
+      <p>Player 2:</p>
+      <div><label><input name="player2" type="radio" id="ppo_bc" value="ppo_bc" checked>Human-aware PPO agent</label></div>
+      <div><label><input name="player2" type="radio" id="ppo_sp" value="ppo_sp">Self-play agent</label></div>
+      <div><label><input name="player2" type="radio" id="pbt" value="pbt">Population Based Training agent</label></div>
+
+      <p>Layout:</p>
+      <div><label><input name="layout" type="radio" id="cramped_room" value="cramped_room" checked>Cramped Room</label></div>
+      <div><label><input name="layout" type="radio" id="asymmetric_advantages" value="asymmetric_advantages">Asymmetric Advantages</label></div>
+      <div><label><input name="layout" type="radio" id="coordination_ring" value="coordination_ring">Coordination Ring</label></div>
+      <div><label><input name="layout" type="radio" id="random0" value="random0"></label>Forced Coordination</div>
+      <div><label><input name="layout" type="radio" id="random3" value="random3">Counter Circuit</label></div>
+
       <div id="overcooked"></div>
-      <!-- <p>Press enter to begin!</p> -->
+      <div id="control"></div>
+
       <noscript>
 	<h1>Warning: Javascript seems to be disabled</h1>
 	<p>This website requires that Javascript be enabled on your browser.</p>
