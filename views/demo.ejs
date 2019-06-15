@@ -23,28 +23,32 @@
   </head>
   <body>
     <form>
-      <div class="form-group">
-	<label for="agent">AI agent</label>
-	<select class="form-control" id="agent">
-	  <option value="ppo_bc">Human-aware PPO agent</option>
-	  <option value="ppo_sp">Self-play agent</option>
-	  <option value="pbt">Population Based Training agent</option>
-	</select>
+      <div class="container">
+      <div class="row text-center">
+	<div class="form-group col-lg-6">
+	  <label for="agent">AI agent</label>
+	  <select class="form-control" id="agent">
+	    <option value="ppo_bc">Human-aware PPO agent</option>
+	    <option value="ppo_sp">Self-play agent</option>
+	    <option value="pbt">Population Based Training agent</option>
+	  </select>
+	</div>
+	<div class="form-group col-lg-6">
+	  <label for="layout">Layout</label>
+	  <select class="form-control" id="layout">
+	    <option value="cramped_room">Cramped Room</option>
+	    <option value="asymmetric_advantages">Asymmetric Advantages</option>
+	    <option value="coordination_ring">Coordination Ring</option>
+	    <option value="random0">Forced Coordination</option>
+	    <option value="random3">Counter Circuit</option>
+	  </select>
+	</div>
       </div>
-      <div class="form-group">
-	<label for="layout">Layout</label>
-	<select class="form-control" id="layout">
-	  <option value="cramped_room">Cramped Room</option>
-	  <option value="asymmetric_advantages">Asymmetric Advantages</option>
-	  <option value="coordination_ring">Coordination Ring</option>
-	  <option value="random0">Forced Coordination</option>
-	  <option value="random3">Counter Circuit</option>
-	</select>
       </div>
     </form>
 
-    <div id="overcooked"></div>
-    <div id="control"></div>
+    <div id="overcooked" class="text-center"></div>
+    <div id="control" class="text-center"></div>
 
     <noscript>
       <h1>Warning: Javascript seems to be disabled</h1>

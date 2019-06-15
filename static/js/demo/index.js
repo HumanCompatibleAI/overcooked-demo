@@ -124,11 +124,10 @@ function enableEnter() {
 
 function disableEnter() {
     $(document).off("keydown");
-    $("#control").html('<button id="reset">Reset</button>');
+    $("#control").html('<button id="reset" type="button" class="btn btn-primary">Reset</button>');
     $("#reset").click(endGame);
 }
 
 $(document).ready(() => {
-    $("#overcooked").css("text-align", "center");
     enableEnter();
 });
