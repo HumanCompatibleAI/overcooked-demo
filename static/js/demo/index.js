@@ -63,10 +63,6 @@ let layouts = {
     ]
 };
 
-function getRadioValue(id) {
-    return $("input[name=" + id + "]:checked").val();
-};
-
 let game;
 
 function startGame(endOfGameCallback) {
@@ -77,8 +73,8 @@ function startGame(endOfGameCallback) {
     // let HOST = "https://lit-mesa-15330.herokuapp.com/".replace(/^http/, "ws");
     // let gameserverio = new GameServerIO({HOST});
 
-    let model_type = getRadioValue("player2");
-    let layout_name = getRadioValue("layout");
+    let model_type = $("#agent").val();
+    let layout_name = $("#layout").val();
     let layout = layouts[layout_name];
 
     getOvercookedPolicy(model_type, layout_name, AGENT_INDEX).then(function(npc_policy) {
