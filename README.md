@@ -11,14 +11,6 @@ Then, at the top-level directory:
     overcooked-demo $ npm link /path/to/overcooked-js/
     overcooked-demo $ npm run build
 
-Annoyingly, some underlying library introduces a bug into the compiled code. To fix it, open the file `static/js/demo/demo.js` (which should have been created by the npm build command) and change the line
-
-    exports.fetch = fetch;
-
-to
-
-    exports.fetch = window.fetch.bind(window);
-
 At this point the code should be ready to run. Start the server with
 
     overcooked-demo $ node index.js
