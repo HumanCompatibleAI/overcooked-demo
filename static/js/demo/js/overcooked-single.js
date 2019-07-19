@@ -83,6 +83,7 @@ export default class OvercookedSinglePlayerTask{
 
         this.start_time = new Date().getTime();
         this.state = this.game.mdp.get_start_state(this.init_orders);
+        console.log(this.state)
         this.game.drawState(this.state);
         this.joint_action = [STAY, STAY];
 

@@ -4,6 +4,7 @@ import _ from "lodash"
 // import OvercookedInteractiveTask from "./js/overcooked-task";
 import OvercookedSinglePlayerTask from "./js/overcooked-single";
 import getOvercookedPolicy from "./js/load_tf_model.js";
+import OvercookedTrajectoryReplay from "./js/overcooked-replay.js";
 
 import * as Overcooked from "overcook"
 let OvercookedMDP = Overcooked.OvercookedMDP;
@@ -64,6 +65,30 @@ let layouts = {
 };
 
 let game;
+let replayer;
+function replayGame(){
+    // make sure the game metadata matches what's 
+    // in the trajectory file
+    $.getJSON("assets/test_traj.json", function(trajectory_data) {
+        replayer = new OvercookedTrajectoryReplay({
+            container_id: "overcooked", 
+            trajectory: trajectory_data, 
+            start_grid: layouts["cramped_room"],
+            MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
+            init_orders: ['onion'],
+            always_serve: 'onion',
+            completion_callback: () => {
+            console.log("Time up");
+            endOfGameCallback();
+            },
+            DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
+
+        })
+        replayer.init()
+    });
+    
+
+}
 
 function startGame(endOfGameCallback) {
     let AGENT_INDEX = 1 - PARAMS.PLAYER_INDEX;
@@ -81,22 +106,22 @@ function startGame(endOfGameCallback) {
 	let npc_policies = {};
 	npc_policies[AGENT_INDEX] = npc_policy;
 	$("#overcooked").empty();
-        game = new OvercookedSinglePlayerTask({
-	    container_id: "overcooked",
-	    player_index: PARAMS.PLAYER_INDEX,
-	    start_grid : layout,
-	    npc_policies: npc_policies,
-	    TIMESTEP : PARAMS.TIMESTEP_LENGTH,
-	    MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
-	    init_orders: ['onion'],
-	    always_serve: 'onion',
-	    completion_callback: () => {
-		console.log("Time up");
-		endOfGameCallback();
-	    },
-	    DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
+    game = new OvercookedSinglePlayerTask({
+        container_id: "overcooked",
+        player_index: PARAMS.PLAYER_INDEX,
+        start_grid : layout,
+        npc_policies: npc_policies,
+        TIMESTEP : PARAMS.TIMESTEP_LENGTH,
+        MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
+        init_orders: ['onion'],
+        always_serve: 'onion',
+        completion_callback: () => {
+    	console.log("Time up");
+    	endOfGameCallback();
+        },
+        DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
         });
-        game.init();
+    game.init();
     });
 }
 
@@ -114,7 +139,8 @@ function startGameOnEnter(e) {
 
     disableEnter();
     // Reenable enter handler when the game ends
-    startGame(enableEnter);
+    //startGame(enableEnter);
+    replayGame()
 }
 
 function enableEnter() {
