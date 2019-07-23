@@ -2,8 +2,8 @@ import $ from "jquery"
 import _ from "lodash"
 // import GameServerIO from "./js/gameserver-io.js"
 // import OvercookedInteractiveTask from "./js/overcooked-task";
-import OvercookedSinglePlayerTask from "./js/overcooked-single";
 import getOvercookedPolicy from "./js/load_tf_model.js";
+import OvercookedTrajectoryReplay from "./js/overcooked-replay.js";
 
 import * as Overcooked from "overcook"
 let OvercookedMDP = Overcooked.OvercookedMDP;
@@ -20,7 +20,8 @@ let PARAMS = {
     PLAYER_INDEX: 1,  // Either 0 or 1
     MODEL_TYPE: 'ppo_bc'  // Either ppo_bc, ppo_sp, or pbt
 };
-
+let trajectoryPath = "assets/test_traj.json";
+let trajectoryData; 
 /***********************************
       Main trial order
  ************************************/
@@ -61,7 +62,7 @@ let layouts = {
         "X2    1X",
         "XXXOOXXX"
     ], 
-    "test_layout": [
+    "mdp_test": [
     "XXPXX", 
     "O  2O", 
     "T1  T", 
@@ -70,41 +71,43 @@ let layouts = {
 };
 
 let game;
+function replayGame(endOfGameCallback){
+    // make sure the game metadata matches what's 
+    // in the trajectory file
+    $("#overcooked").empty();
+    if (trajectoryData != undefined) {
 
-function startGame(endOfGameCallback) {
-    let AGENT_INDEX = 1 - PARAMS.PLAYER_INDEX;
-    /***********************************
-          Set up websockets server
-    ***********************************/
-    // let HOST = "https://lit-mesa-15330.herokuapp.com/".replace(/^http/, "ws");
-    // let gameserverio = new GameServerIO({HOST});
+        replayTrajectory(trajectoryData, endOfGameCallback);
+    }
+    else { 
+        console.log("Upload data not found")
+        $.getJSON(trajectoryPath, function(trajectoryData) {
+                replayTrajectory(trajectoryData, endOfGameCallback);
+            }); 
+    } 
+}
 
-    let model_type = $("#agent").val();
-    let layout_name = $("#layout").val();
-    let layout = layouts[layout_name];
-
-    getOvercookedPolicy(model_type, layout_name, AGENT_INDEX).then(function(npc_policy) {
-	let npc_policies = {};
-	npc_policies[AGENT_INDEX] = npc_policy;
-	$("#overcooked").empty();
-    game = new OvercookedSinglePlayerTask({
-        container_id: "overcooked",
-        player_index: PARAMS.PLAYER_INDEX,
-        start_grid : layout,
-        npc_policies: npc_policies,
-        TIMESTEP : PARAMS.TIMESTEP_LENGTH,
+function replayTrajectory(trajectoryDataObj, endOfGameCallback) {
+    let mdp_params = trajectoryDataObj.mdp_params[0];
+    game = new OvercookedTrajectoryReplay({
+        container_id: "overcooked", 
+        trajectory: trajectoryDataObj, 
+        start_grid: layouts[mdp_params.layout_name],
         MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
-        init_orders: ['onion'],
+        cook_time: mdp_params.cook_time,
+        init_orders: mdp_params.start_order_list,
         always_serve: 'onion',
         completion_callback: () => {
-    	console.log("Time up");
-    	endOfGameCallback();
+        console.log("Time up");
+        endOfGameCallback();
         },
         DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
-        });
-    game.init();
-    });
+
+    })
+    game.init()
+
 }
+
 
 function endGame() {
     game.close();
@@ -120,11 +123,33 @@ function startGameOnEnter(e) {
 
     disableEnter();
     // Reenable enter handler when the game ends
-    startGame(enableEnter);
+    replayGame(enableEnter)
 }
+
+function setTrajectoryPathOnLoad(event){
+    var trajectoryData = JSON.parse(event.target.result);
+
+}
+
+function onChange(event) {
+    var reader = new FileReader();
+    reader.onload = setTrajectoryPathOnLoad;
+    reader.readAsText(event.target.files[0]);
+    let fileName = event.target.files[0].name;
+    $("#fileInfo").html("<p>Reading trajectory info from uploaded " + fileName + "</p>")
+}
+
+
+
+function alert_data(name, family){
+    alert('Name : ' + name + ', Family : ' + family);
+    }
 
 function enableEnter() {
     $(document).keydown(startGameOnEnter);
+    // $("#fileInput").on("change", onChange); 
+
+    $("#fileInfo").html("<p>Reading trajectory info from " + trajectoryPath + "</p>")
     $("#control").html("<p>Press enter to begin!</p>");
 }
 

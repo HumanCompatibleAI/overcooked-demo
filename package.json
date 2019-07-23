@@ -4,9 +4,10 @@
   "description": "Website to play Overcooked with AI agents",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "build-debug": "browserify static/js/demo/index.js -o static/js/demo.js -d -t babelify",
-    "build": "browserify static/js/demo/index.js -o static/js/demo/demo.js -t babelify"
+    "build": "browserify static/js/demo/index.js -o static/js/demo/demo.js -t babelify",
+    "build-replay": "browserify static/js/demo/replay-index.js -o static/js/demo/replay.js -t babelify"
   },
   "author": "Rohin Shah",
   "license": "ISC",
@@ -14,7 +15,8 @@
     "@tensorflow/tfjs": "^1.2.3",
     "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
-    "babelify": "^8.0.0"
+    "babelify": "^8.0.0",
+    "jest": "^24.8.0"
   },
   "dependencies": {
     "browserify": "^16.3.0",
