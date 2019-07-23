@@ -111,6 +111,7 @@ function replayTrajectory(trajectoryDataObj, endOfGameCallback) {
 
 function endGame() {
     game.close();
+    $("#overcooked").empty();
 }
 
 // Handler to be added to $(document) on keydown when a game is not in
@@ -127,7 +128,10 @@ function startGameOnEnter(e) {
 }
 
 function setTrajectoryPathOnLoad(event){
-    var trajectoryData = JSON.parse(event.target.result);
+    trajectoryData = JSON.parse(event.target.result);
+    console.log("Uploaded data: ")
+    console.log(trajectoryData)
+    
 
 }
 
@@ -136,9 +140,15 @@ function onChange(event) {
     reader.onload = setTrajectoryPathOnLoad;
     reader.readAsText(event.target.files[0]);
     let fileName = event.target.files[0].name;
-    $("#fileInfo").html("<p>Reading trajectory info from uploaded " + fileName + "</p>")
+    $("#fileInfo").html("<p>Reading trajectory info from uploaded file " + fileName +"</p>")
+    endGame();
 }
 
+function clearFile() {
+    $("#fileInput").val('');
+    $("#fileInfo").html("<p>Reading trajectory info from " + trajectoryPath + "</p>")
+    endGame();
+}
 
 
 function alert_data(name, family){
@@ -147,16 +157,18 @@ function alert_data(name, family){
 
 function enableEnter() {
     $(document).keydown(startGameOnEnter);
-    // $("#fileInput").on("change", onChange); 
-
-    $("#fileInfo").html("<p>Reading trajectory info from " + trajectoryPath + "</p>")
+    $("#fileInput").on("change", onChange); 
+    if ($("#fileInfo").is(':empty')) {
+        $("#fileInfo").html("<p>Reading trajectory info from " + trajectoryPath + "</p>");
+    }
     $("#control").html("<p>Press enter to begin!</p>");
 }
 
 function disableEnter() {
     $(document).off("keydown");
-    $("#control").html('<button id="reset" type="button" class="btn btn-primary">Reset</button>');
+    $("#control").html('<button id="reset" type="button" class="btn btn-primary">Reset</button> <button id="clearFile" type="button" class="btn btn-primary">Clear File</button>');
     $("#reset").click(endGame);
+    $("#clearFile").click(clearFile);
 }
 
 $(document).ready(() => {
