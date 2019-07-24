@@ -12,15 +12,21 @@ import {loadGraphModel} from '@tensorflow/tfjs-converter';
 
 // Returns a Promise that resolves to a policy
 export default function getOvercookedPolicy(model_type, layout_name, playerIndex) {
+	if (model_type == "human") {
+		return new Promise(function(resolve, reject) {
+		    resolve(null);
+	    });
+	}
+	
     const modelPromise = loadGraphModel('assets/' + model_type + '_' + layout_name + '_agent/model.json');
 
     return modelPromise.then(function (model) {
-	return new Promise(function(resolve, reject) {
-	    resolve(function (state, game) {
-		let action_tensor = model.execute(preprocessState(state, game, playerIndex));
-		let action_probs = action_tensor.arraySync()[0];
-		let action = Action.INDEX_TO_ACTION[argmax(action_probs)];
-		return action;
+		return new Promise(function(resolve, reject) {
+		    resolve(function (state, game) {
+			let action_tensor = model.execute(preprocessState(state, game, playerIndex));
+			let action_probs = action_tensor.arraySync()[0];
+			let action = Action.INDEX_TO_ACTION[argmax(action_probs)];
+			return action;
 	    });
 	});
     });

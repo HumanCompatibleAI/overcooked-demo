@@ -9,8 +9,8 @@ let [STAY, INTERACT] = [Direction.STAY, Action.INTERACT];
 export default class OvercookedSinglePlayerTask{
     constructor ({
         container_id,
-	player_index,
-        npc_policies,
+	    player_index,
+        npc_policies, //todo 
         start_grid = [
                 'XXXXXPXX',
                 'O     2O',
@@ -27,6 +27,7 @@ export default class OvercookedSinglePlayerTask{
     }) {
         //NPC policies get called at every time step
         if (typeof(npc_policies) === 'undefined') {
+            // TODO maybe delete this? 
             npc_policies = {
                 1:
                     (function () {
@@ -47,12 +48,10 @@ export default class OvercookedSinglePlayerTask{
                     })()
             }
         }
-        this.npc_policies = npc_policies;
+    this.npc_policies = npc_policies;
 	this.player_index = player_index;
 
-	let player_colors = {};
-	player_colors[this.player_index] = 'green';
-	player_colors[1 - this.player_index] = 'blue';
+	let player_colors = {0: 'blue', 1: 'green'};
 
         this.game = new OvercookedGame({
             start_grid,
@@ -67,7 +66,13 @@ export default class OvercookedSinglePlayerTask{
             player_colors: player_colors
         });
         this.init_orders = init_orders;
-        console.log("Single player");
+        if (Object.keys(npc_policies).length == 1) {
+            console.log("Single human player vs agent");
+        }
+        else {
+            console.log("Agent playing vs agent")
+        }
+        
 
         this.TIMESTEP = TIMESTEP;
         this.MAX_TIME = MAX_TIME;
@@ -88,10 +93,10 @@ export default class OvercookedSinglePlayerTask{
         this.joint_action = [STAY, STAY];
 
         this.gameloop = setInterval(() => {
-	    for (let npc_index in this.npc_policies) {
-		let npc_a = this.npc_policies[npc_index](this.state, this.game);
-		this.joint_action[npc_index] = npc_a;
-	    }
+    	    for (let npc_index in this.npc_policies) {
+    		let npc_a = this.npc_policies[npc_index](this.state, this.game);
+    		this.joint_action[npc_index] = npc_a;
+    	    }
             let  [[next_state, prob], reward] =
                 this.game.mdp.get_transition_states_and_probs({
                     state: this.state,
