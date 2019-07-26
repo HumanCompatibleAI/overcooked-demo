@@ -4,7 +4,7 @@
   "description": "Website to play Overcooked with AI agents",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "build-debug": "browserify static/js/demo/index.js -o static/js/demo.js -d -t babelify",
     "build": "browserify static/js/demo/index.js -o static/js/demo/demo.js -t babelify; browserify static/js/demo/replay-index.js -o static/js/demo/replay.js -t babelify"
 
@@ -16,7 +16,6 @@
     "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
     "babelify": "^8.0.0",
-    "jest": "^24.8.0"
   },
   "dependencies": {
     "ejs": "^2.6.1",
