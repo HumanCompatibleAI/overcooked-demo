@@ -10,7 +10,7 @@ export default class OvercookedSinglePlayerTask{
     constructor ({
         container_id,
 	    player_index,
-        npc_policies, //todo 
+        npc_policies,
         start_grid = [
                 'XXXXXPXX',
                 'O     2O',

@@ -80,10 +80,10 @@ function startGame(endOfGameCallback) {
     // let gameserverio = new GameServerIO({HOST});
 
     let players = [$("#playerZero").val(), $("#playerOne").val()]
-    console.log(players);
+
     if (players[0] == 'human' && players[1] == 'human')
     {
-        console.log("Got inside If statement")
+
         $("#overcooked").html("<h3>Sorry, we can't support humans as both players.  Please make a different dropdown selection and hit Enter</h3>"); 
         endOfGameCallback();
         return;
