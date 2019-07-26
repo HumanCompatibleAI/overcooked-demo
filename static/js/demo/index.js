@@ -97,9 +97,9 @@ function startGame(endOfGameCallback) {
         init_orders: ['onion'],
         always_serve: 'onion',
         completion_callback: () => {
-    	console.log("Time up");
-    	endOfGameCallback();
-        },
+        	console.log("Time up");
+        	endOfGameCallback();
+            },
         DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
         });
     game.init();
