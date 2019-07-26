@@ -7,6 +7,10 @@ app.get('/', function(req, res) {
     res.render("demo");
 });
 
+app.get('/replay', function(req, res) {
+    res.render("replay");
+});
+
 app.get('/instructions', function(req, res) {
     res.render("instructions");
 });

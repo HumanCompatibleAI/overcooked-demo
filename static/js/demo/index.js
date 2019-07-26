@@ -1,7 +1,6 @@
 import $ from "jquery"
 import _ from "lodash"
-// import GameServerIO from "./js/gameserver-io.js"
-// import OvercookedInteractiveTask from "./js/overcooked-task";
+
 import OvercookedSinglePlayerTask from "./js/overcooked-single";
 import getOvercookedPolicy from "./js/load_tf_model.js";
 
@@ -16,7 +15,7 @@ let [STAY, INTERACT] = [Direction.STAY, Action.INTERACT];
 let PARAMS = {
     MAIN_TRIAL_TIME: 60, //seconds
     TIMESTEP_LENGTH: 150, //milliseconds
-    DELIVERY_POINTS: 5,
+    DELIVERY_POINTS: 20,
     PLAYER_INDEX: 1,  // Either 0 or 1
     MODEL_TYPE: 'ppo_bc'  // Either ppo_bc, ppo_sp, or pbt
 };
@@ -81,22 +80,22 @@ function startGame(endOfGameCallback) {
 	let npc_policies = {};
 	npc_policies[AGENT_INDEX] = npc_policy;
 	$("#overcooked").empty();
-        game = new OvercookedSinglePlayerTask({
-	    container_id: "overcooked",
-	    player_index: PARAMS.PLAYER_INDEX,
-	    start_grid : layout,
-	    npc_policies: npc_policies,
-	    TIMESTEP : PARAMS.TIMESTEP_LENGTH,
-	    MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
-	    init_orders: ['onion'],
-	    always_serve: 'onion',
-	    completion_callback: () => {
-		console.log("Time up");
-		endOfGameCallback();
-	    },
-	    DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
+    game = new OvercookedSinglePlayerTask({
+        container_id: "overcooked",
+        player_index: PARAMS.PLAYER_INDEX,
+        start_grid : layout,
+        npc_policies: npc_policies,
+        TIMESTEP : PARAMS.TIMESTEP_LENGTH,
+        MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
+        init_orders: ['onion'],
+        always_serve: 'onion',
+        completion_callback: () => {
+        	console.log("Time up");
+        	endOfGameCallback();
+            },
+        DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
         });
-        game.init();
+    game.init();
     });
 }
 

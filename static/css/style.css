@@ -204,6 +204,7 @@ h1 {
     opacity: 1;
     -webkit-transition: .2s;
     transition: opacity .2s;
+    margin-top: 10px;
 }
 
 .slider:hover {
