@@ -4,6 +4,10 @@ A web application where humans can play Overcooked with trained AI agents.
 ## Installation
 
 First, install `node` and `npm`, and ensure that you have set up the [overcooked-js repository](https://github.com/markkho/overcooked-js).
+Also, install 	browserify globally, by calling: 
+
+    overcooked-demo $ npm install -g browserify
+
 
 Then, at the top-level directory:
 
