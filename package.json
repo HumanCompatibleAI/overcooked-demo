@@ -6,8 +6,8 @@
   "scripts": {
     "test": "jest",
     "build-debug": "browserify static/js/demo/index.js -o static/js/demo.js -d -t babelify",
-    "build": "browserify static/js/demo/index.js -o static/js/demo/demo.js -t babelify",
-    "build-replay": "browserify static/js/demo/replay-index.js -o static/js/demo/replay.js -t babelify"
+    "build": "browserify static/js/demo/index.js -o static/js/demo/demo.js -t babelify; browserify static/js/demo/replay-index.js -o static/js/demo/replay.js -t babelify"
+
   },
   "author": "Rohin Shah",
   "license": "ISC",
