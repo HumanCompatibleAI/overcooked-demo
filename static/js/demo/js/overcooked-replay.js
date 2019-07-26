@@ -30,41 +30,42 @@ export default class OvercookedTrajectoryReplay{
         completion_callback = () => {console.log("Time up")},
         timestep_callback = (data) => {},
         DELIVERY_REWARD = 5
-    }) {
+    }) 
+    {
 
-	let player_colors = {};
-	player_colors[0] = 'green';
-	player_colors[1] = 'blue';
+    	let player_colors = {};
+    	player_colors[0] = 'green';
+        player_colors[1] = 'blue';
 
-    this.game = new OvercookedGame({
-        start_grid,
-        container_id,
-        assets_loc: "assets/",
-        ANIMATION_DURATION: 200*.9,
-        tileSize: 80,
-        COOK_TIME: cook_time,
-        explosion_time: Number.MAX_SAFE_INTEGER,
-        DELIVERY_REWARD: DELIVERY_REWARD,
-        always_serve: always_serve,
-        player_colors: player_colors
-    });
-    this.init_orders = init_orders;
-    console.log("Trajectory replay");
-    this.observations = trajectory.ep_observations[0];
-    this.actions = trajectory.ep_actions[0];
-    this.MAX_TIME = MAX_TIME;
-    this.time_left = MAX_TIME;
-    this.cur_gameloop = 0;
-    this.score = 0;
-    this.completion_callback = completion_callback;
-    this.timestep_callback = timestep_callback;
-    this.total_timesteps = this.observations.length - 1;
-    this.paused = false;
-    this.keyboard_paused = false;
-    this.last_step_time = new Date().getTime();
-    this.seconds_per_step = 1;
-    this.speed_play = 0;
-    this.speed_seconds_per_step = 0.1; 
+        this.game = new OvercookedGame({
+            start_grid,
+            container_id,
+            assets_loc: "assets/",
+            ANIMATION_DURATION: 200*.9,
+            tileSize: 80,
+            COOK_TIME: cook_time,
+            explosion_time: Number.MAX_SAFE_INTEGER,
+            DELIVERY_REWARD: DELIVERY_REWARD,
+            always_serve: always_serve,
+            player_colors: player_colors
+        });
+        this.init_orders = init_orders;
+        console.log("Trajectory replay");
+        this.observations = trajectory.ep_observations[0];
+        this.actions = trajectory.ep_actions[0];
+        this.MAX_TIME = MAX_TIME;
+        this.time_left = MAX_TIME;
+        this.cur_gameloop = 0;
+        this.score = 0;
+        this.completion_callback = completion_callback;
+        this.timestep_callback = timestep_callback;
+        this.total_timesteps = this.observations.length - 1;
+        this.paused = false;
+        this.keyboard_paused = false;
+        this.last_step_time = new Date().getTime();
+        this.seconds_per_step = 1;
+        this.speed_play = 0;
+        this.speed_seconds_per_step = 0.1; 
     }
 
 
@@ -72,10 +73,6 @@ export default class OvercookedTrajectoryReplay{
         this.game.init();
 
         this.start_time = new Date().getTime();
-
-        // What type is a state? How do you construct one from raw data?  How do you. 
-        // get a state's component elements? These will all be important for doing the trajectory replay
-        
  
         this.gameloop = setInterval(() => {
             if (this.cur_gameloop > this.total_timesteps) {
@@ -91,13 +88,8 @@ export default class OvercookedTrajectoryReplay{
                 this.last_step_time = new Date().getTime();
                 let state_dict = this.observations[this.cur_gameloop]
                 this.state = dictToState(state_dict)
-                console.log("Timestep: ")
-                console.log(this.cur_gameloop)
-                console.log("Drawing state: ")
-                console.log(this.state)
                 this.game.drawState(this.state);
                 let actions_arr = this.actions[this.cur_gameloop]; 
-                console.log(actions_arr);
                 this.joint_action = lookupActions(actions_arr);
                 // read the two player actions out of the trajectory 
                 // Do a transition and get the next state and reward.
@@ -106,14 +98,7 @@ export default class OvercookedTrajectoryReplay{
                         state: this.state,
                         joint_action: this.joint_action
                     });
-                // If the state and reward don't match what's in the trajectory file, warn or 
-                // die or something. 
-                // update next round
-                console.log("Game mechanic next state: ")
-                console.log(next_state)
-                // this.game.drawState(next_state);
-                // this.score += reward;
-                // this.game.drawScore(this.score);
+
                 this.time_left = this.total_timesteps - this.cur_gameloop
                 this.game.drawTimeLeft(this.time_left);
 
@@ -139,8 +124,8 @@ export default class OvercookedTrajectoryReplay{
             let seconds_since_step = (new Date().getTime() - this.last_step_time)/1000; 
             if (this.keyboard_paused == false) {
                 if (this.speed_play < 0 && seconds_since_step > this.speed_seconds_per_step) {
-                this.paused = false;
-                this.cur_gameloop -= 1;
+                    this.paused = false;
+                    this.cur_gameloop -= 1;
                 }
                 else if (this.speed_play > 0 && seconds_since_step > this.speed_seconds_per_step) {
                     this.paused = false;
@@ -157,7 +142,7 @@ export default class OvercookedTrajectoryReplay{
             if (this.time_left < 0) {
                 this.time_left = 0;
                 this.close();
-                }
+            }
         }, this.TIMESTEP);
         //By default it seems like we'd want to remove the response listener 
         // But we could maybe also keep a response listener that takes in the keys Left and Right 
@@ -176,23 +161,14 @@ export default class OvercookedTrajectoryReplay{
 
     activate_response_listener () {
         var slider = document.getElementById("stepSlider");
-        console.log(slider)
         let total_timesteps = this.total_timesteps; 
         let game = this; 
         slider.oninput = function() {
             let slider_percent = this.value/100.0;
-            console.log("Slider Percent: ")
-            console.log(slider_percent);
-            console.log(game.total_timesteps);
-            console.log(slider_percent*game.total_timesteps);
-            console.log(Math.round(slider_percent*game.total_timesteps));
             game.cur_gameloop = Math.round(slider_percent*game.total_timesteps); 
             game.paused = false;
-            console.log("New current game loop stage: ")
-            console.log(game.cur_gameloop)
         }
         $(document).on("keydown", (e) => {
-            console.log(e)
             switch(e.which) {
                 case 37: // left
                 this.cur_gameloop -= 1;
