@@ -15,8 +15,4 @@ At this point the code should be ready to run. Start the server with
 
     overcooked-demo $ node index.js
 
-at which point you should be able to load the website in any browser by going to [http://localhost:8766](http://localhost:8766).
-
-
-If you want to build the trajectory replay code, all of the above is the same, 
-but you'll need to run `npm run build-replay`, and then navigate to [http://localhost:8766/replay](http://localhost:8766/replay).
+at which point you should be able to load the website in any browser by going to [http://localhost:8766](http://localhost:8766). At the root directory, you can play the game against pre-trained agents, or watch these agents play each other. At /replay, you can watch replays of fixed trajectories. 
