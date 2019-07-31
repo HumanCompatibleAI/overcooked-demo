@@ -14,7 +14,7 @@ let [STAY, INTERACT] = [Direction.STAY, Action.INTERACT];
 
 // Parameters
 let PARAMS = {
-    MAIN_TRIAL_TIME: 5, //seconds
+    MAIN_TRIAL_TIME: 15, //seconds
     TIMESTEP_LENGTH: 150, //milliseconds
     DELIVERY_POINTS: 20,
     PLAYER_INDEX: 1,  // Either 0 or 1
@@ -79,8 +79,8 @@ function startGame(endOfGameCallback) {
     // let HOST = "https://lit-mesa-15330.herokuapp.com/".replace(/^http/, "ws");
     // let gameserverio = new GameServerIO({HOST});
 
-    let players = [$("#playerZero").val(), $("#playerOne").val()]
-
+    let players = [$("#playerZero").val(), $("#playerOne").val()];
+    let saveTrajectory = $("#saveTrajectories").is(':checked');
     if (players[0] == 'human' && players[1] == 'human')
     {
 
@@ -89,6 +89,13 @@ function startGame(endOfGameCallback) {
         return;
     } 
     let layout_name = $("#layout").val();
+    let game_time = $("#gameTime").val();
+    if (game_time > 120) {
+        $("#overcooked").html("<h3>Sorry, please choose a shorter amount of time for the game!</h3>"); 
+        endOfGameCallback();
+        return;
+    }
+
     let layout = layouts[layout_name];
 
 
@@ -116,8 +123,9 @@ function startGame(endOfGameCallback) {
                 start_grid : layout,
                 npc_policies: npc_policies,
                 mdp_params: mdp_params,
+                save_trajectory: saveTrajectory,
                 TIMESTEP : PARAMS.TIMESTEP_LENGTH,
-                MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
+                MAX_TIME : game_time, //seconds
                 init_orders: ['onion'],
                 always_serve: 'onion',
                 completion_callback: () => {
@@ -154,7 +162,7 @@ function startGameOnEnter(e) {
 
 function enableEnter() {
     $(document).keydown(startGameOnEnter);
-    $("#control").html("<p>Press enter to begin!</p>");
+    $("#control").html("<p>Press enter to begin!</p><p>(make sure you've deselected all input elements first!)</p>");
 }
 
 function disableEnter() {

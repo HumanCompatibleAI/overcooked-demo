@@ -14,6 +14,7 @@ export default class OvercookedSinglePlayerTask{
 	    player_index,
         npc_policies,
         mdp_params,
+        save_trajectory = false,
         start_grid = [
                 'XXXXXPXX',
                 'O     2O',
@@ -75,7 +76,7 @@ export default class OvercookedSinglePlayerTask{
         }
         else {
             console.log("Agent playing vs agent")
-            this.game_type = 'human_vs_agent';
+            this.game_type = 'agent_vs_agent';
         }
         
 
@@ -89,6 +90,7 @@ export default class OvercookedSinglePlayerTask{
         this.mdp_params = mdp_params; 
         this.mdp_params['cook_time'] = COOK_TIME; 
         this.mdp_params['start_order_list'] = init_orders;
+        this.save_trajectory = save_trajectory
         this.trajectory = {
             'ep_observations': [[]], 
             'ep_actions': [[]],
@@ -162,23 +164,27 @@ export default class OvercookedSinglePlayerTask{
         if (typeof(this.gameloop) !== 'undefined') {
             clearInterval(this.gameloop);
         }
-        let traj_file_data = {
+        if (this.save_trajectory) {
+            let traj_file_data = {
             "start_time": this.start_time, 
             "game_type": this.game_type, 
             "trajectory_data": this.trajectory
 
+            }
+            $.ajax({url: "/save_trajectory",
+                    type: "POST", 
+                    contentType: 'application/json',
+                    data: JSON.stringify(traj_file_data),
+                    success: function(response) {
+                console.log(`Save trajectory status is ${response}`)
+            }})
+            
         }
-        $.ajax({url: "/save_trajectory",
-                type: "POST", 
-                contentType: 'application/json',
-                data: JSON.stringify(traj_file_data),
-                success: function(response) {
-            console.log(`Save trajectory status is ${response}`)
-        }})
         this.game.close();
         this.disable_response_listener();
         this.completion_callback();
 
+    
 
     }
 

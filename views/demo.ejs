@@ -25,7 +25,7 @@
     <form>
       <div class="container">
       <div class="row text-center">
-	<div class="form-group col-lg-4">
+	<div class="form-group col-lg-3">
 	  <label for="playerZero" style="color:#1E6A9E">Player 1</label>
 	  <select class="form-control" id="playerZero">
 	    <option value="ppo_bc">Human-aware PPO agent</option>
@@ -34,7 +34,7 @@
       <option value="human">Human Keyboard Input</option>
 	  </select>
 	</div>
-  <div class="form-group col-lg-4">
+  <div class="form-group col-lg-3">
     <label for="playerOne" style="color:#44956B">Player 2</label>
     <select class="form-control" id="playerOne">
       <option value="human">Human Keyboard Input</option>
@@ -44,7 +44,7 @@
       
     </select>
   </div>
-	<div class="form-group col-lg-4">
+	<div class="form-group col-lg-2">
 	  <label for="layout">Layout</label>
 	  <select class="form-control" id="layout">
 	    <option value="cramped_room">Cramped Room</option>
@@ -54,6 +54,15 @@
 	    <option value="random3">Counter Circuit</option>
 	  </select>
 	</div>
+  <div class="form-group col-lg-2">
+    <label for="gameTime">Game Length (sec)</label>
+    <input type="number" id="gameTime" value="30" min="1" max="120">
+  </div>
+  <div class="form-group col-lg-2">
+    <label for="layout">Automatically Save Game Trajectories?</label>
+    <input type="checkbox" id="saveTrajectories" name="saveTrajectories">
+  </div>
+  
       </div>
       </div>
     </form>
