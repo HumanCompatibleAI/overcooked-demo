@@ -14,7 +14,7 @@ let [STAY, INTERACT] = [Direction.STAY, Action.INTERACT];
 
 // Parameters
 let PARAMS = {
-    MAIN_TRIAL_TIME: 60, //seconds
+    MAIN_TRIAL_TIME: 5, //seconds
     TIMESTEP_LENGTH: 150, //milliseconds
     DELIVERY_POINTS: 20,
     PLAYER_INDEX: 1,  // Either 0 or 1
@@ -90,6 +90,8 @@ function startGame(endOfGameCallback) {
     } 
     let layout_name = $("#layout").val();
     let layout = layouts[layout_name];
+
+
     $("#overcooked").empty();
     getOvercookedPolicy(players[0], layout_name, 0).then(function(npc_policy_zero) {
         getOvercookedPolicy(players[1], layout_name, 1).then(function(npc_policy_one) {
@@ -103,11 +105,17 @@ function startGame(endOfGameCallback) {
                 player_index = 1; 
                 npc_policies = {0: npc_policy_zero}; 
             }
+            let mdp_params = {
+                    "layout_name": layout_name, 
+                    "num_items_for_soup": 3, 
+                    "rew_shaping_params": null, 
+                }
             game = new OvercookedSinglePlayerTask({
                 container_id: "overcooked",
                 player_index: player_index,
                 start_grid : layout,
                 npc_policies: npc_policies,
+                mdp_params: mdp_params,
                 TIMESTEP : PARAMS.TIMESTEP_LENGTH,
                 MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
                 init_orders: ['onion'],
