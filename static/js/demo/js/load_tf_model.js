@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs-core';
 
-import * as Overcooked from "overcook"
+import * as Overcooked from "overcook"; 
 let OvercookedGame = Overcooked.OvercookedGame.OvercookedGame;
 let OvercookedMDP = Overcooked.OvercookedMDP;
 let Direction = OvercookedMDP.Direction;
@@ -11,7 +11,23 @@ let [STAY, INTERACT] = [Direction.STAY, Action.INTERACT];
 import {loadGraphModel} from '@tensorflow/tfjs-converter';
 
 // Returns a Promise that resolves to a policy
-export default function getOvercookedPolicy(model_type, layout_name, playerIndex) {
+
+function sampleIndexFromCategorical(probas) {
+	// Stolen from: https://stackoverflow.com/questions/8877249/generate-random-integers-with-probabilities
+	let randomNum = Math.random(); 
+	let accumulator = 0; 
+	let lastProbaIndex = probas.length - 1; 
+
+	for (var i = 0;  i < lastProbaIndex; i++) {
+		accumulator += probas[i]; 
+		if (randomNum < accumulator) {
+			return i;
+		}
+	}
+	return lastProbaIndex;
+}
+
+export default function getOvercookedPolicy(model_type, layout_name, playerIndex, sample) {
 	if (model_type == "human") {
 		return new Promise(function(resolve, reject) {
 		    resolve(null);
@@ -25,8 +41,16 @@ export default function getOvercookedPolicy(model_type, layout_name, playerIndex
 		    resolve(function (state, game) {
 			let action_tensor = model.execute(preprocessState(state, game, playerIndex));
 			let action_probs = action_tensor.arraySync()[0];
-			let action = Action.INDEX_TO_ACTION[argmax(action_probs)];
-			return action;
+			let action_index; 
+			if (sample == true) {
+				action_index = sampleIndexFromCategorical(action_probs)
+			}
+			else {
+				// will happen if sample == false or if sample == undefined
+				action_index = argmax(action_probs);
+			}
+
+			return Action.INDEX_TO_ACTION[action_index];
 	    });
 	});
     });
