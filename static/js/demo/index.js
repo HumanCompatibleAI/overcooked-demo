@@ -90,7 +90,7 @@ function startGame(endOfGameCallback) {
     } 
     let layout_name = $("#layout").val();
     let game_time = $("#gameTime").val();
-    if (game_time > 120) {
+    if (game_time > 1800) {
         $("#overcooked").html("<h3>Sorry, please choose a shorter amount of time for the game!</h3>"); 
         endOfGameCallback();
         return;
