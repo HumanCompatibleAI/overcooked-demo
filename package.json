@@ -4,10 +4,10 @@
   "description": "Website to play Overcooked with AI agents",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "build-debug": "browserify static/js/demo/index.js -o static/js/demo.js -d -t babelify",
-    "build": "browserify static/js/demo/index.js -o static/js/demo/demo.js -t babelify",
-    "build-replay": "browserify static/js/demo/replay-index.js -o static/js/demo/replay.js -t babelify"
+    "build": "browserify static/js/demo/index.js -o static/js/demo/demo.js -t babelify; browserify static/js/demo/replay-index.js -o static/js/demo/replay.js -t babelify"
+
   },
   "author": "Rohin Shah",
   "license": "ISC",
@@ -16,16 +16,13 @@
     "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
     "babelify": "^8.0.0",
-    "jest": "^24.8.0"
   },
   "dependencies": {
     "body-parser": "^1.19.0",
-    "browserify": "^16.3.0",
     "ejs": "^2.6.1",
     "express": "^4.17.1",
     "jquery": "^3.3.1",
     "lodash": "^4.17.11",
-    "nodemon": "^1.19.1",
     "rollup": "^1.12.3",
     "socket.io-client": "^2.2.0"
   }

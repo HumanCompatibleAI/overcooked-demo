@@ -1,7 +1,6 @@
 import $ from "jquery"
 import _ from "lodash"
-// import GameServerIO from "./js/gameserver-io.js"
-// import OvercookedInteractiveTask from "./js/overcooked-task";
+
 import getOvercookedPolicy from "./js/load_tf_model.js";
 import OvercookedTrajectoryReplay from "./js/overcooked-replay.js";
 

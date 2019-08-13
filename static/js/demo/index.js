@@ -1,7 +1,6 @@
 import $ from "jquery"
 import _ from "lodash"
-// import GameServerIO from "./js/gameserver-io.js"
-// import OvercookedInteractiveTask from "./js/overcooked-task";
+
 import OvercookedSinglePlayerTask from "./js/overcooked-single";
 import getOvercookedPolicy from "./js/load_tf_model.js";
 
@@ -60,12 +59,6 @@ let layouts = {
         "D XXXX S",
         "X2    1X",
         "XXXOOXXX"
-    ], 
-    "test_layout": [
-    "XXPXX", 
-    "O  2O", 
-    "T1  T", 
-    "XDPSX"
     ]
 };
 
