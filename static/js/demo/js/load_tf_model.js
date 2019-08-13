@@ -7,10 +7,8 @@ let Direction = OvercookedMDP.Direction;
 let Action = OvercookedMDP.Action;
 let [NORTH, SOUTH, EAST, WEST] = Direction.CARDINAL;
 let [STAY, INTERACT] = [Direction.STAY, Action.INTERACT];
-
 import {loadGraphModel} from '@tensorflow/tfjs-converter';
 
-// Returns a Promise that resolves to a policy
 
 function sampleIndexFromCategorical(probas) {
 	// Stolen from: https://stackoverflow.com/questions/8877249/generate-random-integers-with-probabilities
@@ -28,6 +26,7 @@ function sampleIndexFromCategorical(probas) {
 }
 
 export default function getOvercookedPolicy(model_type, layout_name, playerIndex, sample) {
+	// Returns a Promise that resolves to a policy
 	if (model_type == "human") {
 		return new Promise(function(resolve, reject) {
 		    resolve(null);
