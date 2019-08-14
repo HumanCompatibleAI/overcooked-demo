@@ -38,3 +38,7 @@ If you intend to develop further, we recommend using `nodemon` to avoid having t
     $ npm install -g nodemon
 
 Then run the server with `nodemon index.js`.
+
+### Issues
+
+We have sometimes found the animation to break & behave weirdly (and appeared slowed down). This is usually caused by updates to the overcooked gridoworld code (such as switching branches or updating). Uninstalling both `overcooked_ai_js` and `overcooked-demo` and reinstalling them usually fixes the issue (simply restarting one's computer might help too).
