@@ -39,6 +39,12 @@ If you intend to develop further, we recommend using `nodemon` to avoid having t
 
 Then run the server with `nodemon index.js`.
 
+### Converting models to overcooked-demo format
+
+To convert Tensorflow models to a format in which they can be used by overcooked-demo, we used [tensorflow-js](https://github.com/tensorflow/tfjs) to convert our Tensorflow models saved with `simple_save` to models that could be served in the browser.
+
+In particular, the way we converted the models in [Human Aware RL](https://github.com/HumanCompatibleAI/human_aware_rl) was by using `simple_save` [with this output format](https://github.com/HumanCompatibleAI/human_aware_rl/blob/master/human_aware_rl/ppo/ppo.py#L222) and then running `convert_model_to_web.sh` as documented in [the README](https://github.com/HumanCompatibleAI/human_aware_rl#converting-models-to-js-format).
+
 ### Issues
 
 We have sometimes found the animation to break & behave weirdly (e.g. skip timesteps). This is usually caused by updates to the overcooked gridoworld code (such as switching branches or updating). Uninstalling both `overcooked_ai_js` and `overcooked-demo` and reinstalling them usually fixes the issue (simply restarting one's computer might help too).
