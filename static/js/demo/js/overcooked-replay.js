@@ -63,7 +63,7 @@ export default class OvercookedTrajectoryReplay{
         this.paused = false;
         this.keyboard_paused = false;
         this.last_step_time = new Date().getTime();
-        this.seconds_per_step = 1;
+        this.seconds_per_step = 0.5;
         this.speed_play = 0;
         this.speed_seconds_per_step = 0.1; 
     }
@@ -83,11 +83,19 @@ export default class OvercookedTrajectoryReplay{
             }
             let game_loop_percentage = Math.round(100*this.cur_gameloop/this.total_timesteps);
             document.getElementById("stepSlider").value = game_loop_percentage; 
+            if (this.time_left == 0) {
+                this.close();
+            }
+
             if (this.paused == false && this.keyboard_paused == false) {
                 this.disable_response_listener()
                 this.last_step_time = new Date().getTime();
                 let state_dict = this.observations[this.cur_gameloop]
+                if (state_dict == undefined) {
+                    debugger;
+                }
                 this.state = dictToState(state_dict)
+
                 this.game.drawState(this.state);
                 let actions_arr = this.actions[this.cur_gameloop]; 
                 this.joint_action = lookupActions(actions_arr);
@@ -139,10 +147,7 @@ export default class OvercookedTrajectoryReplay{
             
 
             //time run out
-            if (this.time_left < 0) {
-                this.time_left = 0;
-                this.close();
-            }
+            
         }, this.TIMESTEP);
         //By default it seems like we'd want to remove the response listener 
         // But we could maybe also keep a response listener that takes in the keys Left and Right 

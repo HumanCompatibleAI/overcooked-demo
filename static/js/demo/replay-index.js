@@ -140,13 +140,17 @@ function onChange(event) {
     reader.readAsText(event.target.files[0]);
     let fileName = event.target.files[0].name;
     $("#fileInfo").html("<p>Reading trajectory info from uploaded file " + fileName +"</p>")
-    endGame();
+    if (game != undefined) {
+        endGame();
+    }
 }
 
 function clearFile() {
     $("#fileInput").val('');
     $("#fileInfo").html("<p>Reading trajectory info from " + trajectoryPath + "</p>")
-    endGame();
+    if (game != undefined) {
+        endGame();
+    }
 }
 
 

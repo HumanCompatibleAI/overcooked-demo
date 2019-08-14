@@ -104,7 +104,6 @@ export default class OvercookedSinglePlayerTask{
 
         this.start_time = new Date().getTime();
         this.state = this.game.mdp.get_start_state(this.init_orders);
-        console.log(this.state)
         this.game.drawState(this.state);
         this.joint_action = [STAY, STAY];
 
@@ -118,7 +117,9 @@ export default class OvercookedSinglePlayerTask{
                     state: this.state,
                     joint_action: this.joint_action
                 });
-            this.trajectory.ep_observations[0].push(JSON.stringify(this.state))
+            let cleanedState = JSON.parse(JSON.stringify(this.state));
+            cleanedState['objects'] = Object.values(cleanedState['objects']);  
+            this.trajectory.ep_observations[0].push(JSON.stringify(cleanedState))
             this.trajectory.ep_actions[0].push(JSON.stringify(this.joint_action))
             this.trajectory.ep_rewards[0].push(reward)
             //update next round
