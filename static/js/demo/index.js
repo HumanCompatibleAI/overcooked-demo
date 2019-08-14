@@ -22,7 +22,7 @@ let PARAMS = {
 
 /***********************************
       Main trial order
- ************************************/
+************************************/
 
 
 let layouts = {
@@ -106,10 +106,10 @@ function startGame(endOfGameCallback) {
                 npc_policies = {0: npc_policy_zero}; 
             }
             let mdp_params = {
-                    "layout_name": layout_name, 
-                    "num_items_for_soup": 3, 
-                    "rew_shaping_params": null, 
-                }
+                "layout_name": layout_name, 
+                "num_items_for_soup": 3, 
+                "rew_shaping_params": null, 
+            }
             game = new OvercookedSinglePlayerTask({
                 container_id: "overcooked",
                 player_index: player_index,
@@ -122,18 +122,18 @@ function startGame(endOfGameCallback) {
                 init_orders: ['onion'],
                 always_serve: 'onion',
                 completion_callback: () => {
-                console.log("Time up");
-                endOfGameCallback();
+                    console.log("Time up");
+                    endOfGameCallback();
                 },
                 DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
-                });
-        game.init();
-        
+            });
+            game.init();
+            
         });
         
         
 
-});
+    });
 }
 
 function endGame() {

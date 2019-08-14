@@ -11,16 +11,16 @@ let COOK_TIME = 20;
 export default class OvercookedSinglePlayerTask{
     constructor ({
         container_id,
-	    player_index,
+	player_index,
         npc_policies,
         mdp_params,
         save_trajectory = false,
         start_grid = [
-                'XXXXXPXX',
-                'O     2O',
-                'T1     T',
-                'XXXDPSXX'
-            ],
+            'XXXXXPXX',
+            'O     2O',
+            'T1     T',
+            'XXXDPSXX'
+        ],
         TIMESTEP = 200,
         MAX_TIME = 20, //seconds
         init_orders=['onion'],
@@ -34,25 +34,25 @@ export default class OvercookedSinglePlayerTask{
             // TODO maybe delete this? 
             npc_policies = {
                 1:
-                    (function () {
-                        let action_loop = [
-                            SOUTH, WEST, NORTH, EAST
-                        ];
-                        let ai = 0;
-                        let pause = 4;
-                        return (s) => {
-                            let a = STAY;
-                            if (ai % pause === 0) {
-                                a = action_loop[ai/pause];
-                            }
-                            ai += 1;
-                            ai = ai % (pause*action_loop.length);
-                            return a
+                (function () {
+                    let action_loop = [
+                        SOUTH, WEST, NORTH, EAST
+                    ];
+                    let ai = 0;
+                    let pause = 4;
+                    return (s) => {
+                        let a = STAY;
+                        if (ai % pause === 0) {
+                            a = action_loop[ai/pause];
                         }
-                    })()
+                        ai += 1;
+                        ai = ai % (pause*action_loop.length);
+                        return a
+                    }
+                })()
             }
         }
-    this.npc_policies = npc_policies;
+	this.npc_policies = npc_policies;
 	this.player_index = player_index;
 
 	let player_colors = {0: 'blue', 1: 'green'};
@@ -166,9 +166,9 @@ export default class OvercookedSinglePlayerTask{
         }
         if (this.save_trajectory) {
             let traj_file_data = {
-            "start_time": this.start_time, 
-            "game_type": this.game_type, 
-            "trajectory_data": this.trajectory
+		"start_time": this.start_time, 
+		"game_type": this.game_type, 
+		"trajectory_data": this.trajectory
 
             }
             $.ajax({url: "/save_trajectory",
@@ -176,15 +176,15 @@ export default class OvercookedSinglePlayerTask{
                     contentType: 'application/json',
                     data: JSON.stringify(traj_file_data),
                     success: function(response) {
-                console.log(`Save trajectory status is ${response}`)
-            }})
+			console.log(`Save trajectory status is ${response}`)
+		    }})
             
         }
         this.game.close();
         this.disable_response_listener();
         this.completion_callback();
 
-    
+	
 
     }
 
@@ -192,27 +192,27 @@ export default class OvercookedSinglePlayerTask{
         $(document).on("keydown", (e) => {
             let action;
             switch(e.which) {
-                case 37: // left
+            case 37: // left
                 action = WEST;
                 break;
 
-                case 38: // up
+            case 38: // up
                 action = NORTH;
                 break;
 
-                case 39: // right
+            case 39: // right
                 action = EAST;
                 break;
 
-                case 40: // down
+            case 40: // down
                 action = SOUTH;
                 break;
 
-                case 32: //space
+            case 32: //space
                 action = INTERACT;
                 break;
 
-                default: return; // exit this handler for other keys
+            default: return; // exit this handler for other keys
             }
             e.preventDefault(); // prevent the default action (scroll / move caret)
 
