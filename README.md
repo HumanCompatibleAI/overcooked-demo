@@ -12,7 +12,10 @@ Also, install 	browserify globally, by calling:
 Then, at the top-level directory:
 
     overcooked-demo $ npm install
-    overcooked-demo $ npm link /path/to/overcooked-js/
+
+Link to the javascript version of the environment code ([this](https://github.com/HumanCompatibleAI/overcooked_ai/tree/master/overcooked_ai_js)) and then build.
+
+    overcooked-demo $ npm link /path/to/overcooked_ai_js/
     overcooked-demo $ npm run build
 
 At this point the code should be ready to run. Start the server with
