@@ -83,6 +83,7 @@ export default class OvercookedTrajectoryReplay{
             }
             let game_loop_percentage = Math.round(100*this.cur_gameloop/this.total_timesteps);
             document.getElementById("stepSlider").value = game_loop_percentage; 
+
             if (this.time_left == 0) {
                 this.close();
             }
@@ -91,9 +92,7 @@ export default class OvercookedTrajectoryReplay{
                 this.disable_response_listener()
                 this.last_step_time = new Date().getTime();
                 let state_dict = this.observations[this.cur_gameloop]
-                if (state_dict == undefined) {
-                    debugger;
-                }
+              
                 this.state = dictToState(state_dict)
 
                 this.game.drawState(this.state);
