@@ -25,7 +25,7 @@ function sampleIndexFromCategorical(probas) {
 	return lastProbaIndex;
 }
 
-export default function getOvercookedPolicy(model_type, layout_name, playerIndex, sample) {
+export default function getOvercookedPolicy(model_type, layout_name, playerIndex, use_argmax) {
 	// Returns a Promise that resolves to a policy
 	if (model_type == "human") {
 		return new Promise(function(resolve, reject) {
@@ -41,12 +41,12 @@ export default function getOvercookedPolicy(model_type, layout_name, playerIndex
 			let action_tensor = model.execute(preprocessState(state, game, playerIndex));
 			let action_probs = action_tensor.arraySync()[0];
 			let action_index; 
-			if (sample == true) {
-				action_index = sampleIndexFromCategorical(action_probs)
+			if (use_argmax == true) {
+				action_index = argmax(action_probs);
 			}
 			else {
-				// will happen if sample == false or if sample == undefined
-				action_index = argmax(action_probs);
+				// will happen if use_argmax == false or if use_argmax == undefined
+				action_index = sampleIndexFromCategorical(action_probs)
 			}
 
 			return Action.INDEX_TO_ACTION[action_index];
