@@ -2,3 +2,4 @@
 package-lock.json
 node_modules/
 static/js/demo/demo.js
+**/.DS_Store
