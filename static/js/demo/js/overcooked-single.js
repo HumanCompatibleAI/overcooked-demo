@@ -117,6 +117,9 @@ export default class OvercookedSinglePlayerTask{
                     state: this.state,
                     joint_action: this.joint_action
                 });
+
+            // Apparently doing a Parse(Stringify(Obj)) is actually the most succinct way. 
+            // to do a deep copy in JS 
             let cleanedState = JSON.parse(JSON.stringify(this.state));
             cleanedState['objects'] = Object.values(cleanedState['objects']);  
             this.trajectory.ep_observations[0].push(JSON.stringify(cleanedState))
