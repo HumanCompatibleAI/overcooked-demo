@@ -93,8 +93,8 @@ function startGame(endOfGameCallback) {
 
 
     $("#overcooked").empty();
-    getOvercookedPolicy(players[0], layout_name, 0).then(function(npc_policy_zero) {
-        getOvercookedPolicy(players[1], layout_name, 1).then(function(npc_policy_one) {
+    getOvercookedPolicy(players[0], layout_name, 0, true).then(function(npc_policy_zero) {
+        getOvercookedPolicy(players[1], layout_name, 1, true).then(function(npc_policy_one) {
             let player_index = null; 
             let npc_policies = {0: npc_policy_zero, 1: npc_policy_one}; 
             if (npc_policies[0] == null) {
