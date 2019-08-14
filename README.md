@@ -1,4 +1,8 @@
 # Overcooked Demo
+<p align="center">
+<img src="https://i.imgur.com/Rk2Hp55.png" >
+</p>
+
 A web application where humans can play Overcooked with trained AI agents.
 
 ## Installation
