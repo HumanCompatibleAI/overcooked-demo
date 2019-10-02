@@ -33,7 +33,7 @@ export default function getOvercookedPolicy(model_type, layout_name, playerIndex
 	});
     }
     
-    const modelPromise = loadGraphModel('assets/' + model_type + '_' + layout_name + '_agent/model.json');
+    const modelPromise = loadGraphModel('static/assets/' + model_type + '_' + layout_name + '_agent/model.json');
 
     return modelPromise.then(function (model) {
 	return new Promise(function(resolve, reject) {
