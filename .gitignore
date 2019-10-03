@@ -1,5 +1,8 @@
 *~
 package-lock.json
 node_modules/
-static/js/demo/demo.js
 **/.DS_Store
+
+# Compiled files
+static/js/demo/demo.js
+static/js/demo/replay.js
