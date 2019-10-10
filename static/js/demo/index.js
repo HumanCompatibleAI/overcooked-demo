@@ -73,6 +73,7 @@ function startGame(endOfGameCallback) {
     // let gameserverio = new GameServerIO({HOST});
 
     let players = [$("#playerZero").val(), $("#playerOne").val()];
+    let deterministic = $("#deterministic").is(':checked');
     let saveTrajectory = $("#saveTrajectories").is(':checked');
     if (players[0] == 'human' && players[1] == 'human')
     {
@@ -93,8 +94,8 @@ function startGame(endOfGameCallback) {
 
 
     $("#overcooked").empty();
-    getOvercookedPolicy(players[0], layout_name, 0).then(function(npc_policy_zero) {
-        getOvercookedPolicy(players[1], layout_name, 1).then(function(npc_policy_one) {
+    getOvercookedPolicy(players[0], layout_name, 0, deterministic).then(function(npc_policy_zero) {
+        getOvercookedPolicy(players[1], layout_name, 1, deterministic).then(function(npc_policy_one) {
             let player_index = null; 
             let npc_policies = {0: npc_policy_zero, 1: npc_policy_one}; 
             if (npc_policies[0] == null) {
