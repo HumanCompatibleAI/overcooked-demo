@@ -45,7 +45,6 @@ export default function getOvercookedPolicy(model_type, layout_name, playerIndex
 		    action_index = argmax(action_probs);
 		}
 		else {
-		    // will happen if use_argmax == false or if use_argmax == undefined
 		    action_index = sampleIndexFromCategorical(action_probs)
 		}
 
