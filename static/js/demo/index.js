@@ -22,7 +22,7 @@ let PARAMS = {
 
 /***********************************
       Main trial order
- ************************************/
+************************************/
 
 
 let layouts = {
@@ -73,6 +73,7 @@ function startGame(endOfGameCallback) {
     // let gameserverio = new GameServerIO({HOST});
 
     let players = [$("#playerZero").val(), $("#playerOne").val()];
+    let deterministic = $("#deterministic").is(':checked');
     let saveTrajectory = $("#saveTrajectories").is(':checked');
     if (players[0] == 'human' && players[1] == 'human')
     {
@@ -93,8 +94,8 @@ function startGame(endOfGameCallback) {
 
 
     $("#overcooked").empty();
-    getOvercookedPolicy(players[0], layout_name, 0).then(function(npc_policy_zero) {
-        getOvercookedPolicy(players[1], layout_name, 1).then(function(npc_policy_one) {
+    getOvercookedPolicy(players[0], layout_name, 0, deterministic).then(function(npc_policy_zero) {
+        getOvercookedPolicy(players[1], layout_name, 1, deterministic).then(function(npc_policy_one) {
             let player_index = null; 
             let npc_policies = {0: npc_policy_zero, 1: npc_policy_one}; 
             if (npc_policies[0] == null) {
@@ -106,10 +107,10 @@ function startGame(endOfGameCallback) {
                 npc_policies = {0: npc_policy_zero}; 
             }
             let mdp_params = {
-                    "layout_name": layout_name, 
-                    "num_items_for_soup": 3, 
-                    "rew_shaping_params": null, 
-                }
+                "layout_name": layout_name, 
+                "num_items_for_soup": 3, 
+                "rew_shaping_params": null, 
+            }
             game = new OvercookedSinglePlayerTask({
                 container_id: "overcooked",
                 player_index: player_index,
@@ -122,18 +123,18 @@ function startGame(endOfGameCallback) {
                 init_orders: ['onion'],
                 always_serve: 'onion',
                 completion_callback: () => {
-                console.log("Time up");
-                endOfGameCallback();
+                    console.log("Time up");
+                    endOfGameCallback();
                 },
                 DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
-                });
-        game.init();
-        
+            });
+            game.init();
+            
         });
         
         
 
-});
+    });
 }
 
 function endGame() {

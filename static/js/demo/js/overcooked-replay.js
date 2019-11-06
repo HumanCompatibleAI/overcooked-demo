@@ -18,11 +18,11 @@ export default class OvercookedTrajectoryReplay{
         container_id,
         trajectory,
         start_grid = [
-                'XXXXXPXX',
-                'O     2O',
-                'T1     T',
-                'XXXDPSXX'
-            ],
+            'XXXXXPXX',
+            'O     2O',
+            'T1     T',
+            'XXXDPSXX'
+        ],
         MAX_TIME = 1, //seconds
         cook_time=5,
         init_orders=['onion'],
@@ -73,7 +73,7 @@ export default class OvercookedTrajectoryReplay{
         this.game.init();
 
         this.start_time = new Date().getTime();
- 
+	
         this.gameloop = setInterval(() => {
             if (this.cur_gameloop > this.total_timesteps) {
                 this.close()
@@ -174,19 +174,19 @@ export default class OvercookedTrajectoryReplay{
         }
         $(document).on("keydown", (e) => {
             switch(e.which) {
-                case 37: // left
+            case 37: // left
                 this.cur_gameloop -= 1;
                 this.speed_play = -1; 
                 this.paused = false; 
                 break;
 
-                case 39: // right
+            case 39: // right
                 this.cur_gameloop += 1;
                 this.speed_play = +1; 
                 this.paused = false; 
                 break;
 
-                case 32: //space
+            case 32: //space
                 if (this.keyboard_paused) {
                     this.keyboard_paused = false;
                     console.log("Unpausing")
@@ -197,17 +197,17 @@ export default class OvercookedTrajectoryReplay{
                 }
                 
                 break;
-                default: return; // exit this handler for other keys
+            default: return; // exit this handler for other keys
             }
             e.preventDefault(); // prevent the default action (scroll / move caret)
         });
 
-    $(document).on("keyup", (e) => {
-        if (e.which == 37 || e.which == 39) {
-            this.speed_play = 0; 
-        }
-        
-    }); 
+	$(document).on("keyup", (e) => {
+            if (e.which == 37 || e.which == 39) {
+		this.speed_play = 0; 
+            }
+            
+	}); 
     }
 
     disable_response_listener () {

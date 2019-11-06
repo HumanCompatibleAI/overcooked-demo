@@ -23,7 +23,7 @@ let trajectoryPath = "assets/test_traj.json";
 let trajectoryData; 
 /***********************************
       Main trial order
- ************************************/
+************************************/
 
 
 let layouts = {
@@ -62,10 +62,10 @@ let layouts = {
         "XXXOOXXX"
     ], 
     "mdp_test": [
-    "XXPXX", 
-    "O  2O", 
-    "T1  T", 
-    "XDPSX"
+	"XXPXX", 
+	"O  2O", 
+	"T1  T", 
+	"XDPSX"
     ]
 };
 
@@ -81,8 +81,8 @@ function replayGame(endOfGameCallback){
     else { 
         console.log("Upload data not found")
         $.getJSON(trajectoryPath, function(trajectoryData) {
-                replayTrajectory(trajectoryData, endOfGameCallback);
-            }); 
+            replayTrajectory(trajectoryData, endOfGameCallback);
+        }); 
     } 
 }
 
@@ -97,8 +97,8 @@ function replayTrajectory(trajectoryDataObj, endOfGameCallback) {
         init_orders: mdp_params.start_order_list,
         always_serve: 'onion',
         completion_callback: () => {
-        console.log("Time up");
-        endOfGameCallback();
+            console.log("Time up");
+            endOfGameCallback();
         },
         DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
 
@@ -156,7 +156,7 @@ function clearFile() {
 
 function alert_data(name, family){
     alert('Name : ' + name + ', Family : ' + family);
-    }
+}
 
 function enableEnter() {
     $(document).keydown(startGameOnEnter);

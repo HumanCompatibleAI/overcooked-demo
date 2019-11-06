@@ -11,18 +11,18 @@ import {loadGraphModel} from '@tensorflow/tfjs-converter';
 
 
 function sampleIndexFromCategorical(probas) {
-	// Stolen from: https://stackoverflow.com/questions/8877249/generate-random-integers-with-probabilities
-	let randomNum = Math.random(); 
-	let accumulator = 0; 
-	let lastProbaIndex = probas.length - 1; 
+    // Stolen from: https://stackoverflow.com/questions/8877249/generate-random-integers-with-probabilities
+    let randomNum = Math.random(); 
+    let accumulator = 0; 
+    let lastProbaIndex = probas.length - 1; 
 
-	for (var i = 0;  i < lastProbaIndex; i++) {
-		accumulator += probas[i]; 
-		if (randomNum < accumulator) {
-			return i;
-		}
+    for (var i = 0;  i < lastProbaIndex; i++) {
+	accumulator += probas[i]; 
+	if (randomNum < accumulator) {
+	    return i;
 	}
-	return lastProbaIndex;
+    }
+    return lastProbaIndex;
 }
 
 export default function getOvercookedPolicy(model_type, layout_name, playerIndex, argmax) {
