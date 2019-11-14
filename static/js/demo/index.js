@@ -117,6 +117,7 @@ function startGame(endOfGameCallback) {
                 start_grid : layout,
                 npc_policies: npc_policies,
                 mdp_params: mdp_params,
+                task_params: PARAMS,
                 save_trajectory: saveTrajectory,
                 TIMESTEP : PARAMS.TIMESTEP_LENGTH,
                 MAX_TIME : game_time, //seconds

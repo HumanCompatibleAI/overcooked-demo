@@ -20,6 +20,8 @@ app.get('/instructions', function(req, res) {
 });
 
 app.post('/save_trajectory', function(req, res) {
+    // NOTE: This method for saving trajectories in a directory is not currently used anymore
+    
     let startTime = req.body.start_time;
     let gameType = req.body.game_type;
     
