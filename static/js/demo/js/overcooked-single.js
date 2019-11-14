@@ -14,6 +14,7 @@ export default class OvercookedSinglePlayerTask{
 	player_index,
         npc_policies,
         mdp_params,
+        task_params,
         save_trajectory = false,
         start_grid = [
             'XXXXXPXX',
@@ -90,6 +91,7 @@ export default class OvercookedSinglePlayerTask{
         this.mdp_params = mdp_params; 
         this.mdp_params['cook_time'] = COOK_TIME; 
         this.mdp_params['start_order_list'] = init_orders;
+        this.task_params = task_params;
         this.save_trajectory = save_trajectory
         this.trajectory = {
             'ep_observations': [[]], 
@@ -169,27 +171,51 @@ export default class OvercookedSinglePlayerTask{
             clearInterval(this.gameloop);
         }
         if (this.save_trajectory) {
-            let traj_file_data = {
-		"start_time": this.start_time, 
-		"game_type": this.game_type, 
-		"trajectory_data": this.trajectory
+            var today = new Date();
+            var traj_time = (today.getMonth()+1) + '_' + today.getDate() + '_' + today.getFullYear() + '_' + today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+            let trajectory = this.trajectory;
+            let task_params = this.task_params;
 
+            // Looks like all the internal objects are getting stored as strings rather than actual arrays or objects
+            // So it looks like Bodyparser only parses the top levl keys, and keeps everything on the lower level as strings rather 
+            // than processing it recursively 
+
+            let parsed_trajectory_data = {
+            "ep_observations": [[]], 
+            "ep_rewards": [[]], 
+            "ep_actions": [[]], 
+            "mdp_params": []
             }
-            $.ajax({url: "/save_trajectory",
-                    type: "POST", 
-                    contentType: 'application/json',
-                    data: JSON.stringify(traj_file_data),
-                    success: function(response) {
-			console.log(`Save trajectory status is ${response}`)
-		    }})
+
+            parsed_trajectory_data['mdp_params'][0] = trajectory.mdp_params[0]; 
+            ["ep_observations", "ep_rewards", "ep_actions"].forEach(function(key, key_index) {
+                trajectory[key][0].forEach(function(item, index) {
+                    parsed_trajectory_data[key][0].push(JSON.parse(item))
+                })
+            })
+            let fileName = traj_time + "_" + task_params.MODEL_TYPE + "_" + task_params.PLAYER_INDEX + ".json";
+
+            // A way to download a json file purely through JS
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(parsed_trajectory_data));
+            var dlAnchorElem = document.getElementById('downloadAnchorElem');
+            dlAnchorElem.setAttribute("href",     dataStr);
+            dlAnchorElem.setAttribute("download", fileName);
+            dlAnchorElem.click();
+
+            // Old code for saving to overcooked-demo folder
+            //
+            // $.ajax({url: "/save_trajectory",
+            //         type: "POST", 
+            //         contentType: 'application/json',
+            //         data: JSON.stringify(traj_file_data),
+            //         success: function(response) {
+			// console.log(`Save trajectory status is ${response}`)
+		    // }})
             
         }
         this.game.close();
         this.disable_response_listener();
         this.completion_callback();
-
-	
-
     }
 
     activate_response_listener () {
