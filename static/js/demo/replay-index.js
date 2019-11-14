@@ -19,7 +19,7 @@ let PARAMS = {
     PLAYER_INDEX: 1,  // Either 0 or 1
     MODEL_TYPE: 'ppo_bc'  // Either ppo_bc, ppo_sp, or pbt
 };
-let trajectoryPath = "assets/test_traj.json";
+let trajectoryPath = "static/assets/test_traj.json";
 let trajectoryData; 
 /***********************************
       Main trial order
