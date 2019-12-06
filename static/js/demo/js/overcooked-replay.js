@@ -40,7 +40,7 @@ export default class OvercookedTrajectoryReplay{
         this.game = new OvercookedGame({
             start_grid,
             container_id,
-            assets_loc: "static/assets/",
+            assets_loc: "assets/",
             ANIMATION_DURATION: 200*.9,
             tileSize: 80,
             COOK_TIME: cook_time,

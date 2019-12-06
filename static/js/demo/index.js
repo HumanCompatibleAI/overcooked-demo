@@ -46,14 +46,14 @@ let layouts = {
         "O   X",
         "XOSXX"
     ],
-    "random0":[
+    "forced_coordination":[
         "XXXPX",
         "O X1P",
         "O2X X",
         "D X X",
         "XXXSX"
     ],
-    "random3": [
+    "counter_circuit": [
         "XXXPPXXX",
         "X      X",
         "D XXXX S",

@@ -19,7 +19,7 @@ let PARAMS = {
     PLAYER_INDEX: 1,  // Either 0 or 1
     MODEL_TYPE: 'ppo_bc'  // Either ppo_bc, ppo_sp, or pbt
 };
-let trajectoryPath = "static/assets/test_traj.json";
+let trajectoryPath = "assets/test_traj.json";
 let trajectoryData; 
 /***********************************
       Main trial order
@@ -47,14 +47,14 @@ let layouts = {
         "O   X",
         "XOSXX"
     ],
-    "random0":[
+    "forced_coordination":[
         "XXXPX",
         "O X1P",
         "O2X X",
         "D X X",
         "XXXSX"
     ],
-    "random3": [
+    "counter_circuit": [
         "XXXPPXXX",
         "X      X",
         "D XXXX S",

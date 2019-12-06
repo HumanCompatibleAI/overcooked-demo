@@ -61,7 +61,7 @@ export default class OvercookedSinglePlayerTask{
         this.game = new OvercookedGame({
             start_grid,
             container_id,
-            assets_loc: "static/assets/",
+            assets_loc: "assets/",
             ANIMATION_DURATION: TIMESTEP*.9,
             tileSize: 80,
             COOK_TIME: COOK_TIME,
