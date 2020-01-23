@@ -28,7 +28,7 @@ export default class OvercookedTrajectoryReplay{
         init_orders=null,
         completion_callback = () => {console.log("Time up")},
         timestep_callback = (data) => {},
-        DELIVERY_REWARD = 5
+        DELIVERY_REWARD = 20
     }) 
     {
 

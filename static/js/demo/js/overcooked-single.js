@@ -27,7 +27,7 @@ export default class OvercookedSinglePlayerTask{
         init_orders=null,
         completion_callback = () => {console.log("Time up")},
         timestep_callback = (data) => {},
-        DELIVERY_REWARD = 5
+        DELIVERY_REWARD = 20
     }) {
         //NPC policies get called at every time step
         if (typeof(npc_policies) === 'undefined') {
