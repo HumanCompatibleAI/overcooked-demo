@@ -4,7 +4,7 @@ import _ from "lodash"
 import OvercookedSinglePlayerTask from "./js/overcooked-single";
 import getOvercookedPolicy from "./js/load_tf_model.js";
 
-import * as Overcooked from "overcook"
+import * as Overcooked from "overcooked"
 let OvercookedMDP = Overcooked.OvercookedMDP;
 let Direction = OvercookedMDP.Direction;
 let Action = OvercookedMDP.Action;
@@ -121,8 +121,7 @@ function startGame(endOfGameCallback) {
                 save_trajectory: saveTrajectory,
                 TIMESTEP : PARAMS.TIMESTEP_LENGTH,
                 MAX_TIME : game_time, //seconds
-                init_orders: ['onion'],
-                always_serve: 'onion',
+                init_orders: null,
                 completion_callback: () => {
                     console.log("Time up");
                     endOfGameCallback();

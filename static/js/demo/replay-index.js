@@ -4,7 +4,7 @@ import _ from "lodash"
 import getOvercookedPolicy from "./js/load_tf_model.js";
 import OvercookedTrajectoryReplay from "./js/overcooked-replay.js";
 
-import * as Overcooked from "overcook"
+import * as Overcooked from "overcooked"
 let OvercookedMDP = Overcooked.OvercookedMDP;
 let Direction = OvercookedMDP.Direction;
 let Action = OvercookedMDP.Action;
@@ -95,7 +95,6 @@ function replayTrajectory(trajectoryDataObj, endOfGameCallback) {
         MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
         cook_time: mdp_params.cook_time,
         init_orders: mdp_params.start_order_list,
-        always_serve: 'onion',
         completion_callback: () => {
             console.log("Time up");
             endOfGameCallback();

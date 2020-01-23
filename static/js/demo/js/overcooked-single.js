@@ -1,4 +1,4 @@
-import * as Overcooked from "overcook"
+import * as Overcooked from "overcooked"
 let OvercookedGame = Overcooked.OvercookedGame.OvercookedGame;
 let OvercookedMDP = Overcooked.OvercookedMDP;
 let Direction = OvercookedMDP.Direction;
@@ -24,8 +24,7 @@ export default class OvercookedSinglePlayerTask{
         ],
         TIMESTEP = 200,
         MAX_TIME = 20, //seconds
-        init_orders=['onion'],
-        always_serve='onion',
+        init_orders=null,
         completion_callback = () => {console.log("Time up")},
         timestep_callback = (data) => {},
         DELIVERY_REWARD = 5
@@ -67,7 +66,6 @@ export default class OvercookedSinglePlayerTask{
             COOK_TIME: COOK_TIME,
             explosion_time: Number.MAX_SAFE_INTEGER,
             DELIVERY_REWARD: DELIVERY_REWARD,
-            always_serve: always_serve,
             player_colors: player_colors
         });
         this.init_orders = init_orders;

@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs-core';
 
-import * as Overcooked from "overcook"; 
+import * as Overcooked from "overcooked"; 
 let OvercookedGame = Overcooked.OvercookedGame.OvercookedGame;
 let OvercookedMDP = Overcooked.OvercookedMDP;
 let Direction = OvercookedMDP.Direction;
