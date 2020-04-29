@@ -51,4 +51,6 @@ app.post('/save_trajectory', function(req, res) {
     })
 })
 
+console.log("You can now open overcooked-demo at http://localhost:8766");
+
 app.listen(8766);
