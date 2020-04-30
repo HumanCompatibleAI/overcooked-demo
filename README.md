@@ -56,3 +56,5 @@ We have sometimes found the animation to break & behave weirdly (e.g. skip times
 ### Updating gh-pages
 
 To update gh-pages, remember that it might be necessary to link the overcooked_js repo again (if changes were made there too). Additionally, due to an [issue](https://github.com/HumanCompatibleAI/overcooked-demo/issues/14), one must go through all instances of paths containing "assets" in the demo.js and replay.js files and update them to "static/assets".
+
+If you run into a bug getting something to work on the gh-pages branch, it's easier to first solve the issue locally, and then by following the step above it should also work on the gh-pages website.
