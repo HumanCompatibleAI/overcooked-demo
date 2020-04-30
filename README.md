@@ -52,3 +52,7 @@ In particular, the way we converted the models in [Human Aware RL](https://githu
 ### Issues
 
 We have sometimes found the animation to break & behave weirdly (e.g. skip timesteps). This is usually caused by updates to the overcooked gridoworld code (such as switching branches or updating). Uninstalling both `overcooked_ai_js` and `overcooked-demo` and reinstalling them usually fixes the issue (simply restarting one's computer might help too).
+
+### Updating gh-pages
+
+To update gh-pages, remember that it might be necessary to link the overcooked_js repo again (if changes were made there too). Additionally, due to an [issue](https://github.com/HumanCompatibleAI/overcooked-demo/issues/14), one must go through all instances of paths containing "assets" in the demo.js and replay.js files and update them to "static/assets".
