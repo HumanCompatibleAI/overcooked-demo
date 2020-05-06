@@ -30,13 +30,13 @@ app.post('/save_trajectory', function(req, res) {
     // than processing it recursively 
 
     let parsed_trajectory_data = {
-	"ep_observations": [[]], 
+	"ep_states": [[]], 
 	"ep_rewards": [[]], 
 	"ep_actions": [[]], 
 	"mdp_params": []
     }
     parsed_trajectory_data['mdp_params'][0] = req.body.trajectory_data.mdp_params[0]; 
-    ["ep_observations", "ep_rewards", "ep_actions"].forEach(function(key, key_index) {
+    ["ep_states", "ep_rewards", "ep_actions"].forEach(function(key, key_index) {
 	req.body.trajectory_data[key][0].forEach(function(item, index) {
 	    parsed_trajectory_data[key][0].push(JSON.parse(item))
 	})

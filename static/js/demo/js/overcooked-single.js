@@ -92,7 +92,7 @@ export default class OvercookedSinglePlayerTask{
         this.task_params = task_params;
         this.save_trajectory = save_trajectory
         this.trajectory = {
-            'ep_observations': [[]], 
+            'ep_states': [[]], 
             'ep_actions': [[]],
             'ep_rewards': [[]], 
             'mdp_params': [mdp_params]
@@ -122,7 +122,7 @@ export default class OvercookedSinglePlayerTask{
             // to do a deep copy in JS 
             let cleanedState = JSON.parse(JSON.stringify(this.state));
             cleanedState['objects'] = Object.values(cleanedState['objects']);  
-            this.trajectory.ep_observations[0].push(JSON.stringify(cleanedState))
+            this.trajectory.ep_states[0].push(JSON.stringify(cleanedState))
             this.trajectory.ep_actions[0].push(JSON.stringify(this.joint_action))
             this.trajectory.ep_rewards[0].push(reward)
             //update next round
@@ -179,14 +179,14 @@ export default class OvercookedSinglePlayerTask{
             // than processing it recursively 
 
             let parsed_trajectory_data = {
-            "ep_observations": [[]], 
+            "ep_states": [[]], 
             "ep_rewards": [[]], 
             "ep_actions": [[]], 
             "mdp_params": []
             }
 
             parsed_trajectory_data['mdp_params'][0] = trajectory.mdp_params[0]; 
-            ["ep_observations", "ep_rewards", "ep_actions"].forEach(function(key, key_index) {
+            ["ep_states", "ep_rewards", "ep_actions"].forEach(function(key, key_index) {
                 trajectory[key][0].forEach(function(item, index) {
                     parsed_trajectory_data[key][0].push(JSON.parse(item))
                 })

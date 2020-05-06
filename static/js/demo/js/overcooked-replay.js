@@ -49,7 +49,7 @@ export default class OvercookedTrajectoryReplay{
         });
         this.init_orders = init_orders;
         console.log("Trajectory replay");
-        this.observations = trajectory.ep_observations[0];
+        this.observations = trajectory.ep_states[0];
         this.actions = trajectory.ep_actions[0];
         this.MAX_TIME = MAX_TIME;
         this.time_left = MAX_TIME;
