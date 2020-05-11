@@ -14,7 +14,7 @@ Also, install browserify globally, by calling:
 
 Clone the repo:
 
-    $ git clone git@github.com:HumanCompatibleAI/overcooked-demo.git
+    $ git clone https://github.com/HumanCompatibleAI/overcooked-demo.git
     $ cd overcooked-demo
 
 Install using `npm`:
