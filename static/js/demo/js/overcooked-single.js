@@ -6,12 +6,12 @@ let Action = OvercookedMDP.Action;
 let [NORTH, SOUTH, EAST, WEST] = Direction.CARDINAL;
 let [STAY, INTERACT] = [Direction.STAY, Action.INTERACT];
 
-let COOK_TIME = 20; 
+let COOK_TIME = 20;
 
-export default class OvercookedSinglePlayerTask{
-    constructor ({
+export default class OvercookedSinglePlayerTask {
+    constructor({
         container_id,
-	player_index,
+        player_index,
         npc_policies,
         mdp_params,
         task_params,
@@ -24,44 +24,44 @@ export default class OvercookedSinglePlayerTask{
         ],
         TIMESTEP = 200,
         MAX_TIME = 20, //seconds
-        init_orders=null,
-        completion_callback = () => {console.log("Time up")},
-        timestep_callback = (data) => {},
+        init_orders = null,
+        completion_callback = () => { console.log("Time up") },
+        timestep_callback = (data) => { },
         DELIVERY_REWARD = 20
     }) {
         //NPC policies get called at every time step
-        if (typeof(npc_policies) === 'undefined') {
+        if (typeof (npc_policies) === 'undefined') {
             // TODO maybe delete this? 
             npc_policies = {
                 1:
-                (function () {
-                    let action_loop = [
-                        SOUTH, WEST, NORTH, EAST
-                    ];
-                    let ai = 0;
-                    let pause = 4;
-                    return (s) => {
-                        let a = STAY;
-                        if (ai % pause === 0) {
-                            a = action_loop[ai/pause];
+                    (function () {
+                        let action_loop = [
+                            SOUTH, WEST, NORTH, EAST
+                        ];
+                        let ai = 0;
+                        let pause = 4;
+                        return (s) => {
+                            let a = STAY;
+                            if (ai % pause === 0) {
+                                a = action_loop[ai / pause];
+                            }
+                            ai += 1;
+                            ai = ai % (pause * action_loop.length);
+                            return a
                         }
-                        ai += 1;
-                        ai = ai % (pause*action_loop.length);
-                        return a
-                    }
-                })()
+                    })()
             }
         }
-	this.npc_policies = npc_policies;
-	this.player_index = player_index;
+        this.npc_policies = npc_policies;
+        this.player_index = player_index;
 
-	let player_colors = {0: 'blue', 1: 'green'};
+        let player_colors = { 0: 'blue', 1: 'green' };
 
         this.game = new OvercookedGame({
             start_grid,
             container_id,
             assets_loc: "assets/",
-            ANIMATION_DURATION: TIMESTEP*.9,
+            ANIMATION_DURATION: TIMESTEP * .9,
             tileSize: 80,
             COOK_TIME: COOK_TIME,
             explosion_time: Number.MAX_SAFE_INTEGER,
@@ -77,7 +77,7 @@ export default class OvercookedSinglePlayerTask{
             console.log("Agent playing vs agent")
             this.game_type = 'agent_vs_agent';
         }
-        
+
 
         this.TIMESTEP = TIMESTEP;
         this.MAX_TIME = MAX_TIME;
@@ -86,15 +86,15 @@ export default class OvercookedSinglePlayerTask{
         this.score = 0;
         this.completion_callback = completion_callback;
         this.timestep_callback = timestep_callback;
-        this.mdp_params = mdp_params; 
-        this.mdp_params['cook_time'] = COOK_TIME; 
+        this.mdp_params = mdp_params;
+        this.mdp_params['cook_time'] = COOK_TIME;
         this.mdp_params['start_order_list'] = init_orders;
         this.task_params = task_params;
         this.save_trajectory = save_trajectory
         this.trajectory = {
-            'ep_states': [[]], 
+            'ep_states': [[]],
             'ep_actions': [[]],
-            'ep_rewards': [[]], 
+            'ep_rewards': [[]],
             'mdp_params': [mdp_params]
         }
     }
@@ -106,13 +106,16 @@ export default class OvercookedSinglePlayerTask{
         this.state = this.game.mdp.get_start_state(this.init_orders);
         this.game.drawState(this.state);
         this.joint_action = [STAY, STAY];
+        this.lstm_state = [null, null];
+        this.done = 1;
 
         this.gameloop = setInterval(() => {
-    	    for (let npc_index in this.npc_policies) {
-    		let npc_a = this.npc_policies[npc_index](this.state, this.game);
-    		this.joint_action[npc_index] = npc_a;
-    	    }
-            let  [[next_state, prob], reward] =
+            for (let npc_index in this.npc_policies) {
+                let [npc_a, lstm_state] = this.npc_policies[npc_index](this.state, this.done, this.lstm_state[npc_index], this.game);
+                this.lstm_state[npc_index] = lstm_state;
+                this.joint_action[npc_index] = npc_a;
+            }
+            let [[next_state, prob], reward] =
                 this.game.mdp.get_transition_states_and_probs({
                     state: this.state,
                     joint_action: this.joint_action
@@ -121,7 +124,7 @@ export default class OvercookedSinglePlayerTask{
             // Apparently doing a Parse(Stringify(Obj)) is actually the most succinct way. 
             // to do a deep copy in JS 
             let cleanedState = JSON.parse(JSON.stringify(this.state));
-            cleanedState['objects'] = Object.values(cleanedState['objects']);  
+            cleanedState['objects'] = Object.values(cleanedState['objects']);
             this.trajectory.ep_states[0].push(JSON.stringify(cleanedState))
             this.trajectory.ep_actions[0].push(JSON.stringify(this.joint_action))
             this.trajectory.ep_rewards[0].push(reward)
@@ -129,9 +132,10 @@ export default class OvercookedSinglePlayerTask{
             this.game.drawState(next_state);
             this.score += reward;
             this.game.drawScore(this.score);
-            let time_elapsed = (new Date().getTime() - this.start_time)/1000;
+            let time_elapsed = (new Date().getTime() - this.start_time) / 1000;
             this.time_left = Math.round(this.MAX_TIME - time_elapsed);
             this.game.drawTimeLeft(this.time_left);
+            this.done = 0
 
             //record data
             this.timestep_callback({
@@ -164,13 +168,13 @@ export default class OvercookedSinglePlayerTask{
         this.activate_response_listener();
     }
 
-    close () {
-        if (typeof(this.gameloop) !== 'undefined') {
+    close() {
+        if (typeof (this.gameloop) !== 'undefined') {
             clearInterval(this.gameloop);
         }
         if (this.save_trajectory) {
             var today = new Date();
-            var traj_time = (today.getMonth()+1) + '_' + today.getDate() + '_' + today.getFullYear() + '_' + today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+            var traj_time = (today.getMonth() + 1) + '_' + today.getDate() + '_' + today.getFullYear() + '_' + today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
             let trajectory = this.trajectory;
             let task_params = this.task_params;
 
@@ -179,15 +183,15 @@ export default class OvercookedSinglePlayerTask{
             // than processing it recursively 
 
             let parsed_trajectory_data = {
-            "ep_states": [[]], 
-            "ep_rewards": [[]], 
-            "ep_actions": [[]], 
-            "mdp_params": []
+                "ep_states": [[]],
+                "ep_rewards": [[]],
+                "ep_actions": [[]],
+                "mdp_params": []
             }
 
-            parsed_trajectory_data['mdp_params'][0] = trajectory.mdp_params[0]; 
-            ["ep_states", "ep_rewards", "ep_actions"].forEach(function(key, key_index) {
-                trajectory[key][0].forEach(function(item, index) {
+            parsed_trajectory_data['mdp_params'][0] = trajectory.mdp_params[0];
+            ["ep_states", "ep_rewards", "ep_actions"].forEach(function (key, key_index) {
+                trajectory[key][0].forEach(function (item, index) {
                     parsed_trajectory_data[key][0].push(JSON.parse(item))
                 })
             })
@@ -196,7 +200,7 @@ export default class OvercookedSinglePlayerTask{
             // A way to download a json file purely through JS
             var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(parsed_trajectory_data));
             var dlAnchorElem = document.getElementById('downloadAnchorElem');
-            dlAnchorElem.setAttribute("href",     dataStr);
+            dlAnchorElem.setAttribute("href", dataStr);
             dlAnchorElem.setAttribute("download", fileName);
             dlAnchorElem.click();
 
@@ -207,40 +211,40 @@ export default class OvercookedSinglePlayerTask{
             //         contentType: 'application/json',
             //         data: JSON.stringify(traj_file_data),
             //         success: function(response) {
-			// console.log(`Save trajectory status is ${response}`)
-		    // }})
-            
+            // console.log(`Save trajectory status is ${response}`)
+            // }})
+
         }
         this.game.close();
         this.disable_response_listener();
         this.completion_callback();
     }
 
-    activate_response_listener () {
+    activate_response_listener() {
         $(document).on("keydown", (e) => {
             let action;
-            switch(e.which) {
-            case 37: // left
-                action = WEST;
-                break;
+            switch (e.which) {
+                case 37: // left
+                    action = WEST;
+                    break;
 
-            case 38: // up
-                action = NORTH;
-                break;
+                case 38: // up
+                    action = NORTH;
+                    break;
 
-            case 39: // right
-                action = EAST;
-                break;
+                case 39: // right
+                    action = EAST;
+                    break;
 
-            case 40: // down
-                action = SOUTH;
-                break;
+                case 40: // down
+                    action = SOUTH;
+                    break;
 
-            case 32: //space
-                action = INTERACT;
-                break;
+                case 32: //space
+                    action = INTERACT;
+                    break;
 
-            default: return; // exit this handler for other keys
+                default: return; // exit this handler for other keys
             }
             e.preventDefault(); // prevent the default action (scroll / move caret)
 
@@ -249,7 +253,7 @@ export default class OvercookedSinglePlayerTask{
         });
     }
 
-    disable_response_listener () {
+    disable_response_listener() {
         $(document).off('keydown');
     }
 }
