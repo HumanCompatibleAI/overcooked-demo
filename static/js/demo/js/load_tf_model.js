@@ -10,8 +10,6 @@ let [STAY, INTERACT] = [Direction.STAY, Action.INTERACT];
 import { loadGraphModel } from '@tensorflow/tfjs-converter';
 
 
-let sim_threads = 30;
-
 function sampleIndexFromCategorical(probas) {
 	// Stolen from: https://stackoverflow.com/questions/8877249/generate-random-integers-with-probabilities
 	let randomNum = Math.random();
@@ -40,7 +38,7 @@ export default function getOvercookedPolicy(model_type, layout_name, playerIndex
 	return modelPromise.then(function (model) {
 		return new Promise(function (resolve, reject) {
 			resolve(function (state, done, lstm_state, game) {
-				// Add automatic detection of sim_threads by querying model.inputs[i].shape
+				let sim_threads = model.inputs[0].shape[0];
 				let [result, shape] = game.mdp.lossless_state_encoding(state, playerIndex, sim_threads);
 				let state_tensor = tf.tensor(result, shape);
 
