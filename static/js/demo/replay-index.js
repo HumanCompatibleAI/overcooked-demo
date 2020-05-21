@@ -20,34 +20,34 @@ let PARAMS = {
     MODEL_TYPE: 'ppo_bc'  // Either ppo_bc, ppo_sp, or pbt
 };
 let trajectoryPath = "assets/test_traj.json";
-let trajectoryData; 
+let trajectoryData;
 /***********************************
       Main trial order
 ************************************/
 
 
 let layouts = {
-    "cramped_room":[
+    "cramped_room": [
         "XXPXX",
         "O  2O",
         "X1  X",
         "XDXSX"
     ],
-    "asymmetric_advantages":[
+    "asymmetric_advantages": [
         "XXXXXXXXX",
         "O XSXOX S",
         "X   P 1 X",
         "X2  P   X",
         "XXXDXDXXX"
     ],
-    "coordination_ring":[
+    "coordination_ring": [
         "XXXPX",
         "X 1 P",
         "D2X X",
         "O   X",
         "XOSXX"
     ],
-    "forced_coordination":[
+    "forced_coordination": [
         "XXXPX",
         "O X1P",
         "O2X X",
@@ -60,17 +60,49 @@ let layouts = {
         "D XXXX S",
         "X2    1X",
         "XXXOOXXX"
-    ], 
+    ],
+    "bottleneck": [
+        "XXOXDXX",
+        "X 1X2 X",
+        "X  X  X",
+        "X     X",
+        "XSXXPPX"
+    ],
+    "large_room": [
+        "XXXPXXX",
+        "O    2O",
+        "X     X",
+        "X     X",
+        "X     X",
+        "X1    X",
+        "XDXXXSX"
+    ],
+    "centre_objects": [
+        "XXXXXXX",
+        "X  1  X",
+        "X P S X",
+        "X     X",
+        "X D O X",
+        "X  2  X",
+        "XXXXXXX"
+    ],
+    "centre_pots": [
+        "XXXOSSX",
+        "X  1  X",
+        "X P P X",
+        "X  2  X",
+        "XDDOXXX"
+    ],
     "mdp_test": [
-	"XXPXX", 
-	"O  2O", 
-	"T1  T", 
-	"XDPSX"
+        "XXPXX",
+        "O  2O",
+        "T1  T",
+        "XDPSX"
     ]
 };
 
 let game;
-function replayGame(endOfGameCallback){
+function replayGame(endOfGameCallback) {
     // make sure the game metadata matches what's 
     // in the trajectory file
     $("#overcooked").empty();
@@ -78,21 +110,21 @@ function replayGame(endOfGameCallback){
 
         replayTrajectory(trajectoryData, endOfGameCallback);
     }
-    else { 
+    else {
         console.log("Upload data not found")
-        $.getJSON(trajectoryPath, function(trajectoryData) {
+        $.getJSON(trajectoryPath, function (trajectoryData) {
             replayTrajectory(trajectoryData, endOfGameCallback);
-        }); 
-    } 
+        });
+    }
 }
 
 function replayTrajectory(trajectoryDataObj, endOfGameCallback) {
     let mdp_params = trajectoryDataObj.mdp_params[0];
     game = new OvercookedTrajectoryReplay({
-        container_id: "overcooked", 
-        trajectory: trajectoryDataObj, 
+        container_id: "overcooked",
+        trajectory: trajectoryDataObj,
         start_grid: layouts[mdp_params.layout_name],
-        MAX_TIME : PARAMS.MAIN_TRIAL_TIME, //seconds
+        MAX_TIME: PARAMS.MAIN_TRIAL_TIME, //seconds
         cook_time: mdp_params.cook_time,
         init_orders: mdp_params.start_order_list,
         completion_callback: () => {
@@ -117,7 +149,7 @@ function endGame() {
 function startGameOnEnter(e) {
     // Do nothing for keys other than Enter
     if (e.which !== 13) {
-	return;
+        return;
     }
 
     disableEnter();
@@ -125,11 +157,11 @@ function startGameOnEnter(e) {
     replayGame(enableEnter)
 }
 
-function setTrajectoryPathOnLoad(event){
+function setTrajectoryPathOnLoad(event) {
     trajectoryData = JSON.parse(event.target.result);
     console.log("Uploaded data: ")
     console.log(trajectoryData)
-    
+
 
 }
 
@@ -138,7 +170,7 @@ function onChange(event) {
     reader.onload = setTrajectoryPathOnLoad;
     reader.readAsText(event.target.files[0]);
     let fileName = event.target.files[0].name;
-    $("#fileInfo").html("<p>Reading trajectory info from uploaded file " + fileName +"</p>")
+    $("#fileInfo").html("<p>Reading trajectory info from uploaded file " + fileName + "</p>")
     if (game != undefined) {
         endGame();
     }
@@ -153,13 +185,13 @@ function clearFile() {
 }
 
 
-function alert_data(name, family){
+function alert_data(name, family) {
     alert('Name : ' + name + ', Family : ' + family);
 }
 
 function enableEnter() {
     $(document).keydown(startGameOnEnter);
-    $("#fileInput").on("change", onChange); 
+    $("#fileInput").on("change", onChange);
     if ($("#fileInfo").is(':empty')) {
         $("#fileInfo").html("<p>Reading trajectory info from " + trajectoryPath + "</p>");
     }

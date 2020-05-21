@@ -26,27 +26,27 @@ let PARAMS = {
 
 
 let layouts = {
-    "cramped_room":[
+    "cramped_room": [
         "XXPXX",
         "O  2O",
         "X1  X",
         "XDXSX"
     ],
-    "asymmetric_advantages":[
+    "asymmetric_advantages": [
         "XXXXXXXXX",
         "O XSXOX S",
         "X   P 1 X",
         "X2  P   X",
         "XXXDXDXXX"
     ],
-    "coordination_ring":[
+    "coordination_ring": [
         "XXXPX",
         "X 1 P",
         "D2X X",
         "O   X",
         "XOSXX"
     ],
-    "forced_coordination":[
+    "forced_coordination": [
         "XXXPX",
         "O X1P",
         "O2X X",
@@ -59,6 +59,38 @@ let layouts = {
         "D XXXX S",
         "X2    1X",
         "XXXOOXXX"
+    ],
+    "bottleneck": [
+        "XXOXDXX",
+        "X 1X2 X",
+        "X  X  X",
+        "X     X",
+        "XSXXPPX"
+    ],
+    "large_room": [
+        "XXXPXXX",
+        "O    2O",
+        "X     X",
+        "X     X",
+        "X     X",
+        "X1    X",
+        "XDXXXSX"
+    ],
+    "centre_objects": [
+        "XXXXXXX",
+        "X  1  X",
+        "X P S X",
+        "X     X",
+        "X D O X",
+        "X  2  X",
+        "XXXXXXX"
+    ],
+    "centre_pots": [
+        "XXXOSSX",
+        "X  1  X",
+        "X P P X",
+        "X  2  X",
+        "XDDOXXX"
     ]
 };
 
@@ -75,17 +107,16 @@ function startGame(endOfGameCallback) {
     let players = [$("#playerZero").val(), $("#playerOne").val()];
     let deterministic = $("#deterministic").is(':checked');
     let saveTrajectory = $("#saveTrajectories").is(':checked');
-    if (players[0] == 'human' && players[1] == 'human')
-    {
+    if (players[0] == 'human' && players[1] == 'human') {
 
-        $("#overcooked").html("<h3>Sorry, we can't support humans as both players.  Please make a different dropdown selection and hit Enter</h3>"); 
+        $("#overcooked").html("<h3>Sorry, we can't support humans as both players.  Please make a different dropdown selection and hit Enter</h3>");
         endOfGameCallback();
         return;
-    } 
+    }
     let layout_name = $("#layout").val();
     let game_time = $("#gameTime").val();
     if (game_time > 1800) {
-        $("#overcooked").html("<h3>Sorry, please choose a shorter amount of time for the game!</h3>"); 
+        $("#overcooked").html("<h3>Sorry, please choose a shorter amount of time for the game!</h3>");
         endOfGameCallback();
         return;
     }
@@ -94,33 +125,33 @@ function startGame(endOfGameCallback) {
 
 
     $("#overcooked").empty();
-    getOvercookedPolicy(players[0], layout_name, 0, deterministic).then(function(npc_policy_zero) {
-        getOvercookedPolicy(players[1], layout_name, 1, deterministic).then(function(npc_policy_one) {
-            let player_index = null; 
-            let npc_policies = {0: npc_policy_zero, 1: npc_policy_one}; 
+    getOvercookedPolicy(players[0], layout_name, 0, deterministic).then(function (npc_policy_zero) {
+        getOvercookedPolicy(players[1], layout_name, 1, deterministic).then(function (npc_policy_one) {
+            let player_index = null;
+            let npc_policies = { 0: npc_policy_zero, 1: npc_policy_one };
             if (npc_policies[0] == null) {
-                player_index = 0; 
-                npc_policies = {1: npc_policy_one}; 
+                player_index = 0;
+                npc_policies = { 1: npc_policy_one };
             }
             if (npc_policies[1] == null) {
-                player_index = 1; 
-                npc_policies = {0: npc_policy_zero}; 
+                player_index = 1;
+                npc_policies = { 0: npc_policy_zero };
             }
             let mdp_params = {
-                "layout_name": layout_name, 
-                "num_items_for_soup": 3, 
-                "rew_shaping_params": null, 
+                "layout_name": layout_name,
+                "num_items_for_soup": 3,
+                "rew_shaping_params": null,
             }
             game = new OvercookedSinglePlayerTask({
                 container_id: "overcooked",
                 player_index: player_index,
-                start_grid : layout,
+                start_grid: layout,
                 npc_policies: npc_policies,
                 mdp_params: mdp_params,
                 task_params: PARAMS,
                 save_trajectory: saveTrajectory,
-                TIMESTEP : PARAMS.TIMESTEP_LENGTH,
-                MAX_TIME : game_time, //seconds
+                TIMESTEP: PARAMS.TIMESTEP_LENGTH,
+                MAX_TIME: game_time, //seconds
                 init_orders: null,
                 completion_callback: () => {
                     console.log("Time up");
@@ -129,10 +160,10 @@ function startGame(endOfGameCallback) {
                 DELIVERY_REWARD: PARAMS.DELIVERY_POINTS
             });
             game.init();
-            
+
         });
-        
-        
+
+
 
     });
 }
@@ -146,7 +177,7 @@ function endGame() {
 function startGameOnEnter(e) {
     // Do nothing for keys other than Enter
     if (e.which !== 13) {
-	return;
+        return;
     }
 
     disableEnter();
