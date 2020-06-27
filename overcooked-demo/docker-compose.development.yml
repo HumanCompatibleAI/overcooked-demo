@@ -2,6 +2,11 @@ version : '3.7'
 
 services:
     app:
-        build: ./server
+        build:
+            context: ./server
+            args:
+                BUILD_ENV: development
         environment: 
             FLASK_ENV: development
+        ports:
+            - "8080:5000"
