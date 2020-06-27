@@ -1,0 +1,7 @@
+version : '3.7'
+
+services:
+    app:
+        build: ./server
+        environment: 
+            FLASK_ENV: development
