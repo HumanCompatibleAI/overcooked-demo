@@ -10,3 +10,4 @@ services:
             FLASK_ENV: development
         ports:
             - "8080:5000"
+        
