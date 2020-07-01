@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from threading import Lock
 from queue import Queue, Empty
+from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 
 class Game(ABC):
 
