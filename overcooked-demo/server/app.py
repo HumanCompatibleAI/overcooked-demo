@@ -2,10 +2,11 @@ import os, pickle, queue, atexit
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import DummyGame
+from game import DummyInteractiveGame as Game
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
+# Could use a monitor on a conditional to block all global ops during calls to _ensure_consistent_state
 
 ###########
 # Globals #
@@ -73,7 +74,7 @@ def try_create_game(**kwargs):
     try:
         curr_id = FREE_IDS.get(block=False)
         assert FREE_MAP[curr_id], "Current id is already in use"
-        game = DummyGame(id=curr_id, **kwargs)
+        game = Game(id=curr_id, **kwargs)
     except queue.Empty:
         err = RuntimeError("Server at max capacity")
         return None, err
@@ -127,6 +128,13 @@ def get_waiting_game():
         return None
     else:
         return get_game(waiting_id)
+
+
+
+
+##########################
+# Socket Handler Helpers #
+##########################
 
 def  _leave_game(user_id):
     """
@@ -190,6 +198,12 @@ def _create_game(user_id, params={}):
         else:
             WAITING_GAMES.put(game.id)
             emit('waiting', room=game.id)
+
+
+
+#####################
+# Debugging Helpers #
+#####################
 
 def _ensure_consistent_state():
     """
@@ -341,6 +355,17 @@ def on_leave(data):
     user_id = request.sid
     _leave_game(user_id)
     emit('end_game')
+
+@socketio.on('action')
+def on_action(data):
+    user_id = request.sid
+    action = data['action']
+
+    game = get_curr_game(user_id)
+    if not game:
+        return
+    
+    game.enqueue_action(user_id, action)
 
 
 @socketio.on('connect')

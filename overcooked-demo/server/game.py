@@ -110,7 +110,7 @@ class Game(ABC):
             raise ValueError("Cannot act in games that are inactive")
         if player_id not in self.players:
             raise ValueError("Invalid player ID")
-        self.pending_actions.put(player_id, action)
+        self.pending_actions.put((player_id, action))
 
     def get_state(self):
         """
@@ -183,7 +183,7 @@ class DummyInteractiveGame(Game):
     def __init__(self, **kwargs):
         super(DummyInteractiveGame, self).__init__(**kwargs)
         self.num_players = int(kwargs.get('playerZero', 'human') == 'human') + int(kwargs.get('playerOne', 'human') == 'human')
-        self.max_count = kwargs.get('max_count', 500)
+        self.max_count = kwargs.get('max_count', 100)
         self.counter = 0
         self.counts = [0] * self.num_players
 
@@ -191,20 +191,24 @@ class DummyInteractiveGame(Game):
         return len(self.players) == self.num_players
 
     def is_finished(self):
-        return self.counter >= self.max_count
+        return max(self.counts) >= self.max_count
 
     def apply_action(self, player_id, action):
         player_idx = self.players.index(player_id)
-        if action.lower == 'increment':
+        if action.upper() == 'UP':
             self.counts[player_idx] += 1
-        if action.lower == 'decrement':
+        if action.upper() == 'DOWN':
             self.counts[player_idx] -= 1
+
+    def apply_actions(self):
+        super(DummyInteractiveGame, self).apply_actions()
+        self.counter += 1
 
     def get_state(self):
         state = super(DummyInteractiveGame, self).get_state()
         state['count'] = self.counter
         for i in range(self.num_players):
-            state['player_{}_count'] = self.counts[i]
+            state['player_{}_count'.format(i)] = self.counts[i]
         return state
 
     
