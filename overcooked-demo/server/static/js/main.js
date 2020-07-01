@@ -39,6 +39,11 @@ socket.on('waiting', function(data) {
     $('#join').hide();
     $('#create').hide();
     $('#leave').show();
+    if (typeof window.intervalID === 'undefined'  || window.intervalID === null) {
+        window.intervalID = setInterval(function() {
+            socket.emit('join', {});
+        }, 1000);
+    }
 });
 
 socket.on('creation_failed', function(data) {
@@ -49,6 +54,10 @@ socket.on('creation_failed', function(data) {
 
 socket.on('start_game', function() {
     // Hide game-over and lobby, show game title header
+    if (typeof window.intervalID !== 'undefined') {
+        clearInterval(window.intervalID);
+        window.intervalID = null;
+    }
     $('#game-over').hide();
     $('#lobby').hide();
     $('#join').hide();
