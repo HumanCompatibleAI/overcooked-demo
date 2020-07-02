@@ -132,9 +132,17 @@ class Game(ABC):
     def get_state(self):
         """
         Return a JSON compatible serialized state of the game. Note that this should be as minimalistic as possible
-        as the size of the game state will be the most important factor in game performance
+        as the size of the game state will be the most important factor in game performance. This is sent to the client
+        every frame update.
         """
         return { "players" : self.players }
+
+    def to_json(self):
+        """
+        Return a JSON compatible serialized state of the game. Contains all information about the game, does not need to
+        be minimalistic. This is sent to the client only once, upon game creation
+        """
+        return self.get_state()
 
     def is_empty(self):
         """
@@ -322,11 +330,16 @@ class OvercookedGame(Game):
 
     def get_state(self):
         state_dict = {}
-        state_dict['terrain'] = self.mdp.terrain_mtx
-        state_dict['objects'] = self.state.to_dict()
+        state_dict['state'] = self.state.to_dict()
         state_dict['score'] = self.score
         state_dict['time'] = time() - self.start_time
         return state_dict
+
+    def to_json(self):
+        obj_dict = {}
+        obj_dict['terrain'] = self.mdp.terrain_mtx
+        obj_dict['state'] = self.get_state()
+        return obj_dict
 
     def get_policy(self, npc_id):
         # TODO

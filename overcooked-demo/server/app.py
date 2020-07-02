@@ -194,7 +194,7 @@ def _create_game(user_id, params={}):
         if game.is_ready():
             game.activate()
             ACTIVE_GAMES.add(game.id)
-            emit('start_game', room=game.id)
+            emit('start_game', game.to_json(), room=game.id)
             socketio.start_background_task(play_game, game)
         else:
             WAITING_GAMES.put(game.id)
@@ -344,7 +344,7 @@ def on_join(data):
             # Game is ready to begin play
             game.activate()
             ACTIVE_GAMES.add(game.id)
-            emit('start_game', room=game.id)
+            emit('start_game', game.to_json(), room=game.id)
             socketio.start_background_task(play_game, game)
         else:
             # Still need to keep waiting for players

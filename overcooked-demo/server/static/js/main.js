@@ -52,7 +52,7 @@ socket.on('creation_failed', function(data) {
     $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
 });
 
-socket.on('start_game', function() {
+socket.on('start_game', function(data) {
     // Hide game-over and lobby, show game title header
     if (typeof window.intervalID !== 'undefined') {
         clearInterval(window.intervalID);
@@ -65,13 +65,14 @@ socket.on('start_game', function() {
     $('#leave').show();
     $('#game-title').show();
     enable_key_listener();
-    window.gameIntervalID = setInterval(game_loop, 200);
+    window.gameIntervalID = setInterval(game_loop, TIMESTEP_DURATION);
+    graphics_start(data);
 });
 
 socket.on('state_pong', function(data) {
     // Draw state update
     $("#overcooked").empty();
-    $("#overcooked").append(`<h4>Current game state: ${JSON.stringify(data['state'])}</>`);
+    drawState(data['state'])
 });
 
 socket.on('end_game', function() {
@@ -84,6 +85,7 @@ socket.on('end_game', function() {
     $("#leave").hide();
     clearInterval(window.gameIntervalID);
     disable_key_listener();
+    graphics_end();
 });
 
 
