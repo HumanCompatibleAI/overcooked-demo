@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from threading import Lock
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
+from time import time
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
+from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
+from overcooked_ai_py.mdp.actions import Action, Direction
 
 class Game(ABC):
 
@@ -20,18 +23,20 @@ class Game(ABC):
 
     # Possible TODO: create a static list of IDs used by the class so far to verify id uniqueness
     # This would need to be serialized, however, which might cause too great a performance hit to 
-    # be worth it 
+    # be worth it
+
+    EMPTY = 'EMPTY'
 
     def __init__(self, *args, **kwargs):
         """
         players (list): List of IDs of players currently in the game
         id (int):   Unique identifier for this game
-        pending_actions (Queue): Buffer of (player_id, action) pairs have submitted that haven't been commited yet
+        pending_actions List[(Queue)]: Buffer of (player_id, action) pairs have submitted that haven't been commited yet
         lock (Lock):    Used to serialize updates to the game state
         is_active(bool): Whether the game is currently being played or not
         """
         self.players = []
-        self.pending_actions = Queue()
+        self.pending_actions = []
         self.id = kwargs.get('id', id(self))
         self.lock = Lock()
         self._is_active = False
@@ -39,14 +44,14 @@ class Game(ABC):
     @abstractmethod
     def is_full(self):
         """
-        Returns whether the game can currently be started. Usually conditioned on correct number of players having joined
+        Returns whether there is room for additional players to join or not
         """
         pass
 
     @abstractmethod
-    def apply_action(self, player_id, action):
+    def apply_action(self, player_idx, action):
         """
-        Updates the game state by applying a single (player_id, action) tuple. Subclasses should try to override this method
+        Updates the game state by applying a single (player_idx, action) tuple. Subclasses should try to override this method
         if possible
         """
         pass
@@ -58,6 +63,12 @@ class Game(ABC):
         Returns whether the game has concluded or not
         """
         pass
+
+    def is_ready(self):
+        """
+        Returns whether the game can be started. Defaults to having enough players
+        """
+        return self.is_full()
 
     @property
     def is_active(self):
@@ -72,12 +83,13 @@ class Game(ABC):
         should override this method if joint actions are necessary. If actions can be serialized, overriding `apply_action` is 
         preferred
         """
-        try:
-            while True:
-                player_id, action = self.pending_actions.get(block=False)
-                self.apply_action(player_id, action)
-        except Empty:
-            pass
+        for i in range(len(self.players)):
+            try:
+                while True:
+                    action = self.pending_actions[i].get(block=False)
+                    self.apply_action(i, action)
+            except Empty:
+                pass
 
     def activate(self):
         """
@@ -111,7 +123,11 @@ class Game(ABC):
             raise ValueError("Cannot act in games that are inactive")
         if player_id not in self.players:
             raise ValueError("Invalid player ID")
-        self.pending_actions.put((player_id, action))
+        try:
+            player_idx = self.players.index(player_id)
+            self.pending_actions[player_idx].put(action)
+        except Full:
+            pass
 
     def get_state(self):
         """
@@ -126,24 +142,43 @@ class Game(ABC):
         """
         return not len(self.players)
 
-    def add_player(self, player_id):
+    def add_player(self, player_id, idx=None, buff_size=-1):
         """
         Add player_id to the game
         """
+        if self.is_full():
+            raise ValueError("Cannot add players to full game")
         if self.is_active:
             raise ValueError("Cannot add players to active games")
-        self.players.append(player_id)
+        if not idx and self.EMPTY in self.players:
+            idx = self.players.index(self.EMPTY)
+        elif not idx:
+            idx = len(self.players)
+        
+        padding = max(0, idx - len(self.players) + 1)
+        for _ in range(padding):
+            self.players.append(self.EMPTY)
+            self.pending_actions.append(self.EMPTY)
+        
+        self.players[idx] = player_id
+        self.pending_actions[idx] = Queue(maxsize=buff_size)
 
     def remove_player(self, player_id):
         """
         Remove player_id from the game
         """
         try:
-            self.players.remove(player_id)
+            idx = self.players.index(player_id)
+            self.players[idx] = self.EMPTY
+            self.pending_actions[idx] = self.EMPTY
         except ValueError:
             return False
         else:
             return True
+
+    @property
+    def num_players(self):
+        return len([player for player in self.players if player != self.EMPTY])
         
 
 
@@ -158,9 +193,9 @@ class DummyGame(Game):
         self.counter = 0
 
     def is_full(self):
-        return len(self.players) == 2
+        return self.num_players == 2
 
-    def apply_action(self):
+    def apply_action(self, idx, action):
         pass
 
     def apply_actions(self):
@@ -183,19 +218,18 @@ class DummyInteractiveGame(Game):
 
     def __init__(self, **kwargs):
         super(DummyInteractiveGame, self).__init__(**kwargs)
-        self.num_players = int(kwargs.get('playerZero', 'human') == 'human') + int(kwargs.get('playerOne', 'human') == 'human')
+        self.max_players = int(kwargs.get('playerZero', 'human') == 'human') + int(kwargs.get('playerOne', 'human') == 'human')
         self.max_count = kwargs.get('max_count', 100)
         self.counter = 0
-        self.counts = [0] * self.num_players
+        self.counts = [0] * self.max_players
 
     def is_full(self):
-        return len(self.players) == self.num_players
+        return self.num_players == self.max_players
 
     def is_finished(self):
         return max(self.counts) >= self.max_count
 
-    def apply_action(self, player_id, action):
-        player_idx = self.players.index(player_id)
+    def apply_action(self, player_idx, action):
         if action.upper() == 'UP':
             self.counts[player_idx] += 1
         if action.upper() == 'DOWN':
@@ -213,6 +247,106 @@ class DummyInteractiveGame(Game):
         return state
 
     
+class OvercookedGame(Game):
+    """
+    Class for bridging the gap between Overcooked_Env and the Game interface
+    """
 
+    def __init__(self, layout="cramped_room", mdp_params={}, **kwargs):
+        super(OvercookedGame, self).__init__()
+        self.max_players = kwargs.get('num_players', 2)
+        self.mdp = OvercookedGridworld.from_layout_name(layout, **mdp_params)
+        self.score = 0
+        self.max_time = kwargs.get("gameTime", 60)
+        self.npc_policies = {}
+        self.action_to_overcooked_action = {
+            "STAY" : Action.STAY,
+            "UP" : Direction.NORTH,
+            "DOWN" : Direction.SOUTH,
+            "LEFT" : Direction.WEST,
+            "RIGHT" : Direction.EAST,
+            "SPACE" : Action.INTERACT
+        }
+
+        player_zero = kwargs.get('playerZero', 'human')
+        player_one = kwargs.get('playerOne', 'human')
+
+        if player_zero != 'human':
+            player_zero_id = player_zero + '_0'
+            self.add_player(player_zero_id, idx=0, buff_size=1)
+            self.npc_policies[player_zero_id] = self.get_policy(player_zero)
+
+        if player_one != 'human':
+            player_one_id = player_one + '_1'
+            self.add_player(player_one_id, idx=1, buff_size=1)
+            self.npc_policies[player_one_id] = self.get_policy(player_one)
+
+
+    def is_full(self):
+        return self.num_players >= self.max_players
+
+    def is_finished(self):
+        return time() - self.start_time >= self.max_time
+
+    def apply_action(self, player_id, action):
+        pass
+
+    def apply_actions(self):
+        joint_action = [Action.STAY] * len(self.players)
+
+        for i in range(len(self.players)):
+            try:
+                joint_action[i] = self.pending_actions[i].get(block=False)
+            except Empty:
+                pass
+
+        self.state, info = self.mdp.get_state_transition(self.state, joint_action)
+
+        self.score += sum(info['sparse_reward_by_agent'])
+
+    def enqueue_action(self, player_id, action):
+        overcooked_action = self.action_to_overcooked_action[action]
+        super(OvercookedGame, self).enqueue_action(player_id, overcooked_action)
+
+
+    def tick(self):
+        for npc in self.npc_policies:
+            npc_action, _ = self.npc_policies[npc].action(self.state)
+            self.enqueue_action(npc, npc_action)
+        return super(OvercookedGame, self).tick()
+
+    def activate(self):
+        super(OvercookedGame, self).activate()
+        self.state = self.mdp.get_standard_start_state()
+        self.start_time = time()
+
+    def get_state(self):
+        state_dict = {}
+        state_dict['terrain'] = self.mdp.terrain_mtx
+        state_dict['objects'] = self.state.to_dict()
+        state_dict['score'] = self.score
+        state_dict['time'] = time() - self.start_time
+        return state_dict
+
+    def get_policy(self, npc_id):
+        # TODO
+        return None
+
+
+
+class DummyOvercookedGame(OvercookedGame):
+    """
+    Class that hardcodes the AI to always STAY. Used for debugging
+    """
+    
+    def __init__(self, layout="cramped_room", **kwargs):
+        super(DummyOvercookedGame, self).__init__(layout, playerZero='human', playerOne='AI')
+
+    def get_policy(self, _):
+        class DummyAI():
+            def action(self, state):
+                return 'STAY', None
+        return DummyAI()
+    
 
     

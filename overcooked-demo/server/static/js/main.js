@@ -49,7 +49,7 @@ socket.on('waiting', function(data) {
 socket.on('creation_failed', function(data) {
     // Tell user what went wrong
     let err = data['error']
-    $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${err}</>`);
+    $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
 });
 
 socket.on('start_game', function() {

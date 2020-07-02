@@ -2,7 +2,7 @@ import os, pickle, queue, atexit
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import DummyInteractiveGame as Game
+from game import DummyOvercookedGame as Game
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
@@ -79,7 +79,8 @@ def try_create_game(**kwargs):
         err = RuntimeError("Server at max capacity")
         return None, err
     except Exception as e:
-        return None, e
+        # return None, e
+        raise e
     else:
         GAMES[game.id] = game
         FREE_MAP[game.id] = False
@@ -184,13 +185,13 @@ def  _leave_game(user_id):
 def _create_game(user_id, params={}):
     game, err = try_create_game(**params)
     if not game:
-        emit("creation_failed", { "error" : pickle.dumps(err) })
+        emit("creation_failed", { "error" : err.__repr__() })
         return
     with game.lock:
-        game.players.append(user_id)
+        game.add_player(user_id)
         join_room(game.id)
         set_curr_room(user_id, game.id)
-        if game.is_full():
+        if game.is_ready():
             game.activate()
             ACTIVE_GAMES.add(game.id)
             emit('start_game', room=game.id)
@@ -337,9 +338,9 @@ def on_join(data):
     with game.lock:
         join_room(game.id)
         set_curr_room(user_id, game.id)
-        game.players.append(user_id)
+        game.add_player(user_id)
             
-        if game.is_full():
+        if game.is_ready():
             # Game is ready to begin play
             game.activate()
             ACTIVE_GAMES.add(game.id)
@@ -395,7 +396,7 @@ def on_exit():
 # Game Loop #
 #############
 
-def play_game(game, fps=30):
+def play_game(game, fps=1):
     """
     Asynchronously apply real-time game updates and broadcast state to all clients currently active
     in the game. Note that this loop must be initiated by a parallel thread for each active game
