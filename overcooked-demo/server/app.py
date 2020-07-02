@@ -2,7 +2,7 @@ import os, pickle, queue, atexit
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import DummyInteractiveGame as Game
+from game import DummyOvercookedGame as Game
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
@@ -14,6 +14,9 @@ from game import DummyInteractiveGame as Game
 
 # Maximum number of games that can run concurrently. Contrained by available memory
 MAX_GAMES = 10
+
+# Frames per second cap for serving to client
+MAX_FPS = 30
 
 # Global queue of available IDs. This is how we synch game creation and keep track of how many games are in memory
 FREE_IDS = queue.Queue(maxsize=MAX_GAMES)
@@ -200,7 +203,7 @@ def _create_game(user_id, params={}):
             game.activate()
             ACTIVE_GAMES.add(game.id)
             emit('start_game', game.to_json(), room=game.id)
-            socketio.start_background_task(play_game, game)
+            socketio.start_background_task(play_game, game, fps=MAX_FPS)
         else:
             WAITING_GAMES.put(game.id)
             emit('waiting', room=game.id)

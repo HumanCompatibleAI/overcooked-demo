@@ -1,3 +1,4 @@
+// Miliseconds between keyboard polls and graphics updates
 var TIMESTEP_DURATION = 100;
 
 var DIRECTION_TO_NAME = {
@@ -12,12 +13,12 @@ var scene_config = {
     tileSize : 80,
     animation_duration : TIMESTEP_DURATION * .9,
     show_post_cook_time : false,
-    cook_time : 20
+    cook_time : 20,
+    assets_loc : "./static/assets/"
 };
 
 var game_config = {
     type: Phaser.WEBGL,
-    parent: "overcooked",
     pixelArt: true,
     audio: {
         noAudio: true
@@ -30,8 +31,8 @@ function drawState(state) {
     graphics.set_state(state);
 };
 
-function graphics_start(start_info) {
-    graphics = new GraphicsManager(game_config, scene_config, start_info);
+function graphics_start(graphics_config) {
+    graphics = new GraphicsManager(game_config, scene_config, graphics_config);
 };
 
 function graphics_end() {
@@ -41,17 +42,19 @@ function graphics_end() {
 }
 
 class GraphicsManager {
-    constructor(game_config, scene_config, start_info) {
+    constructor(game_config, scene_config, graphics_config) {
+        let start_info = graphics_config.start_info;
         scene_config.terrain = start_info.terrain;
         scene_config.start_state = start_info.state;
         game_config.scene = new OvercookedScene(scene_config);
-        game_config.gameWidth = scene_config.tileSize*scene_config.terrain[0].length;
-        game_config.gameHeight = scene_config.tileSize*scene_config.terrain.length;
+        game_config.width = scene_config.tileSize*scene_config.terrain[0].length;
+        game_config.height = scene_config.tileSize*scene_config.terrain.length;
+        game_config.parent = graphics_config.container_id;
         this.game = new Phaser.Game(game_config);
     }
 
     set_state(state) {
-        this.game.scene.getAt(0).set_state(state);
+        this.game.scene.getScene('PlayGame').set_state(state);
     }
 }
 
@@ -66,31 +69,32 @@ class OvercookedScene extends Phaser.Scene {
         this.tileSize = config.tileSize;
         this.animation_duration = config.animation_duration;
         this.show_post_cook_time = config.show_post_cook_time;
-        this.cook_time = config.cook_time
+        this.cook_time = config.cook_time;
+        this.assets_loc = config.assets_loc;
     }
 
     set_state(state) {
         this.state = state.state;
         this.score = state.score;
-        this.time = state.time;
+        this.time = Math.floor(state.time);
     }
 
     preload() {
         this.load.atlas("tiles",
-            "./assets/terrain.png",
-            "./assets/terrain.json");
+            this.assets_loc + "terrain.png",
+            this.assets_loc + "terrain.json");
         this.load.atlas("chefs",
-            "./assets/chefs.png",
-            "./assets/chefs.json");
+            this.assets_loc + "chefs.png",
+            this.assets_loc + "chefs.json");
         this.load.atlas("objects",
-            "./assets/objects.png",
-            "./assets/objects.json");
+            this.assets_loc + "objects.png",
+            this.assets_loc + "objects.json");
     }
 
     create() {
         this.sprites = {};
         this.drawLevel();
-        this._drawState(curr_state, this.sprites);
+        this._drawState(this.state, this.sprites);
     }
 
     update() {
@@ -116,17 +120,18 @@ class OvercookedScene extends Phaser.Scene {
             'S': 'serve.png'
         };
         let pos_dict = this.terrain;
-        for (let ttype in pos_dict) {
-            if (!pos_dict.hasOwnProperty(ttype)) {continue}
-            for (let i = 0; i < pos_dict[ttype].length; i++) {
-                let [x, y] = pos_dict[ttype][i];
+        for (let row in pos_dict) {
+            if (!pos_dict.hasOwnProperty(row)) {continue}
+            for (let col = 0; col < pos_dict[row].length; col++) {
+                let [x, y] = [col, row]
+                let ttype = pos_dict[row][col];
                 let tile = this.add.sprite(
-                    tileSize * x,
-                    tileSize * y,
+                    this.tileSize * x,
+                    this.tileSize * y,
                     "tiles",
                     terrain_to_img[ttype]
                 );
-                tile.setDisplaySize(tileSize, tileSize);
+                tile.setDisplaySize(this.tileSize, this.tileSize);
                 tile.setOrigin(0);
             }
         }
@@ -142,7 +147,7 @@ class OvercookedScene extends Phaser.Scene {
             let [x, y] = chef.position;
             let dir = DIRECTION_TO_NAME[chef.orientation];
             let held_obj = chef.held_object;
-            if (typeof(held_obj) !== 'undefined') {
+            if (typeof(held_obj) !== 'undefined' && held_obj !== null) {
                 if (held_obj.name === 'soup') {
                     held_obj = "-soup-"+held_obj.state[0];
                 }
@@ -160,16 +165,16 @@ class OvercookedScene extends Phaser.Scene {
                     "chefs",
                     `${dir}${held_obj}.png`
                 );
-                chefsprite.setDisplaySize(tileSize, tileSize);
+                chefsprite.setDisplaySize(this.tileSize, this.tileSize);
                 chefsprite.depth = 1;
                 chefsprite.setOrigin(0);
                 let hatsprite = this.add.sprite(
-                    tileSize*x,
-                    tileSize*y,
+                    this.tileSize*x,
+                    this.tileSize*y,
                     "chefs",
                     `${dir}-${this.player_colors[pi]}hat.png`
                 );
-                hatsprite.setDisplaySize(tileSize, tileSize);
+                hatsprite.setDisplaySize(this.tileSize, this.tileSize);
                 hatsprite.depth = 2;
                 hatsprite.setOrigin(0);
                 sprites['chefs'][pi] = {chefsprite, hatsprite};
@@ -209,7 +214,7 @@ class OvercookedScene extends Phaser.Scene {
             if (!state.objects.hasOwnProperty(objpos)) { continue }
             let obj = state.objects[objpos];
             let [x, y] = obj.position;
-            let terrain_type = this.terrain;
+            let terrain_type = this.terrain[y][x];
             let spriteframe, souptype, n_ingredients;
             let cooktime = "";
             if ((obj.name === 'soup') && (terrain_type === 'P')) {
@@ -236,7 +241,7 @@ class OvercookedScene extends Phaser.Scene {
 
                 // show time accordingly
                 let show_time = true;
-                if ((cooktime > this.mdp.COOK_TIME) && !this.show_post_cook_time) {
+                if ((cooktime > this.cook_time) && !this.show_post_cook_time) {
                     show_time = false;
                 }
                 if (show_time) {

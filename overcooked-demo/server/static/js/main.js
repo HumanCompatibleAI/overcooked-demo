@@ -58,6 +58,10 @@ socket.on('start_game', function(data) {
         clearInterval(window.intervalID);
         window.intervalID = null;
     }
+    graphics_config = {
+        container_id : "overcooked",
+        start_info : data
+    };
     $('#game-over').hide();
     $('#lobby').hide();
     $('#join').hide();
@@ -66,27 +70,25 @@ socket.on('start_game', function(data) {
     $('#game-title').show();
     enable_key_listener();
     window.gameIntervalID = setInterval(game_loop, TIMESTEP_DURATION);
-    // graphics_start(data);
+    graphics_start(graphics_config);
 });
 
 socket.on('state_pong', function(data) {
     // Draw state update
-    $("#overcooked").empty();
-    // drawState(data['state']);
-    $("#overcooked").append(`<h4>Current Game State: ${JSON.stringify(data['state'])}</>`);
+    drawState(data['state']);
 });
 
 socket.on('end_game', function() {
     // Hide game data and display game-over html
+    graphics_end();
+    disable_key_listener();
+    clearInterval(window.gameIntervalID);
     $('#game-title').hide();
     $('#game-over').show();
-    $("#overcooked").empty();
+    // $("#overcooked").empty();
     $("#join").show();
     $("#create").show();
     $("#leave").hide();
-    clearInterval(window.gameIntervalID);
-    disable_key_listener();
-    // graphics_end();
 });
 
 

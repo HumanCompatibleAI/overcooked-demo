@@ -272,7 +272,7 @@ class OvercookedGame(Game):
         self.max_players = kwargs.get('num_players', 2)
         self.mdp = OvercookedGridworld.from_layout_name(layout, **mdp_params)
         self.score = 0
-        self.max_time = kwargs.get("gameTime", 60)
+        self.max_time = kwargs.get("gameTime", 10)
         self.npc_policies = {}
         self.action_to_overcooked_action = {
             "STAY" : Action.STAY,
