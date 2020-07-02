@@ -2,7 +2,7 @@ import os, pickle, queue, atexit
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import DummyOvercookedGame as Game
+from game import DummyInteractiveGame as Game
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
@@ -166,14 +166,19 @@ def  _leave_game(user_id):
         game.remove_player(user_id)
 
         # Rebroadcast data and handle cleanup based on the transition caused by leaving
-        if game.id in ACTIVE_GAMES and not game.is_empty():
+        if game.id in ACTIVE_GAMES and game.is_ready():
+            # Active -> Active
+            pass
+        elif game.id in ACTIVE_GAMES and not game.is_empty():
             # Active -> Waiting
             ACTIVE_GAMES.remove(game.id)
+            game.deactivate()
             emit('end_game', room=game.id)
             cleanup_game(game)
         elif game.id in ACTIVE_GAMES and game.is_empty():
             # Active -> Empty
             ACTIVE_GAMES.remove(game.id)
+            game.deactivate()
             cleanup_game(game)
         elif not game.is_empty():
             # Waiting -> Waiting
@@ -218,6 +223,8 @@ def _ensure_consistent_state():
     - Intersection of WAITING and ACTIVE games must be empty set
     - Union of WAITING and ACTIVE must be equal to GAMES
     - id \in FREE_IDS => FREE_MAP[id] 
+    - id \in ACTIVE_GAMES => Game in active state
+    - id \in WAITING_GAMES => Game in inactive state
     """
     waiting_games = set()
     active_games = set()
@@ -236,6 +243,9 @@ def _ensure_consistent_state():
     assert waiting_games.union(active_games) == all_games, "WAITING union ACTIVE != ALL"
 
     assert not waiting_games.intersection(active_games), "WAITING intersect ACTIVE != EMPTY"
+
+    assert all([get_game(g_id)._is_active for g_id in active_games]), "Active ID in waiting state"
+    assert all([not get_game(g_id)._id_active for g_id in waiting_games]), "Waiting ID in active state"
 
 
 ######################
@@ -396,7 +406,7 @@ def on_exit():
 # Game Loop #
 #############
 
-def play_game(game, fps=1):
+def play_game(game, fps=30):
     """
     Asynchronously apply real-time game updates and broadcast state to all clients currently active
     in the game. Note that this loop must be initiated by a parallel thread for each active game

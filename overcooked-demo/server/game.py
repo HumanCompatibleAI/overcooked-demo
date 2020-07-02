@@ -93,10 +93,17 @@ class Game(ABC):
 
     def activate(self):
         """
-        Activates the game to let server know real-time updates should start. Provides no functionality but useful as
+        Activates the game to let server know real-time updates should start. Provides little functionality but useful as
         a check for debugging
         """
         self._is_active = True
+
+    def deactivate(self):
+        """
+        Deactives the game such that subsequent calls to `tick` will be no-ops. Used to handle case where game ends but 
+        there is still a buffer of client pings to handle
+        """
+        self._is_active = False
 
 
     def tick(self):
@@ -227,7 +234,7 @@ class DummyInteractiveGame(Game):
     def __init__(self, **kwargs):
         super(DummyInteractiveGame, self).__init__(**kwargs)
         self.max_players = int(kwargs.get('playerZero', 'human') == 'human') + int(kwargs.get('playerOne', 'human') == 'human')
-        self.max_count = kwargs.get('max_count', 100)
+        self.max_count = kwargs.get('max_count', 30)
         self.counter = 0
         self.counts = [0] * self.max_players
 

@@ -66,13 +66,14 @@ socket.on('start_game', function(data) {
     $('#game-title').show();
     enable_key_listener();
     window.gameIntervalID = setInterval(game_loop, TIMESTEP_DURATION);
-    graphics_start(data);
+    // graphics_start(data);
 });
 
 socket.on('state_pong', function(data) {
     // Draw state update
     $("#overcooked").empty();
-    drawState(data['state'])
+    // drawState(data['state']);
+    $("#overcooked").append(`<h4>Current Game State: ${JSON.stringify(data['state'])}</>`);
 });
 
 socket.on('end_game', function() {
@@ -85,7 +86,7 @@ socket.on('end_game', function() {
     $("#leave").hide();
     clearInterval(window.gameIntervalID);
     disable_key_listener();
-    graphics_end();
+    // graphics_end();
 });
 
 
