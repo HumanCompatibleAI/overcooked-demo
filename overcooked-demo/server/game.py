@@ -117,7 +117,7 @@ class Game(ABC):
         Subclasses should try to override `apply_actions` if possible. Only override this method if necessary
         """ 
         if not self.is_active:
-            raise ValueError("Can only tick on games that are actively being played")
+            return False
         self.apply_actions()
         return self.is_finished()
     
@@ -128,7 +128,7 @@ class Game(ABC):
         Note: This function IS thread safe
         """
         if not self.is_active:
-            raise ValueError("Cannot act in games that are inactive")
+            return
         if player_id not in self.players:
             raise ValueError("Invalid player ID")
         try:
@@ -285,6 +285,7 @@ class OvercookedGame(Game):
         }
         self.state_queue = LifoQueue()
         self.ticks_per_ai_action = 4
+        self.curr_tick = 0
 
         player_zero = kwargs.get('playerZero', 'human')
         player_one = kwargs.get('playerOne', 'human')
@@ -330,7 +331,9 @@ class OvercookedGame(Game):
                 pass
 
         self.state, info = self.mdp.get_state_transition(self.state, joint_action)
-        self.state_queue.put(self.state, block=False)
+
+        if self.curr_tick % self.ticks_per_ai_action == 0:
+            self.state_queue.put(self.state, block=False)
 
         self.score += sum(info['sparse_reward_by_agent'])
 
@@ -340,6 +343,7 @@ class OvercookedGame(Game):
 
 
     def tick(self):
+        self.curr_tick += 1
         return super(OvercookedGame, self).tick()
 
     def activate(self):
@@ -382,22 +386,24 @@ class OvercookedGame(Game):
 
 class DummyOvercookedGame(OvercookedGame):
     """
-    Class that hardcodes the AI to always STAY. Used for debugging
+    Class that hardcodes the AI to be random. Used for debugging
     """
     
     def __init__(self, layout="cramped_room", **kwargs):
         super(DummyOvercookedGame, self).__init__(layout, **kwargs)
 
     def get_policy(self, _):
-        return DummyComputeAI()
+        return DummyAI()
 
 
 class DummyAI():
     def action(self, state):
-        return 'STAY', None
+        [action] = random.sample(['STAY', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'SPACE'], 1)
+        return action, None
 
-class DummyComputeAI():
+class DummyComputeAI(DummyAI):
     def __init__(self, compute_unit_iters=1e5):
+        super(DummyComputeAI, self).__init__()
         self.compute_unit_iters = compute_unit_iters
     
     def action(self, state):
@@ -412,8 +418,7 @@ class DummyComputeAI():
                 val += 1
             else:
                 val += 2
-        [action] = random.sample(['STAY', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'SPACE'], 1)
-        return action, None
+        return super(DummyComputeAI, self).action(state)
 
     
 

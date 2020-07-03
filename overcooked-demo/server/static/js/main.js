@@ -76,7 +76,7 @@ socket.on('start_game', function(data) {
     $('#leave').show();
     $('#game-title').show();
     enable_key_listener();
-    window.gameIntervalID = setInterval(game_loop, TIMESTEP_DURATION);
+    // window.gameIntervalID = setInterval(game_loop, TIMESTEP_DURATION);
     graphics_start(graphics_config);
 });
 
@@ -89,7 +89,7 @@ socket.on('end_game', function() {
     // Hide game data and display game-over html
     graphics_end();
     disable_key_listener();
-    clearInterval(window.gameIntervalID);
+    // clearInterval(window.gameIntervalID);
     $('#game-title').hide();
     $('#game-over').show();
     $("#join").show();
@@ -114,36 +114,35 @@ socket.on('end_lobby', function() {
  * Game Key Event Listener *
  * * * * * * * * * * * * * */
 
-window.action = "STAY";
-
 function enable_key_listener() {
     $(document).on('keydown', function(e) {
+        let action = 'STAY'
         switch (e.which) {
             case 37: // left
-                window.action = 'LEFT';
+                action = 'LEFT';
                 break;
 
             case 38: // up
-                window.action = 'UP';
+                action = 'UP';
                 break;
 
             case 39: // right
-                window.action = 'RIGHT';
+                action = 'RIGHT';
                 break;
 
             case 40: // down
-                window.action = 'DOWN';
+                action = 'DOWN';
                 break;
 
             case 32: //space
-                window.action = 'SPACE';
+                action = 'SPACE';
                 break;
 
             default: // exit this handler for other keys
                 return; 
         }
         e.preventDefault();
-        disable_key_listener();
+        socket.emit('action', { 'action' : action });
     });
 };
 
@@ -151,11 +150,11 @@ function disable_key_listener() {
     $(document).off('keydown');
 };
 
-function game_loop() {
-    socket.emit('action', { "action" : window.action })
-    window.action = "STAY";
-    enable_key_listener();
-};
+// function game_loop() {
+//     socket.emit('action', { "action" : window.action })
+//     window.action = "STAY";
+//     enable_key_listener();
+// };
 
 
 /* * * * * * * * * * *

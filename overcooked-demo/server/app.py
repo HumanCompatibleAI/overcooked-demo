@@ -176,17 +176,10 @@ def  _leave_game(user_id):
         if was_active and game.is_ready():
             # Active -> Active
             pass
-        elif was_active and not game.is_empty():
+        elif was_active:
             # Active -> Waiting
-            ACTIVE_GAMES.remove(game.id)
-            game.deactivate()
-            emit('end_game', room=game.id)
-            cleanup_game(game)
-        elif was_active and game.is_empty():
             # Active -> Empty
-            ACTIVE_GAMES.remove(game.id)
             game.deactivate()
-            cleanup_game(game)
         elif not game.is_empty():
             # Waiting -> Waiting
             emit('waiting', room=game.id)
