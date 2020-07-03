@@ -7,6 +7,7 @@ from game import DummyOvercookedGame as Game
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
 # Could use a monitor on a conditional to block all global ops during calls to _ensure_consistent_state
+# Could eliminate keyboard polling on client side and instead use key event directly. Would require imputing "STAY" actions server side
 
 ###########
 # Globals #
@@ -82,8 +83,7 @@ def try_create_game(**kwargs):
         err = RuntimeError("Server at max capacity")
         return None, err
     except Exception as e:
-        # return None, e
-        raise e
+        return None, e
     else:
         GAMES[game.id] = game
         FREE_MAP[game.id] = False
@@ -168,17 +168,20 @@ def  _leave_game(user_id):
         # Update game state maintained by game object
         game.remove_player(user_id)
 
+        # Whether the game was active before the user left
+        was_active = game.id in ACTIVE_GAMES
+
         # Rebroadcast data and handle cleanup based on the transition caused by leaving
-        if game.id in ACTIVE_GAMES and game.is_ready():
+        if was_active and game.is_ready():
             # Active -> Active
             pass
-        elif game.id in ACTIVE_GAMES and not game.is_empty():
+        elif was_active and not game.is_empty():
             # Active -> Waiting
             ACTIVE_GAMES.remove(game.id)
             game.deactivate()
             emit('end_game', room=game.id)
             cleanup_game(game)
-        elif game.id in ACTIVE_GAMES and game.is_empty():
+        elif was_active and game.is_empty():
             # Active -> Empty
             ACTIVE_GAMES.remove(game.id)
             game.deactivate()
@@ -189,6 +192,8 @@ def  _leave_game(user_id):
         else:
             # Waiting -> Empty
             cleanup_game(game)
+
+    return was_active
 
 def _create_game(user_id, params={}):
     game, err = try_create_game(**params)
@@ -278,11 +283,11 @@ def debug():
     free_map = {}
     for game_id in ACTIVE_GAMES:
         game = get_game(game_id)
-        active_games.append({"id" : game_id, "state" : game.get_state()})
+        active_games.append({"id" : game_id, "state" : game.to_json()})
 
     for game_id in list(WAITING_GAMES.queue):
         game = get_game(game_id)
-        game_state = None if FREE_MAP[game_id] else game.get_state()
+        game_state = None if FREE_MAP[game_id] else game.to_json()
         waiting_games.append({ "id" : game_id, "state" : game_state})
 
     for game_id in GAMES:
@@ -367,8 +372,12 @@ def on_join(data):
 @socketio.on('leave')
 def on_leave(data):
     user_id = request.sid
-    _leave_game(user_id)
-    emit('end_game')
+    was_active = _leave_game(user_id)
+
+    if was_active:
+        emit('end_game')
+    else:
+        emit('end_lobby')
 
 @socketio.on('action')
 def on_action(data):

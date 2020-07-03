@@ -8,7 +8,10 @@ var socket = io();
 $(function() {
     $('#create').click(function () {
         params = arrToJSON($('form').serializeArray());
-        socket.emit("create", params);
+        data = {
+            "params" : params
+        };
+        socket.emit("create", data);
     });
 });
 
@@ -32,6 +35,9 @@ $(function() {
  * Socket event handlers *
  * * * * * * * * * * * * */
 
+window.intervalID = -1;
+window.gameIntervalID = -1;
+
 socket.on('waiting', function(data) {
     // Show game lobby
     $('#game-over').hide();
@@ -39,7 +45,7 @@ socket.on('waiting', function(data) {
     $('#join').hide();
     $('#create').hide();
     $('#leave').show();
-    if (typeof window.intervalID === 'undefined'  || window.intervalID === null) {
+    if (window.intervalID === -1) {
         window.intervalID = setInterval(function() {
             socket.emit('join', {});
         }, 1000);
@@ -54,14 +60,15 @@ socket.on('creation_failed', function(data) {
 
 socket.on('start_game', function(data) {
     // Hide game-over and lobby, show game title header
-    if (typeof window.intervalID !== 'undefined') {
+    if (window.intervalID !== -1) {
         clearInterval(window.intervalID);
-        window.intervalID = null;
+        window.intervalID = -1;
     }
     graphics_config = {
         container_id : "overcooked",
         start_info : data
     };
+    $("#overcooked").empty();
     $('#game-over').hide();
     $('#lobby').hide();
     $('#join').hide();
@@ -85,11 +92,22 @@ socket.on('end_game', function() {
     clearInterval(window.gameIntervalID);
     $('#game-title').hide();
     $('#game-over').show();
-    // $("#overcooked").empty();
     $("#join").show();
     $("#create").show();
     $("#leave").hide();
 });
+
+socket.on('end_lobby', function() {
+    // Hide lobby
+    $('#lobby').hide();
+    $("#join").show();
+    $("#create").show();
+    $("#leave").hide();
+
+    // Stop trying to join
+    clearInterval(window.intervalID);
+    window.intervalID = -1;
+})
 
 
 /* * * * * * * * * * * * * * 

@@ -27,14 +27,22 @@ var game_config = {
 
 var graphics;
 
+// Invoked at every state_pong event from server
 function drawState(state) {
-    graphics.set_state(state);
+    // Try catch necessary because state pongs can arrive before graphics manager has finished initializing
+    try {
+        graphics.set_state(state);
+    } catch {
+        console.log("error updating state");
+    }
 };
 
+// Invoked at 'start_game' event
 function graphics_start(graphics_config) {
     graphics = new GraphicsManager(game_config, scene_config, graphics_config);
 };
 
+// Invoked at 'end_game' event
 function graphics_end() {
     graphics.game.renderer.destroy();
     graphics.game.loop.stop();

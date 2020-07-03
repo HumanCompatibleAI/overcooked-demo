@@ -269,10 +269,10 @@ class OvercookedGame(Game):
 
     def __init__(self, layout="cramped_room", mdp_params={}, **kwargs):
         super(OvercookedGame, self).__init__()
-        self.max_players = kwargs.get('num_players', 2)
+        self.max_players = int(kwargs.get('num_players', 2))
         self.mdp = OvercookedGridworld.from_layout_name(layout, **mdp_params)
         self.score = 0
-        self.max_time = kwargs.get("gameTime", 10)
+        self.max_time = int(kwargs.get("gameTime", 10))
         self.npc_policies = {}
         self.action_to_overcooked_action = {
             "STAY" : Action.STAY,
@@ -295,6 +295,9 @@ class OvercookedGame(Game):
             player_one_id = player_one + '_1'
             self.add_player(player_one_id, idx=1, buff_size=1)
             self.npc_policies[player_one_id] = self.get_policy(player_one)
+
+        if len(self.npc_policies) == self.max_players:
+            raise ValueError("At least one player must be a human")
 
 
     def is_full(self):
@@ -345,7 +348,7 @@ class OvercookedGame(Game):
     def to_json(self):
         obj_dict = {}
         obj_dict['terrain'] = self.mdp.terrain_mtx
-        obj_dict['state'] = self.get_state()
+        obj_dict['state'] = self.get_state() if self._is_active else None
         return obj_dict
 
     def get_policy(self, npc_id):
@@ -360,7 +363,7 @@ class DummyOvercookedGame(OvercookedGame):
     """
     
     def __init__(self, layout="cramped_room", **kwargs):
-        super(DummyOvercookedGame, self).__init__(layout, playerZero='human', playerOne='AI')
+        super(DummyOvercookedGame, self).__init__(layout, **kwargs)
 
     def get_policy(self, _):
         class DummyAI():

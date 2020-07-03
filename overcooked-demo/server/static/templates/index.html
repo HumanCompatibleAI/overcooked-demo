@@ -31,16 +31,16 @@
       <div class="row text-center">
 	<div class="form-group col-lg-3">
 	  <label for="playerZero" style="color:#1E6A9E">Player 1</label>
-	  <select class="form-control" id="playerZero">
+	  <select class="form-control" id="playerZero" name="playerZero">
 	    <option value="ppo_bc">Human-aware PPO agent</option>
 	    <option value="ppo_sp">Self-play agent</option>
 	    <option value="pbt">Population Based Training agent</option>
       <option value="human">Human Keyboard Input</option>
 	  </select>
-	</div>
+    </div>
   <div class="form-group col-lg-3">
     <label for="playerOne" style="color:#44956B">Player 2</label>
-    <select class="form-control" id="playerOne">
+    <select class="form-control" id="playerOne" name="playerOne">
       <option value="human">Human Keyboard Input</option>
       <option value="ppo_bc">Human-aware PPO agent</option>
       <option value="ppo_sp">Self-play agent</option>
@@ -50,7 +50,7 @@
   </div>
 	<div class="form-group col-lg-2">
 	  <label for="layout">Layout</label>
-	  <select class="form-control" id="layout">
+	  <select class="form-control" id="layout" name="layout">
 	    <option value="cramped_room">Cramped Room</option>
 	    <option value="asymmetric_advantages">Asymmetric Advantages</option>
 	    <option value="coordination_ring">Coordination Ring</option>
@@ -60,7 +60,7 @@
 	</div>
   <div class="form-group col-lg-2">
     <label for="gameTime">Game Length (sec)</label>
-    <input type="number" id="gameTime" value="30" min="1" max="1800">
+    <input type="number" id="gameTime" value="30" min="1" max="1800" name="gameTime">
   </div>
   <div class="form-group col-lg-2">
     <label for="layout">Deterministic?</label>
@@ -74,7 +74,7 @@
       </div>
       </div>
     </form>
-    <h4 class="text-center"><a href="./instructions">Instructions</a></h4><h4 class="text-center"><a href="./replay">Replay Trajectories</a></h4> 
+    <h4 class="text-center"><a href="./instructions">Instructions</a></h4>
     <div id="lobby", class="text-center" style="display:none">
         <h4 class="text-center">Game Lobby</h4>
         Waiting for game to start...
