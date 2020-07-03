@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from threading import Lock
+from threading import Lock, Thread
 from queue import Queue, Empty, Full
 from time import time
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
@@ -272,7 +272,7 @@ class OvercookedGame(Game):
         self.max_players = int(kwargs.get('num_players', 2))
         self.mdp = OvercookedGridworld.from_layout_name(layout, **mdp_params)
         self.score = 0
-        self.max_time = int(kwargs.get("gameTime", 10))
+        self.max_time = int(kwargs.get("gameTime", 30))
         self.npc_policies = {}
         self.action_to_overcooked_action = {
             "STAY" : Action.STAY,
@@ -282,6 +282,8 @@ class OvercookedGame(Game):
             "RIGHT" : Direction.EAST,
             "SPACE" : Action.INTERACT
         }
+        self.state_queue = Queue(maxsize=1)
+        self.ticks_per_ai_action = 4
 
         player_zero = kwargs.get('playerZero', 'human')
         player_one = kwargs.get('playerOne', 'human')
@@ -298,6 +300,12 @@ class OvercookedGame(Game):
 
         if len(self.npc_policies) == self.max_players:
             raise ValueError("At least one player must be a human")
+
+    def npc_policy_consumer(self, policy_id):
+        while self._is_active:
+            state = self.state_queue.get()
+            npc_action, _ = self.npc_policies[policy_id].action(state)
+            self.enqueue_action(policy_id, npc_action)
 
 
     def is_full(self):
@@ -319,6 +327,7 @@ class OvercookedGame(Game):
                 pass
 
         self.state, info = self.mdp.get_state_transition(self.state, joint_action)
+        self.state_queue.put(self.state)
 
         self.score += sum(info['sparse_reward_by_agent'])
 
@@ -328,15 +337,26 @@ class OvercookedGame(Game):
 
 
     def tick(self):
-        for npc in self.npc_policies:
-            npc_action, _ = self.npc_policies[npc].action(self.state)
-            self.enqueue_action(npc, npc_action)
         return super(OvercookedGame, self).tick()
 
     def activate(self):
         super(OvercookedGame, self).activate()
         self.state = self.mdp.get_standard_start_state()
+        self.state_queue.put(self.state)
         self.start_time = time()
+        self.threads = []
+        for npc_policy in self.npc_policies:
+            t = Thread(target=self.npc_policy_consumer, args=(npc_policy,))
+            self.threads.append(t)
+            t.start()
+
+    def deactivate(self):
+        super(OvercookedGame, self).deactivate()
+        # Ensure the background consumer does not hang
+        self.state_queue.put(self.state)
+        for t in self.threads:
+            t.join()
+
 
     def get_state(self):
         state_dict = {}
