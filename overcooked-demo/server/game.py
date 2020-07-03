@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from threading import Lock, Thread
-from queue import Queue, Empty, Full
+from queue import Queue, LifoQueue, Empty, Full
 from time import time
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
+import random
 
 class Game(ABC):
 
@@ -282,7 +283,7 @@ class OvercookedGame(Game):
             "RIGHT" : Direction.EAST,
             "SPACE" : Action.INTERACT
         }
-        self.state_queue = Queue(maxsize=1)
+        self.state_queue = LifoQueue()
         self.ticks_per_ai_action = 4
 
         player_zero = kwargs.get('playerZero', 'human')
@@ -304,6 +305,8 @@ class OvercookedGame(Game):
     def npc_policy_consumer(self, policy_id):
         while self._is_active:
             state = self.state_queue.get()
+            with self.state_queue.mutex:
+                self.state_queue.queue.clear()
             npc_action, _ = self.npc_policies[policy_id].action(state)
             self.enqueue_action(policy_id, npc_action)
 
@@ -386,10 +389,32 @@ class DummyOvercookedGame(OvercookedGame):
         super(DummyOvercookedGame, self).__init__(layout, **kwargs)
 
     def get_policy(self, _):
-        class DummyAI():
-            def action(self, state):
-                return 'STAY', None
-        return DummyAI()
+        return DummyComputeAI()
+
+
+class DummyAI():
+    def action(self, state):
+        return 'STAY', None
+
+class DummyComputeAI():
+    def __init__(self, compute_unit_iters=1e5):
+        self.compute_unit_iters = compute_unit_iters
+    
+    def action(self, state):
+        # Randomly sample amount of time to busy wait
+        iters = int(random.randint(1, 10) * self.compute_unit_iters)
+
+        # Actually compute something (can't sleep) to avoid scheduling optimizations
+        val = 0
+        for i in range(iters):
+            # Avoid branch prediction optimizations
+            if i % 2 == 0:
+                val += 1
+            else:
+                val += 2
+        [action] = random.sample(['STAY', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'SPACE'], 1)
+        return action, None
+
     
 
     
