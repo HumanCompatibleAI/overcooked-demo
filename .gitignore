@@ -5,3 +5,4 @@ node_modules/
 **/.vscode
 **/old/
 **/master_agents/
+**/__pycache__/
