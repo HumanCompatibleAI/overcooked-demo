@@ -327,7 +327,7 @@ class OvercookedGame(Game):
                 pass
 
         self.state, info = self.mdp.get_state_transition(self.state, joint_action)
-        self.state_queue.put(self.state)
+        self.state_queue.put(self.state, block=False)
 
         self.score += sum(info['sparse_reward_by_agent'])
 
