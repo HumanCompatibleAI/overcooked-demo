@@ -266,15 +266,34 @@ class DummyInteractiveGame(Game):
 class OvercookedGame(Game):
     """
     Class for bridging the gap between Overcooked_Env and the Game interface
+
+    Instance variable:
+        - max_players (int): Maximum number of players that can be in the game at once
+        - mdp (OvercookedGridworld): Controls the underlying Overcooked game logic
+        - score (int): Current reward acheived by all players
+        - max_time (int): Number of seconds the game should last
+        - npc_policies (dict): Maps user_id to policy (Agent) for each AI player
+        - npc_state_queues (dict): Mapping of NPC user_ids to LIFO queues for the policy to process
+        - curr_tick (int): How many times the game server has called this instance's `tick` method
+        - ticker_per_ai_action (int): How many frames should pass in between NPC policy forward passes. 
+            Note that this is a lower bound; if the policy is computationally expensive the actual frames
+            per forward pass can be higher
+        - action_to_overcooked_action (dict): Maps action names returned by client to action names used by OvercookedGridworld
+            Note that this is an instance variable and not a static variable for efficiency reasons
+    
+    Methods:
+        - npc_policy_consumer: Background process that asynchronously computes NPC policy forward passes. One thread
+            spawned for each NPC
     """
 
-    def __init__(self, layout="cramped_room", mdp_params={}, **kwargs):
+    def __init__(self, layout="cramped_room", mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', **kwargs):
         super(OvercookedGame, self).__init__()
-        self.max_players = int(kwargs.get('num_players', 2))
+        self.max_players = int(num_players)
         self.mdp = OvercookedGridworld.from_layout_name(layout, **mdp_params)
         self.score = 0
-        self.max_time = int(kwargs.get("gameTime", 30))
+        self.max_time = int(gameTime)
         self.npc_policies = {}
+        self.npc_state_queues = {}
         self.action_to_overcooked_action = {
             "STAY" : Action.STAY,
             "UP" : Direction.NORTH,
@@ -283,32 +302,32 @@ class OvercookedGame(Game):
             "RIGHT" : Direction.EAST,
             "SPACE" : Action.INTERACT
         }
-        self.state_queue = LifoQueue()
         self.ticks_per_ai_action = 4
         self.curr_tick = 0
 
-        player_zero = kwargs.get('playerZero', 'human')
-        player_one = kwargs.get('playerOne', 'human')
-
-        if player_zero != 'human':
-            player_zero_id = player_zero + '_0'
+        if playerZero != 'human':
+            player_zero_id = playerZero + '_0'
             self.add_player(player_zero_id, idx=0, buff_size=1)
-            self.npc_policies[player_zero_id] = self.get_policy(player_zero)
+            self.npc_policies[player_zero_id] = self.get_policy(playerZero)
+            self.npc_state_queues[player_zero_id] = LifoQueue()
 
-        if player_one != 'human':
-            player_one_id = player_one + '_1'
+        if playerOne != 'human':
+            player_one_id = playerOne + '_1'
             self.add_player(player_one_id, idx=1, buff_size=1)
-            self.npc_policies[player_one_id] = self.get_policy(player_one)
+            self.npc_policies[player_one_id] = self.get_policy(playerOne)
+            self.npc_state_queues[player_one_id] = LifoQueue()
 
         if len(self.npc_policies) == self.max_players:
             raise ValueError("At least one player must be a human")
 
     def npc_policy_consumer(self, policy_id):
+        queue = self.npc_state_queues[policy_id]
+        policy = self.npc_policies[policy_id]
         while self._is_active:
-            state = self.state_queue.get()
-            with self.state_queue.mutex:
-                self.state_queue.queue.clear()
-            npc_action, _ = self.npc_policies[policy_id].action(state)
+            state = queue.get()
+            with queue.mutex:
+                queue.queue.clear()
+            npc_action, _ = policy.action(state)
             self.enqueue_action(policy_id, npc_action)
 
 
@@ -322,19 +341,26 @@ class OvercookedGame(Game):
         pass
 
     def apply_actions(self):
+        # Default joint action, as NPC policies and clients probably don't enqueue actions fast 
+        # enough to produce one at every tick
         joint_action = [Action.STAY] * len(self.players)
 
+        # Synchronize individual player actions into a joint-action as required by overcooked logic
         for i in range(len(self.players)):
             try:
                 joint_action[i] = self.pending_actions[i].get(block=False)
             except Empty:
                 pass
-
+        
+        # Apply overcooked game logic to get state transition
         self.state, info = self.mdp.get_state_transition(self.state, joint_action)
 
+        # Send next state to all background consumers if needed
         if self.curr_tick % self.ticks_per_ai_action == 0:
-            self.state_queue.put(self.state, block=False)
+            for npc_id in self.npc_policies:
+                self.npc_state_queues[npc_id].put(self.state, block=False)
 
+        # Update score based on soup deliveries that might have occured
         self.score += sum(info['sparse_reward_by_agent'])
 
     def enqueue_action(self, player_id, action):
@@ -348,19 +374,22 @@ class OvercookedGame(Game):
 
     def activate(self):
         super(OvercookedGame, self).activate()
-        self.state = self.mdp.get_standard_start_state()
-        self.state_queue.put(self.state)
         self.start_time = time()
+        self.state = self.mdp.get_standard_start_state()
         self.threads = []
         for npc_policy in self.npc_policies:
+            self.npc_state_queues[npc_policy].put(self.state)
             t = Thread(target=self.npc_policy_consumer, args=(npc_policy,))
             self.threads.append(t)
             t.start()
 
     def deactivate(self):
         super(OvercookedGame, self).deactivate()
-        # Ensure the background consumer does not hang
-        self.state_queue.put(self.state)
+        # Ensure the background consumers do not hang
+        for npc_policy in self.npc_policies:
+            self.npc_state_queues[npc_policy].put(self.state)
+
+        # Wait for all background threads to exit
         for t in self.threads:
             t.join()
 
@@ -397,18 +426,28 @@ class DummyOvercookedGame(OvercookedGame):
 
 
 class DummyAI():
+    """
+    Randomly samples actions. Used for debugging
+    """
     def action(self, state):
         [action] = random.sample(['STAY', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'SPACE'], 1)
         return action, None
 
 class DummyComputeAI(DummyAI):
+    """
+    Performs simulated compute before randomly sampling actions. Used for debugging
+    """
     def __init__(self, compute_unit_iters=1e5):
+        """
+        compute_unit_iters (int): Number of for loop cycles in one "unit" of compute. Number of 
+                                    units performed each time is randomly sampled
+        """
         super(DummyComputeAI, self).__init__()
-        self.compute_unit_iters = compute_unit_iters
+        self.compute_unit_iters = int(compute_unit_iters)
     
     def action(self, state):
         # Randomly sample amount of time to busy wait
-        iters = int(random.randint(1, 10) * self.compute_unit_iters)
+        iters = random.randint(1, 10) * self.compute_unit_iters
 
         # Actually compute something (can't sleep) to avoid scheduling optimizations
         val = 0
@@ -418,6 +457,8 @@ class DummyComputeAI(DummyAI):
                 val += 1
             else:
                 val += 2
+        
+        # Return randomly sampled action
         return super(DummyComputeAI, self).action(state)
 
     

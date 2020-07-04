@@ -36,7 +36,6 @@ $(function() {
  * * * * * * * * * * * * */
 
 window.intervalID = -1;
-window.gameIntervalID = -1;
 
 socket.on('waiting', function(data) {
     // Show game lobby
@@ -76,7 +75,6 @@ socket.on('start_game', function(data) {
     $('#leave').show();
     $('#game-title').show();
     enable_key_listener();
-    // window.gameIntervalID = setInterval(game_loop, TIMESTEP_DURATION);
     graphics_start(graphics_config);
 });
 
@@ -89,7 +87,6 @@ socket.on('end_game', function() {
     // Hide game data and display game-over html
     graphics_end();
     disable_key_listener();
-    // clearInterval(window.gameIntervalID);
     $('#game-title').hide();
     $('#game-over').show();
     $("#join").show();
@@ -149,12 +146,6 @@ function enable_key_listener() {
 function disable_key_listener() {
     $(document).off('keydown');
 };
-
-// function game_loop() {
-//     socket.emit('action', { "action" : window.action })
-//     window.action = "STAY";
-//     enable_key_listener();
-// };
 
 
 /* * * * * * * * * * *

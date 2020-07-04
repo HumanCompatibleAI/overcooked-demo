@@ -1,5 +1,3 @@
-var TIMESTEP_DURATION = 100;
-
 var container_id;
 
 const noop = () => {};

@@ -1,5 +1,6 @@
-// Miliseconds between keyboard polls and graphics updates
-var TIMESTEP_DURATION = 100;
+// How long a graphics update should take in milliseconds
+// Note that the server updates at 30 fps
+var ANIMATION_DURATION = 50;
 
 var DIRECTION_TO_NAME = {
     '0,-1': 'NORTH',
@@ -9,9 +10,9 @@ var DIRECTION_TO_NAME = {
 };
 
 var scene_config = {
-    player_colors : {0: 'green', 1: 'blue'},
+    player_colors : {0: 'blue', 1: 'green'},
     tileSize : 80,
-    animation_duration : TIMESTEP_DURATION * .9,
+    animation_duration : ANIMATION_DURATION,
     show_post_cook_time : false,
     cook_time : 20,
     assets_loc : "./static/assets/"
