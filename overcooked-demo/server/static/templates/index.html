@@ -32,20 +32,19 @@
 	<div class="form-group col-lg-3">
 	  <label for="playerZero" style="color:#1E6A9E">Player 1</label>
 	  <select class="form-control" id="playerZero" name="playerZero">
-	    <option value="ppo_bc">Human-aware PPO agent</option>
-	    <option value="ppo_sp">Self-play agent</option>
-	    <option value="pbt">Population Based Training agent</option>
-      <option value="human">Human Keyboard Input</option>
+        <option value="human">Human Keyboard Input</option>
+        {% for agent_name in agent_names %}
+            <option value={{agent_name}}>{{agent_name}}</option>
+        {% endfor %}
 	  </select>
     </div>
   <div class="form-group col-lg-3">
     <label for="playerOne" style="color:#44956B">Player 2</label>
     <select class="form-control" id="playerOne" name="playerOne">
-      <option value="human">Human Keyboard Input</option>
-      <option value="ppo_bc">Human-aware PPO agent</option>
-      <option value="ppo_sp">Self-play agent</option>
-      <option value="pbt">Population Based Training agent</option>
-      
+        <option value="human">Human Keyboard Input</option>
+        {% for agent_name in agent_names %}
+            <option value={{agent_name}}>{{agent_name}}</option>
+        {% endfor %}
     </select>
   </div>
 	<div class="form-group col-lg-2">

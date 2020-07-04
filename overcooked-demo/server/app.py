@@ -2,7 +2,8 @@ import os, pickle, queue, atexit
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import DummyOvercookedGame as Game
+from game import OvercookedGame as Game
+from game import AGENT_DIR
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
@@ -250,6 +251,10 @@ def _ensure_consistent_state():
     assert all([not get_game(g_id)._id_active for g_id in waiting_games]), "Waiting ID in active state"
 
 
+def get_agent_names():
+    return [d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d))]
+
+
 ######################
 # Application routes #
 ######################
@@ -259,7 +264,8 @@ def _ensure_consistent_state():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    agent_names = get_agent_names()
+    return render_template('index.html', agent_names=agent_names)
 
 @app.route('/instructions')
 def instructions():

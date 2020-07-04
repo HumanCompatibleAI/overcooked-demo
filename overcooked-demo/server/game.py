@@ -5,7 +5,10 @@ from time import time
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
-import random
+import random, os, pickle
+
+# Relative path to where all static pre-trained agents are stored on server
+AGENT_DIR = os.path.join(os.curdir, 'static', 'assets', 'agents')
 
 class Game(ABC):
 
@@ -408,8 +411,9 @@ class OvercookedGame(Game):
         return obj_dict
 
     def get_policy(self, npc_id):
-        # TODO
-        return None
+        fpath = os.path.join(AGENT_DIR, npc_id, 'agent.pickle')
+        with open(fpath, 'rb') as f:
+            return pickle.load(f)
 
 
 
