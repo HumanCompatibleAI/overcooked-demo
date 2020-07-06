@@ -6,6 +6,7 @@ services:
             context: ./server
             args:
                 BUILD_ENV: production
+                OVERCOOKED_BRANCH: overcooked_ai_improvements
         environment: 
             FLASK_ENV: production
         ports:
