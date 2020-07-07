@@ -1,8 +1,15 @@
 if [[ $1 = prod* ]];
 then
     echo "production"
-    docker-compose -f docker-compose.production.yml up --build --force-recreate -d
+    export BUILD_ENV=production
+
+    # Completely re-build all images from scatch without using build cache
+    docker-compose build --no-cache
+    docker-compose up --force-recreate -d
 else
     echo "development"
-    docker-compose -f docker-compose.development.yml up --build
+    export BUILD_ENV=development
+
+    # Force re-build of all images but allow use of build cache if possible
+    docker-compose up --build
 fi

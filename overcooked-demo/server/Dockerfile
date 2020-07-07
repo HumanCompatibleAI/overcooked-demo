@@ -2,6 +2,7 @@ FROM python:3.7-stretch
 
 ARG BUILD_ENV
 ARG OVERCOOKED_BRANCH
+ARG GRAPHICS
 
 WORKDIR /app
 COPY ./requirements.txt ./requirements.txt
@@ -11,6 +12,7 @@ RUN git clone https://github.com/HumanCompatibleAI/overcooked_ai.git --branch $O
 RUN pip install -e /overcooked_ai
 COPY ./static ./static
 COPY ./*.py ./
+COPY ./graphics/$GRAPHICS ./static/js/graphics.js
 ENV HOST 0.0.0.0
 ENV PORT 5000
 EXPOSE 5000

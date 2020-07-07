@@ -2,7 +2,7 @@
 package-lock.json
 node_modules/
 **/.DS_Store
-**/.vscode
+**/.vscode/
 **/old/
 **/master_agents/
 **/__pycache__/

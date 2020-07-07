@@ -308,7 +308,7 @@ class OvercookedScene extends Phaser.Scene {
         }
 
         //draw order list
-        if (state.order_list !== null) {
+        if (typeof(state.order_list) !== 'undefined' && state.order_list !== null) {
             let order_list = "Orders: "+state.order_list.join(", ");
             if (typeof(sprites['order_list']) !== 'undefined') {
                 sprites['order_list'].setText(order_list);
