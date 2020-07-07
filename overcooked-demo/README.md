@@ -52,3 +52,6 @@ GRAPHICS=dummy_graphics.js ./up.sh
 The default graphics file is currently `overcooked_graphics_v1.js`
 
 
+## Configuration
+
+Basic game settings can be configured by changing the values in [config.json](server/config.json)

@@ -50,11 +50,9 @@
 	<div class="form-group col-lg-2">
 	  <label for="layout">Layout</label>
 	  <select class="form-control" id="layout" name="layout">
-	    <option value="cramped_room">Cramped Room</option>
-	    <option value="asymmetric_advantages">Asymmetric Advantages</option>
-	    <option value="coordination_ring">Coordination Ring</option>
-	    <option value="forced_coordination">Forced Coordination</option>
-	    <option value="counter_circuit">Counter Circuit</option>
+        {% for layout in layouts %}
+            <option value={{layout}}>{{layout}}</option>
+        {% endfor %}
 	  </select>
 	</div>
   <div class="form-group col-lg-2">

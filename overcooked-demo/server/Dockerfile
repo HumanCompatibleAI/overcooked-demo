@@ -13,7 +13,9 @@ RUN pip install -e /overcooked_ai
 COPY ./static ./static
 COPY ./*.py ./
 COPY ./graphics/$GRAPHICS ./static/js/graphics.js
+COPY ./config.json ./config.json
 ENV HOST 0.0.0.0
 ENV PORT 5000
+ENV CONF_PATH config.json
 EXPOSE 5000
 CMD ["python", "-u", "app.py"]

@@ -40,6 +40,7 @@ window.intervalID = -1;
 socket.on('waiting', function(data) {
     // Show game lobby
     $('#game-over').hide();
+    $("#overcooked").empty();
     $('#lobby').show();
     $('#join').hide();
     $('#create').hide();
@@ -54,6 +55,7 @@ socket.on('waiting', function(data) {
 socket.on('creation_failed', function(data) {
     // Tell user what went wrong
     let err = data['error']
+    $("#overcooked").empty();
     $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
 });
 

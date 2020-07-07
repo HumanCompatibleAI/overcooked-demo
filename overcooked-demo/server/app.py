@@ -1,4 +1,4 @@
-import os, pickle, queue, atexit
+import os, pickle, queue, atexit, json
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
@@ -15,11 +15,19 @@ from game import AGENT_DIR
 # Globals #
 ###########
 
+# Read in global config
+CONF_PATH = os.getenv('CONF_PATH', 'config.json')
+with open(CONF_PATH, 'r') as f:
+    CONFIG = json.load(f)
+
+# Available layout names
+LAYOUTS = CONFIG['layouts']
+
 # Maximum number of games that can run concurrently. Contrained by available memory and CPU
-MAX_GAMES = 10
+MAX_GAMES = CONFIG['MAX_GAMES']
 
 # Frames per second cap for serving to client
-MAX_FPS = 30
+MAX_FPS = CONFIG['MAX_FPS']
 
 # Global queue of available IDs. This is how we synch game creation and keep track of how many games are in memory
 FREE_IDS = queue.Queue(maxsize=MAX_GAMES)
@@ -265,7 +273,7 @@ def get_agent_names():
 @app.route('/')
 def index():
     agent_names = get_agent_names()
-    return render_template('index.html', agent_names=agent_names)
+    return render_template('index.html', agent_names=agent_names, layouts=LAYOUTS)
 
 @app.route('/instructions')
 def instructions():

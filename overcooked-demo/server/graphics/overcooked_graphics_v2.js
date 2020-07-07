@@ -235,7 +235,6 @@ class OvercookedScene extends Phaser.Scene {
             if ((obj.name === 'soup') && (terrain_type === 'P')) {
                 let ingredients = obj._ingredients.map(x => x['name']);
                 let n_ingredients = ingredients.length;
-                console.log(`${JSON.stringify(obj)}`);
                 
                 if (ingredients.includes('onion')) {
                     souptype = 'onion';
