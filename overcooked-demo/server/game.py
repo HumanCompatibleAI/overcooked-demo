@@ -401,7 +401,7 @@ class OvercookedGame(Game):
         state_dict = {}
         state_dict['state'] = self.state.to_dict()
         state_dict['score'] = self.score
-        state_dict['time'] = time() - self.start_time
+        state_dict['time_left'] = max(self.max_time - (time() - self.start_time), 0)
         return state_dict
 
     def to_json(self):

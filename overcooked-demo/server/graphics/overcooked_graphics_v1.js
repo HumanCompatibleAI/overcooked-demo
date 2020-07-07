@@ -72,7 +72,7 @@ class OvercookedScene extends Phaser.Scene {
         super({key: "PlayGame"});
         this.state = config.start_state.state;
         this.score = config.start_state.score;
-        this.time = config.start_state.time;
+        this.time = config.start_state.time_left;
         this.player_colors = config.player_colors;
         this.terrain = config.terrain;
         this.tileSize = config.tileSize;
@@ -85,7 +85,7 @@ class OvercookedScene extends Phaser.Scene {
     set_state(state) {
         this.state = state.state;
         this.score = state.score;
-        this.time = Math.floor(state.time);
+        this.time = Math.ceil(state.time_left);
     }
 
     preload() {
