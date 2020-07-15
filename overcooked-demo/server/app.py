@@ -28,6 +28,9 @@ MAX_GAMES = CONFIG['MAX_GAMES']
 # Frames per second cap for serving to client
 MAX_FPS = CONFIG['MAX_FPS']
 
+# Default configuration for psiturk experiment
+PSITURK_CONFIG = json.dumps(CONFIG['psiturk'])
+
 # Global queue of available IDs. This is how we synch game creation and keep track of how many games are in memory
 FREE_IDS = queue.Queue(maxsize=MAX_GAMES)
 
@@ -277,7 +280,8 @@ def index():
 @app.route('/psiturk')
 def psiturk():
     uid = request.args.get("UID")
-    return render_template('psiturk.html', uid=uid)
+    psiturk_config = request.args.get('config', PSITURK_CONFIG)
+    return render_template('psiturk.html', uid=uid, config=psiturk_config)
 
 @app.route('/instructions')
 def instructions():

@@ -2,6 +2,7 @@
 var socket = io();
 
 // TODO: figure out how to move these params server side
+var config;
 var experimentParams = {
     layouts : ["cramped_room", "counter_circuit"],
     gameTime : 10,
@@ -36,7 +37,7 @@ socket.on('waiting', function(data) {
         // Timeout to leave lobby if no-one is found
         window.lobbyTimeout = setTimeout(function() {
             socket.emit('leave', {});
-        }, lobbyWaitTime)
+        }, config.lobbyWaitTime)
     }
 });
 
@@ -177,12 +178,18 @@ function disable_key_listener() {
  * * * * * * * * * * * */
 
 socket.on("connect", function() {
+    // set configuration variables
+    set_config();
+
+    // Config for this specific game
     let uid = $('#uid').text();
-    let params = JSON.parse(JSON.stringify(experimentParams));
+    let params = JSON.parse(JSON.stringify(config.experimentParams));
     params.psiturk_uid = uid;
     let data = {
         "params" : params
     };
+
+    // create (or join if it exists) new game
     socket.emit("join", data);
 });
 
@@ -201,3 +208,7 @@ var arrToJSON = function(arr) {
     }
     return retval;
 };
+
+var set_config = function() {
+    config = JSON.parse($("#config").text());
+}
