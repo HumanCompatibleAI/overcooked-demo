@@ -289,7 +289,6 @@ def instructions():
 
 @app.route('/debug')
 def debug():
-    # TODO: Figure out if it is worth it to make this entire endpoint atomic
     resp = {}
     games = []
     active_games = []

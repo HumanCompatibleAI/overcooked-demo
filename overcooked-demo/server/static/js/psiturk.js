@@ -1,7 +1,6 @@
 // Persistent network connection that will be used to transmit real-time data
 var socket = io();
 
-// TODO: figure out how to move these params server side
 var config;
 var experimentParams = {
     layouts : ["cramped_room", "counter_circuit"],
