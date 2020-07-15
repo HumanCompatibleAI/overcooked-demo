@@ -8,7 +8,6 @@ from game import AGENT_DIR
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
 # Could use a monitor on a conditional to block all global ops during calls to _ensure_consistent_state for debugging
-# Could eliminate keyboard polling on client side and instead use key event directly. Would require imputing "STAY" actions server side
 # Could cap number of sinlge- and multi-player games separately since the latter has much higher RAM and CPU usage
 
 ###########
@@ -165,7 +164,7 @@ def  _leave_game(user_id):
 
     if not game:
         # Cannot leave a game if not currently in one
-        return
+        return False
     
     # Acquire this game's lock to ensure all global state updates are atomic
     with game.lock:
@@ -275,6 +274,10 @@ def index():
     agent_names = get_agent_names()
     return render_template('index.html', agent_names=agent_names, layouts=LAYOUTS)
 
+@app.route('/psiturk')
+def psiturk():
+    return render_template('psiturk.html')
+
 @app.route('/instructions')
 def instructions():
     return render_template('instructions.html')
@@ -357,8 +360,9 @@ def on_join(data):
     game = get_waiting_game()
 
     if not game:
-        # No available game was found so create a default game
-        _create_game(user_id)
+        # No available game was found so create a game
+        params = data.get('params', {})
+        _create_game(user_id, params)
         return
     
     with game.lock:
@@ -383,7 +387,7 @@ def on_leave(data):
     was_active = _leave_game(user_id)
 
     if was_active:
-        emit('end_game')
+        emit('end_game', { "status" : Game.Status.DONE})
     else:
         emit('end_lobby')
 
@@ -417,7 +421,7 @@ def on_disconnect():
 def on_exit():
     # Force-terminate all games on server termination
     for game_id in GAMES:
-        socketio.emit('end_game', room=game_id)
+        socketio.emit('end_game', { "status" : Game.Status.INACTIVE }, room=game_id)
 
 
 
@@ -435,14 +439,20 @@ def play_game(game, fps=30):
                             room id for all clients connected to this game
     fps (int):              Number of game ticks that should happen every second
     """
-    done = False
-    while not done:
+    status = Game.Status.ACTIVE
+    while status != Game.Status.DONE and status != Game.Status.INACTIVE:
         with game.lock:
-            done = game.tick()
-        socketio.emit('state_pong', { "state" : game.get_state() }, room=game.id)
+            status = game.tick()
+        if status == Game.Status.RESET:
+            socketio.emit('reset_game', { "state" : game.to_json(), "timeout" : game.reset_timeout }, room=game.id)
+            socketio.sleep(game.reset_timeout/1000)
+        else:
+            socketio.emit('state_pong', { "state" : game.get_state() }, room=game.id)
         socketio.sleep(1/fps)
-    socketio.emit('end_game', room=game.id)
+    
+    socketio.emit('end_game', { "status" : status }, room=game.id)
     with game.lock:
+        game.deactivate()
         ACTIVE_GAMES.remove(game.id)
         cleanup_game(game)
 

@@ -85,7 +85,7 @@ class OvercookedScene extends Phaser.Scene {
     set_state(state) {
         this.state = state.state;
         this.score = state.score;
-        this.time = Math.ceil(state.time_left);
+        this.time = Math.round(state.time_left);
     }
 
     preload() {

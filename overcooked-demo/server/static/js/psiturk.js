@@ -1,54 +1,42 @@
 // Persistent network connection that will be used to transmit real-time data
 var socket = io();
 
-/* * * * * * * * * * * * * * * * 
- * Button click event handlers *
- * * * * * * * * * * * * * * * */
+// TODO: figure out how to move these params server side
+var experimentParams = {
+    layouts : ["cramped_room", "counter_circuit"],
+    gameTime : 10,
+    playerZero : "DummyAI"
+};
 
-$(function() {
-    $('#create').click(function () {
-        params = arrToJSON($('form').serializeArray());
-        data = {
-            "params" : params
-        };
-        socket.emit("create", data);
-    });
-});
-
-$(function() {
-    $('#join').click(function() {
-        socket.emit("join", {});
-    });
-});
-
-$(function() {
-    $('#leave').click(function() {
-        socket.emit('leave', {});
-    });
-});
-
-
-
-
+var lobbyWaitTime = 300000;
 
 /* * * * * * * * * * * * * 
  * Socket event handlers *
  * * * * * * * * * * * * */
 
 window.intervalID = -1;
+window.ellipses = -1;
+window.lobbyTimeout = -1;
 
 socket.on('waiting', function(data) {
     // Show game lobby
     $('#game-over').hide();
     $("#overcooked").empty();
     $('#lobby').show();
-    $('#join').hide();
-    $('#create').hide();
-    $('#leave').show();
     if (window.intervalID === -1) {
+        // Occassionally ping server to try and join
         window.intervalID = setInterval(function() {
             socket.emit('join', {});
         }, 1000);
+        // Waiting animation
+        window.ellipses = setInterval(function () {
+            var e = $("#ellipses").text();
+            $("#ellipses").text(".".repeat((e.length + 1) % 10));
+        }, 500);
+        // Timeout to leave lobby if no-one is found
+        window.lobbyTimeout = setTimeout(function() {
+            socket.emit('leave', {});
+        }, lobbyWaitTime)
     }
 });
 
@@ -57,12 +45,19 @@ socket.on('creation_failed', function(data) {
     let err = data['error']
     $("#overcooked").empty();
     $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
+    $("error-exit").show();
+
+    // Let parent window (psiturk) know error occurred
+    console.log("sending message");
+    window.top.postMessage({ name : "error"}, "*");
 });
 
 socket.on('start_game', function(data) {
     // Hide game-over and lobby, show game title header
     if (window.intervalID !== -1) {
         clearInterval(window.intervalID);
+        clearInterval(window.ellipses);
+        clearTimeout(window.lobbyTimeout);
         window.intervalID = -1;
     }
     graphics_config = {
@@ -72,12 +67,30 @@ socket.on('start_game', function(data) {
     $("#overcooked").empty();
     $('#game-over').hide();
     $('#lobby').hide();
-    $('#join').hide();
-    $('#create').hide();
-    $('#leave').show();
+    $('#reset-game').hide();
     $('#game-title').show();
     enable_key_listener();
     graphics_start(graphics_config);
+});
+
+socket.on('reset_game', function(data) {
+    graphics_end();
+    disable_key_listener();
+    $("#overcooked").empty();
+    $("#reset-game").show();
+    setTimeout(function() {
+        $("#reset-game").hide();
+        graphics_config = {
+            container_id : "overcooked",
+            start_info : data.state
+        };
+        graphics_start(graphics_config);
+        enable_key_listener();
+
+        // Propogate game stats to parent window (psiturk)
+        console.log("sending message");
+        window.top.postMessage({ name : "data", data : [{"field_1" : "val_11", "field_2" : "val_21"}, {"field_1" : "val_12", "field_2" : "val_22"}], done : false}, "*");
+    }, data.timeout);
 });
 
 socket.on('state_pong', function(data) {
@@ -85,27 +98,40 @@ socket.on('state_pong', function(data) {
     drawState(data['state']);
 });
 
-socket.on('end_game', function() {
+socket.on('end_game', function(data) {
     // Hide game data and display game-over html
     graphics_end();
     disable_key_listener();
     $('#game-title').hide();
     $('#game-over').show();
-    $("#join").show();
-    $("#create").show();
-    $("#leave").hide();
+    $("#overcooked").empty();
+
+    // Game ended unexpectedly
+    if (data.status === 'inactive') {
+        $("#error").show();
+        $("#error-exit").show();
+    }
+
+    // Propogate game stats to parent window with psiturk code
+    console.log("sending final message");
+    window.top.postMessage({ name : "data", data : [{"field_1" : "val_final", "field_2" : "val_2_final"}], done : true }, "*");
 });
 
 socket.on('end_lobby', function() {
-    // Hide lobby
-    $('#lobby').hide();
-    $("#join").show();
-    $("#create").show();
-    $("#leave").hide();
+    // Display join game timeout text
+    $("#finding_partner").text(
+        "We were unable to find you a partner."
+    );
+    $("#error-exit").show();
 
     // Stop trying to join
     clearInterval(window.intervalID);
+    clearInterval(window.ellipses);
     window.intervalID = -1;
+
+    // Let parent window (psiturk) know what happened
+    console.log("sending message");
+    window.top.postMessage({ name : "timeout" }, "*");
 })
 
 
@@ -148,6 +174,18 @@ function enable_key_listener() {
 function disable_key_listener() {
     $(document).off('keydown');
 };
+
+
+/* * * * * * * * * * * * 
+ * Game Initialization *
+ * * * * * * * * * * * */
+
+socket.on("connect", function() {
+    let data = {
+        "params" : experimentParams
+    };
+    socket.emit("join", data);
+});
 
 
 /* * * * * * * * * * *
