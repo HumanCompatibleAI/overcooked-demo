@@ -459,12 +459,10 @@ class OvercookedGame(Game):
         super(OvercookedGame, self).enqueue_action(player_id, overcooked_action)
 
     def reset(self):
-        print("curr layout before reset", self.curr_layout, flush=True)
         status = super(OvercookedGame, self).reset()
         if status == self.Status.RESET:
             # Hacky way of making sure game timer doesn't "start" until after reset timeout has passed
             self.start_time += self.reset_timeout / 1000
-        print("curr layout after reset", self.curr_layout, flush=True)
 
 
     def tick(self):

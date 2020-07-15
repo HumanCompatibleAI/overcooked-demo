@@ -48,7 +48,6 @@ socket.on('creation_failed', function(data) {
     $("error-exit").show();
 
     // Let parent window (psiturk) know error occurred
-    console.log("sending message");
     window.top.postMessage({ name : "error"}, "*");
 });
 
@@ -88,7 +87,6 @@ socket.on('reset_game', function(data) {
         enable_key_listener();
 
         // Propogate game stats to parent window (psiturk)
-        console.log("sending message");
         window.top.postMessage({ name : "data", data : data.data, done : false}, "*");
     }, data.timeout);
 });
@@ -113,7 +111,6 @@ socket.on('end_game', function(data) {
     }
 
     // Propogate game stats to parent window with psiturk code
-    console.log("sending final message");
     window.top.postMessage({ name : "data", data : data.data, done : true }, "*");
 });
 
@@ -130,7 +127,6 @@ socket.on('end_lobby', function() {
     window.intervalID = -1;
 
     // Let parent window (psiturk) know what happened
-    console.log("sending message");
     window.top.postMessage({ name : "timeout" }, "*");
 })
 
