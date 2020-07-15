@@ -447,12 +447,9 @@ class OvercookedGame(Game):
             "score" : self.score,
             "time_elapsed" : time() - self.start_time,
             "cur_gameloop" : self.curr_tick,
-            "client_id" : None,
-            "is_leader" : True,
-            "partner_id" : None,
-            "datetime" : None,
             "layout" : self.mdp.terrain_mtx,
-            "layout_name" : self.curr_layout
+            "layout_name" : self.curr_layout,
+            "trial_id" : self.trial_id
         }
         self.trajectory.append(transition)
         
@@ -462,10 +459,12 @@ class OvercookedGame(Game):
         super(OvercookedGame, self).enqueue_action(player_id, overcooked_action)
 
     def reset(self):
+        print("curr layout before reset", self.curr_layout, flush=True)
         status = super(OvercookedGame, self).reset()
         if status == self.Status.RESET:
             # Hacky way of making sure game timer doesn't "start" until after reset timeout has passed
             self.start_time += self.reset_timeout / 1000
+        print("curr layout after reset", self.curr_layout, flush=True)
 
 
     def tick(self):
@@ -480,6 +479,7 @@ class OvercookedGame(Game):
         self.start_time = time()
         self.score = 0
         self.threads = []
+        self.trial_id = self.psiturk_uid + str(self.start_time)
         for npc_policy in self.npc_policies:
             self.npc_state_queues[npc_policy].put(self.state)
             t = Thread(target=self.npc_policy_consumer, args=(npc_policy,))
@@ -522,7 +522,7 @@ class OvercookedGame(Game):
         """
         Returns and then clears the accumulated trajectory
         """
-        data = { "uid" : self.psiturk_uid  + "_" + self.curr_layout, "trajectory" : self.trajectory }
+        data = { "uid" : self.psiturk_uid  + "_" + str(time()), "trajectory" : self.trajectory }
         self.trajectory = []
         return data
 
