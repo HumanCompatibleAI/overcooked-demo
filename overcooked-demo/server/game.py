@@ -522,7 +522,7 @@ class OvercookedGame(Game):
         """
         Returns and then clears the accumulated trajectory
         """
-        data = { "uid" : self.psiturk_uid, "trajectory" : self.trajectory }
+        data = { "uid" : self.psiturk_uid  + "_" + self.curr_layout, "trajectory" : self.trajectory }
         self.trajectory = []
         return data
 
