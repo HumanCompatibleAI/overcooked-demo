@@ -276,7 +276,8 @@ def index():
 
 @app.route('/psiturk')
 def psiturk():
-    return render_template('psiturk.html')
+    uid = request.args.get("UID")
+    return render_template('psiturk.html', uid=uid)
 
 @app.route('/instructions')
 def instructions():
@@ -387,7 +388,7 @@ def on_leave(data):
     was_active = _leave_game(user_id)
 
     if was_active:
-        emit('end_game', { "status" : Game.Status.DONE})
+        emit('end_game', { "status" : Game.Status.DONE, "data" : {}})
     else:
         emit('end_lobby')
 
@@ -421,7 +422,7 @@ def on_disconnect():
 def on_exit():
     # Force-terminate all games on server termination
     for game_id in GAMES:
-        socketio.emit('end_game', { "status" : Game.Status.INACTIVE }, room=game_id)
+        socketio.emit('end_game', { "status" : Game.Status.INACTIVE, "data" : get_game(game_id).get_data() }, room=game_id)
 
 
 
@@ -444,14 +445,17 @@ def play_game(game, fps=30):
         with game.lock:
             status = game.tick()
         if status == Game.Status.RESET:
-            socketio.emit('reset_game', { "state" : game.to_json(), "timeout" : game.reset_timeout }, room=game.id)
+            with game.lock:
+                data = game.get_data()
+            socketio.emit('reset_game', { "state" : game.to_json(), "timeout" : game.reset_timeout, "data" : data}, room=game.id)
             socketio.sleep(game.reset_timeout/1000)
         else:
             socketio.emit('state_pong', { "state" : game.get_state() }, room=game.id)
         socketio.sleep(1/fps)
     
-    socketio.emit('end_game', { "status" : status }, room=game.id)
     with game.lock:
+        data = game.get_data()
+        socketio.emit('end_game', { "status" : status, "data" : data }, room=game.id)
         game.deactivate()
         ACTIVE_GAMES.remove(game.id)
         cleanup_game(game)

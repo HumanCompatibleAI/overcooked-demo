@@ -89,7 +89,7 @@ socket.on('reset_game', function(data) {
 
         // Propogate game stats to parent window (psiturk)
         console.log("sending message");
-        window.top.postMessage({ name : "data", data : [{"field_1" : "val_11", "field_2" : "val_21"}, {"field_1" : "val_12", "field_2" : "val_22"}], done : false}, "*");
+        window.top.postMessage({ name : "data", data : data.data, done : false}, "*");
     }, data.timeout);
 });
 
@@ -114,7 +114,7 @@ socket.on('end_game', function(data) {
 
     // Propogate game stats to parent window with psiturk code
     console.log("sending final message");
-    window.top.postMessage({ name : "data", data : [{"field_1" : "val_final", "field_2" : "val_2_final"}], done : true }, "*");
+    window.top.postMessage({ name : "data", data : data.data, done : true }, "*");
 });
 
 socket.on('end_lobby', function() {
@@ -181,8 +181,11 @@ function disable_key_listener() {
  * * * * * * * * * * * */
 
 socket.on("connect", function() {
+    let uid = $('#uid').text();
+    let params = JSON.parse(JSON.stringify(experimentParams));
+    params.psiturk_uid = uid;
     let data = {
-        "params" : experimentParams
+        "params" : params
     };
     socket.emit("join", data);
 });

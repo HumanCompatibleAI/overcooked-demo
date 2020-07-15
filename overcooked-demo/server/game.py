@@ -246,6 +246,12 @@ class Game(ABC):
     @property
     def num_players(self):
         return len([player for player in self.players if player != self.EMPTY])
+
+    def get_data(self):
+        """
+        Returns any accumulated data about the game. Used for psiturk data collection
+        """
+        return {}
         
 
 
@@ -331,6 +337,7 @@ class OvercookedGame(Game):
             per forward pass can be higher
         - action_to_overcooked_action (dict): Maps action names returned by client to action names used by OvercookedGridworld
             Note that this is an instance variable and not a static variable for efficiency reasons
+        - trajectory (list(dict)): list of state-action pairs in current trajectory
     
     Methods:
         - npc_policy_consumer: Background process that asynchronously computes NPC policy forward passes. One thread
@@ -338,8 +345,9 @@ class OvercookedGame(Game):
         - _curr_game_over: Determines whether the game on the current mdp has ended
     """
 
-    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', **kwargs):
+    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', psiturk_uid=-1, **kwargs):
         super(OvercookedGame, self).__init__()
+        self.psiturk_uid = psiturk_uid
         self.mdp_params = mdp_params
         self.layouts = layouts
         self.max_players = int(num_players)
@@ -358,6 +366,7 @@ class OvercookedGame(Game):
         }
         self.ticks_per_ai_action = 4
         self.curr_tick = 0
+        self.trajectory = []
 
         if playerZero != 'human':
             player_zero_id = playerZero + '_0'
@@ -417,7 +426,8 @@ class OvercookedGame(Game):
                 pass
         
         # Apply overcooked game logic to get state transition
-        self.state, info = self.mdp.get_state_transition(self.state, joint_action)
+        prev_state = self.state
+        self.state, info = self.mdp.get_state_transition(prev_state, joint_action)
 
         # Send next state to all background consumers if needed
         if self.curr_tick % self.ticks_per_ai_action == 0:
@@ -425,7 +435,27 @@ class OvercookedGame(Game):
                 self.npc_state_queues[npc_id].put(self.state, block=False)
 
         # Update score based on soup deliveries that might have occured
-        self.score += sum(info['sparse_reward_by_agent'])
+        curr_reward = sum(info['sparse_reward_by_agent'])
+        self.score += curr_reward
+
+        # Log transition in our current trajectory
+        transition = {
+            "state" : prev_state.to_dict(),
+            "joint_action" : joint_action,
+            "reward" : curr_reward,
+            "time_left" : max(self.max_time - (time() - self.start_time), 0),
+            "score" : self.score,
+            "time_elapsed" : time() - self.start_time,
+            "cur_gameloop" : self.curr_tick,
+            "client_id" : None,
+            "is_leader" : True,
+            "partner_id" : None,
+            "datetime" : None,
+            "layout" : self.mdp.terrain_mtx,
+            "layout_name" : self.curr_layout
+        }
+        self.trajectory.append(transition)
+        
 
     def enqueue_action(self, player_id, action):
         overcooked_action = self.action_to_overcooked_action[action]
@@ -444,7 +474,8 @@ class OvercookedGame(Game):
 
     def activate(self):
         super(OvercookedGame, self).activate()
-        self.mdp = OvercookedGridworld.from_layout_name(self.layouts.pop(), **self.mdp_params)
+        self.curr_layout = self.layouts.pop()
+        self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
         self.state = self.mdp.get_standard_start_state()
         self.start_time = time()
         self.score = 0
@@ -486,6 +517,15 @@ class OvercookedGame(Game):
         fpath = os.path.join(AGENT_DIR, npc_id, 'agent.pickle')
         with open(fpath, 'rb') as f:
             return pickle.load(f)
+
+    def get_data(self):
+        """
+        Returns and then clears the accumulated trajectory
+        """
+        data = { "uid" : self.psiturk_uid, "trajectory" : self.trajectory }
+        self.trajectory = []
+        return data
+
 
 
 
