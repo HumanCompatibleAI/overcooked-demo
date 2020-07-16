@@ -1,0 +1,5 @@
+{
+    "layouts" : ["cramped_room", "cramped_room_tomato", "asymmetric_advantages", "coordination_ring", "forced_coordination", "counter_circuit"],
+    "MAX_GAMES" : 10,
+    "MAX_FPS" : 30
+}
