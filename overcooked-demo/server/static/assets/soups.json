@@ -10,7 +10,7 @@
 			"scale": 1,
 			"frames": [
 				{
-					"filename": "soup_done_onion_1.png",
+					"filename": "soup_done_tomato_0_onion_1.png",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
@@ -31,7 +31,7 @@
 					}
 				},
 				{
-					"filename": "soup_done_onion_2.png",
+					"filename": "soup_done_tomato_0_onion_2.png",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
@@ -52,7 +52,7 @@
 					}
 				},
 				{
-					"filename": "soup_done_onion_3.png",
+					"filename": "soup_done_tomato_0_onion_3.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -73,7 +73,7 @@
 					}
 				},
 				{
-					"filename": "soup_done_tomato_1.png",
+					"filename": "soup_done_tomato_1_onion_0.png",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
@@ -136,7 +136,7 @@
 					}
 				},
 				{
-					"filename": "soup_done_tomato_2.png",
+					"filename": "soup_done_tomato_2_onion_0.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -178,7 +178,7 @@
 					}
 				},
 				{
-					"filename": "soup_done_tomato_3.png",
+					"filename": "soup_done_tomato_3_onion_0.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -199,7 +199,7 @@
 					}
 				},
 				{
-					"filename": "soup_cooked_onion_1.png",
+					"filename": "soup_cooked_tomato_0_onion_1.png",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
@@ -220,7 +220,7 @@
 					}
 				},
 				{
-					"filename": "soup_cooked_onion_2.png",
+					"filename": "soup_cooked_tomato_0_onion_2.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -241,7 +241,7 @@
 					}
 				},
 				{
-					"filename": "soup_cooked_onion_3.png",
+					"filename": "soup_cooked_tomato_0_onion_3.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -262,7 +262,7 @@
 					}
 				},
 				{
-					"filename": "soup_cooked_tomato_1.png",
+					"filename": "soup_cooked_tomato_1_onion_0.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -325,7 +325,7 @@
 					}
 				},
 				{
-					"filename": "soup_cooked_tomato_2.png",
+					"filename": "soup_cooked_tomato_2_onion_0.png",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
@@ -367,7 +367,7 @@
 					}
 				},
 				{
-					"filename": "soup_cooked_tomato_3.png",
+					"filename": "soup_cooked_tomato_3_onion_0.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -388,7 +388,7 @@
 					}
 				},
 				{
-					"filename": "soup_onion_1.png",
+					"filename": "soup_idle_tomato_0_onion_1.png",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
@@ -409,7 +409,7 @@
 					}
 				},
 				{
-					"filename": "soup_onion_2.png",
+					"filename": "soup_idle_tomato_0_onion_2.png",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
@@ -430,7 +430,7 @@
 					}
 				},
 				{
-					"filename": "soup_tomato_1.png",
+					"filename": "soup_idle_tomato_1_onion_0.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -451,7 +451,7 @@
 					}
 				},
 				{
-					"filename": "soup_tomato_1_onion_1.png",
+					"filename": "soup_idle_tomato_1_onion_1.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -472,7 +472,7 @@
 					}
 				},
 				{
-					"filename": "soup_tomato_2.png",
+					"filename": "soup_idle_tomato_2_onion_0.png",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
@@ -493,7 +493,7 @@
 					}
 				},
 				{
-					"filename": "soup_onion_3.png",
+					"filename": "soup_idle_tomato_0_onion_3.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -514,7 +514,7 @@
 					}
 				},
 				{
-					"filename": "soup_tomato_1_onion_2.png",
+					"filename": "soup_idle_tomato_1_onion_2.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -535,7 +535,7 @@
 					}
 				},
 				{
-					"filename": "soup_tomato_2_onion_1.png",
+					"filename": "soup_idle_tomato_2_onion_1.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -556,7 +556,7 @@
 					}
 				},
 				{
-					"filename": "soup_tomato_3.png",
+					"filename": "soup_idle_tomato_3_onion_0.png",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
@@ -582,6 +582,6 @@
 	"meta": {
 		"app": "https://www.codeandweb.com/texturepacker",
 		"version": "3.0",
-		"smartupdate": "$TexturePacker:SmartUpdate:45ceb3d894264f2033e5544b1f1c497f:26aeb673c43ef905ab00decb53ee4a03:1e4a55a887ecf42c67c9f02537ecf1ec$"
+		"smartupdate": "$TexturePacker:SmartUpdate:862a27fd3868e32154201241891881df:26aeb673c43ef905ab00decb53ee4a03:1e4a55a887ecf42c67c9f02537ecf1ec$"
 	}
 }
