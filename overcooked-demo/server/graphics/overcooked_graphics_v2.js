@@ -1,3 +1,10 @@
+/*
+
+Updated to be compatible with Overcooked_ai mdp V2
+
+*/
+
+
 // How long a graphics update should take in milliseconds
 // Note that the server updates at 30 fps
 var ANIMATION_DURATION = 50;

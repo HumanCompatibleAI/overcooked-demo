@@ -1,3 +1,12 @@
+/*
+
+Added Bonus order graphics and HUD
+Added enriched soup space graphics
+
+*/
+
+
+
 // How long a graphics update should take in milliseconds
 // Note that the server updates at 30 fps
 var ANIMATION_DURATION = 50;
@@ -15,7 +24,8 @@ var scene_config = {
     animation_duration : ANIMATION_DURATION,
     show_post_cook_time : false,
     cook_time : 20,
-    assets_loc : "./static/assets/"
+    assets_loc : "./static/assets/",
+    hud_size : 100
 };
 
 var game_config = {
@@ -57,7 +67,7 @@ class GraphicsManager {
         scene_config.start_state = start_info.state;
         game_config.scene = new OvercookedScene(scene_config);
         game_config.width = scene_config.tileSize*scene_config.terrain[0].length;
-        game_config.height = scene_config.tileSize*scene_config.terrain.length;
+        game_config.height = scene_config.tileSize*scene_config.terrain.length  + scene_config.hud_size;
         game_config.parent = graphics_config.container_id;
         this.game = new Phaser.Game(game_config);
     }
@@ -71,8 +81,6 @@ class OvercookedScene extends Phaser.Scene {
     constructor(config) {
         super({key: "PlayGame"});
         this.state = config.start_state.state;
-        this.score = config.start_state.score;
-        this.time = config.start_state.time_left;
         this.player_colors = config.player_colors;
         this.terrain = config.terrain;
         this.tileSize = config.tileSize;
@@ -80,12 +88,19 @@ class OvercookedScene extends Phaser.Scene {
         this.show_post_cook_time = config.show_post_cook_time;
         this.cook_time = config.cook_time;
         this.assets_loc = config.assets_loc;
+        this.hud_size = config.hud_size
+        this.hud_data = {
+            score : config.start_state.score,
+            time : config.start_state.time_left,
+            bonus_orders : config.start_state.state.bonus_orders
+        }
     }
 
     set_state(state) {
+        this.hud_data.score = state.score;
+        this.hud_data.time = Math.round(state.time_left);
+        this.hud_data.bonus_orders = state.state.bonus_orders;
         this.state = state.state;
-        this.score = state.score;
-        this.time = Math.round(state.time_left);
     }
 
     preload() {
@@ -113,14 +128,16 @@ class OvercookedScene extends Phaser.Scene {
         if (typeof(this.state) !== 'undefined') {
             this._drawState(this.state, this.sprites);
         }
-        if (typeof(this.score) !== 'undefined') {
-            this._drawScore(this.score, this.sprites);
-        }
-        if (typeof(this.time) !== 'undefined') {
-            this._drawTimeLeft(this.time, this.sprites);
+        if (typeof(this.hud_data) !== 'undefined') {
+            let { width, height } = this.game.canvas;
+            let board_height = height - this.hud_size;
+            this._drawHUD(this.hud_data, this.sprites, board_height);
         }
     }
     drawLevel() {
+        // Fill canvas with white
+        this.cameras.main.setBackgroundColor('#e6b453')
+
         //draw tiles
         let terrain_to_img = {
             ' ': 'floor.png',
@@ -237,8 +254,6 @@ class OvercookedScene extends Phaser.Scene {
             let soup_status;
             if ((obj.name === 'soup') && (terrain_type === 'P')) {
                 let ingredients = obj._ingredients.map(x => x['name']);
-                let n_onions = ingredients.filter(x => x === 'onion').length;
-                let n_tomatoes = ingredients.filter(x => x === 'tomato').length;
 
                 // select pot sprite
                 if (!obj.is_ready) {
@@ -247,7 +262,7 @@ class OvercookedScene extends Phaser.Scene {
                 else {
                     soup_status = "cooked";
                 }
-                spriteframe = `soup_${soup_status}_tomato_${n_tomatoes}_onion_${n_onions}.png`
+                spriteframe = this._ingredientsToSpriteFrame(ingredients, soup_status);
                 let objsprite = this.add.sprite(
                     this.tileSize*x,
                     this.tileSize*y,
@@ -283,10 +298,8 @@ class OvercookedScene extends Phaser.Scene {
             }
             else if (obj.name === 'soup') {
                 let ingredients = obj._ingredients.map(x => x['name']);
-                let n_onions = ingredients.filter(x => x === 'onion').length;
-                let n_tomatoes = ingredients.filter(x => x === 'tomato').length;
                 let soup_status = "done";
-                spriteframe = `soup_${soup_status}_tomato_${n_tomatoes}_onion_${n_onions}.png`
+                spriteframe = this._ingredientsToSpriteFrame(ingredients, soup_status);
                 let objsprite = this.add.sprite(
                     this.tileSize*x,
                     this.tileSize*y,
@@ -319,60 +332,100 @@ class OvercookedScene extends Phaser.Scene {
                 objsprite.setOrigin(0);
                 sprites['objects'][objpos] = {objsprite};
             }
-        }
+        }        
+    }
 
-        //draw order list
-        if (typeof(state.bonus_orders) !== 'undefined' && state.bonus_orders !== null) {
-            let bonus_orders = "Orders: "+state.bonus_orders.join(", ");
-            if (typeof(sprites['bonus_orders']) !== 'undefined') {
-                sprites['bonus_orders'].setText(bonus_orders);
-            }
-            else {
-                sprites['bonus_orders'] = this.add.text(
-                    5, 45, bonus_orders,
-                    {
-                        font: "20px Arial",
-                        fill: "yellow",
-                        align: "left"
-                    }
-                )
-            }
+    _drawHUD(hud_data, sprites, board_height) {
+        if (typeof(hud_data.bonus_orders) !== 'undefined') {
+            this._drawBonusOrders(hud_data.bonus_orders, sprites, board_height);
+        }
+        if (typeof(hud_data.time) !== 'undefined') {
+            this._drawTimeLeft(hud_data.time, sprites, board_height);
+        }
+        if (typeof(hud_data.score) !== 'undefined') {
+            this._drawScore(hud_data.score, sprites, board_height);
         }
         
     }
 
-    _drawScore(score, sprites) {
+    _drawBonusOrders(orders, sprites, board_height) {
+        if (typeof(orders) !== 'undefined' && orders !== null) {
+            let orders_str = "Bonus Orders: ";
+            if (typeof(sprites['bonus_orders']) !== 'undefined') {
+                // Clear existing orders
+                sprites['bonus_orders']['orders'].forEach(element => {
+                    element.destroy();
+                });
+                sprites['bonus_orders']['orders'] = [];
+
+                // Update with new orders
+                for (let i = 0; i < orders.length; i++) {
+                    let spriteFrame = this._ingredientsToSpriteFrame(orders[i]['ingredients'], "done");
+                    let orderSprite = this.add.sprite(
+                        130 + 70 * i,
+                        board_height - 4,
+                        "soups",
+                        spriteFrame
+                    );
+                    sprites['bonus_orders']['orders'].push(orderSprite);
+                    orderSprite.setDisplaySize(60, 60);
+                    orderSprite.setOrigin(0);
+                    orderSprite.depth = 1;
+                }
+            }
+            else {
+                sprites['bonus_orders'] = {};
+                sprites['bonus_orders']['str'] = this.add.text(
+                    5, board_height + 15, orders_str,
+                    {
+                        font: "20px Arial",
+                        fill: "red",
+                        align: "left"
+                    }
+                )
+                sprites['bonus_orders']['orders'] = []
+            }
+        }
+    }
+
+    _drawScore(score, sprites, board_height) {
         score = "Score: "+score;
         if (typeof(sprites['score']) !== 'undefined') {
             sprites['score'].setText(score);
         }
         else {
             sprites['score'] = this.add.text(
-                5, 25, score,
+                5, board_height + 40, score,
                 {
                     font: "20px Arial",
-                    fill: "yellow",
+                    fill: "red",
                     align: "left"
                 }
             )
         }
     }
 
-    _drawTimeLeft(time_left, sprites) {
+    _drawTimeLeft(time_left, sprites, board_height) {
         time_left = "Time Left: "+time_left;
         if (typeof(sprites['time_left']) !== 'undefined') {
             sprites['time_left'].setText(time_left);
         }
         else {
             sprites['time_left'] = this.add.text(
-                5, 5, time_left,
+                5, board_height + 65, time_left,
                 {
                     font: "20px Arial",
-                    fill: "yellow",
+                    fill: "red",
                     align: "left"
                 }
             )
         }
+    }
+
+    _ingredientsToSpriteFrame(ingredients, status) {
+        let num_tomatoes = ingredients.filter(x => x === 'tomato').length;
+        let num_onions = ingredients.filter(x => x === 'onion').length;
+        return `soup_${status}_tomato_${num_tomatoes}_onion_${num_onions}.png`
     }
 }
 

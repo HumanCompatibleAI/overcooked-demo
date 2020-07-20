@@ -32,7 +32,7 @@ The branch of `overcooked_ai` imported in both the development and production se
 ```bash
 OVERCOOKED_BRANCH=foo ./up.sh
 ```
-The default branch is currently `overcooked_ai_improvements`
+The default branch is currently `master`
 
 ## Using Pre-trained Agents
 
@@ -49,7 +49,7 @@ The graphics file is dynamically loaded into the docker container and served to 
 ```bash
 GRAPHICS=dummy_graphics.js ./up.sh
 ```
-The default graphics file is currently `overcooked_graphics_v1.js`
+The default graphics file is currently `overcooked_graphics_v2.js`
 
 
 ## Configuration
