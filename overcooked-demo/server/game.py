@@ -576,5 +576,10 @@ class DummyComputeAI(DummyAI):
         return super(DummyComputeAI, self).action(state)
 
     
-
+class StayAI():
+    """
+    Always returns "stay" action. Used for debugging
+    """
+    def action(self, state):
+        return 'STAY', None
     
