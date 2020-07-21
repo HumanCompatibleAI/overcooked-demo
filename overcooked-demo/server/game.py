@@ -240,8 +240,7 @@ class Game(ABC):
         for i, player in enumerate(self.players):
             if player != self.EMPTY:
                 queue = self.pending_actions[i]
-                with queue.mutex:
-                    queue.queue.clear()
+                queue.queue.clear()
 
     @property
     def num_players(self):
@@ -396,9 +395,6 @@ class OvercookedGame(Game):
         policy = self.npc_policies[policy_id]
         while self._is_active:
             state = queue.get()
-            # Clear queue to avoid memory leaks
-            with queue.mutex:
-                queue.queue.clear()
             npc_action, _ = policy.action(state)
             self.enqueue_action(policy_id, npc_action)
 
