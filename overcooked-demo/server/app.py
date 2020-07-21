@@ -1,4 +1,12 @@
-import os, pickle, queue, atexit, json
+import os
+
+# Import and patch the production eventlet server if necessary
+if os.getenv('FLASK_ENV', 'production') == 'production':
+    import eventlet
+    eventlet.monkey_patch()
+
+# All other imports must come after patch to ensure eventlet compatibility
+import pickle, queue, atexit, json, logging
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
@@ -18,6 +26,9 @@ from game import AGENT_DIR
 CONF_PATH = os.getenv('CONF_PATH', 'config.json')
 with open(CONF_PATH, 'r') as f:
     CONFIG = json.load(f)
+
+# Where errors will be logged
+LOGFILE = CONFIG['logfile']
 
 # Available layout names
 LAYOUTS = CONFIG['layouts']
@@ -65,10 +76,14 @@ USER_ROOMS = ThreadSafeDict()
 
 # Create and configure flask app
 app = Flask(__name__, template_folder=os.path.join('static', 'templates'))
-socketio = SocketIO(app, cors_allowed_origins="*")
 app.config['DEBUG'] = os.getenv('FLASK_ENV', 'production') == 'development'
+socketio = SocketIO(app, cors_allowed_origins="*", logger=app.config['DEBUG'])
 
 
+# Attach handler for logging errors to file
+handler = logging.FileHandler(LOGFILE)
+handler.setLevel(logging.ERROR)  
+app.logger.addHandler(handler)  
 
 
 #################################
@@ -468,10 +483,10 @@ def play_game(game, fps=30):
 if __name__ == '__main__':
     # Dynamically parse host and port from environment variables (set by docker build)
     host = os.getenv('HOST', '0.0.0.0')
-    port = int(os.getenv('PORT', 8080))
+    port = int(os.getenv('PORT', 80))
 
     # Attach exit handler to ensure graceful shutdown
     atexit.register(on_exit)
 
-    # https://localhost:8080 is external facing address regardless of build environment
-    socketio.run(app, host=host, port=port)
+    # https://localhost:80 is external facing address regardless of build environment
+    socketio.run(app, host=host, port=port, log_output=app.config['DEBUG'])

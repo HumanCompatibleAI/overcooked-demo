@@ -240,8 +240,7 @@ class Game(ABC):
         for i, player in enumerate(self.players):
             if player != self.EMPTY:
                 queue = self.pending_actions[i]
-                with queue.mutex:
-                    queue.queue.clear()
+                queue.queue.clear()
 
     @property
     def num_players(self):
@@ -345,7 +344,7 @@ class OvercookedGame(Game):
         - _curr_game_over: Determines whether the game on the current mdp has ended
     """
 
-    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', psiturk_uid=-1, **kwargs):
+    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', psiturk_uid="-1", **kwargs):
         super(OvercookedGame, self).__init__()
         self.psiturk_uid = psiturk_uid
         self.mdp_params = mdp_params
@@ -396,9 +395,6 @@ class OvercookedGame(Game):
         policy = self.npc_policies[policy_id]
         while self._is_active:
             state = queue.get()
-            # Clear queue to avoid memory leaks
-            with queue.mutex:
-                queue.queue.clear()
             npc_action, _ = policy.action(state)
             self.enqueue_action(policy_id, npc_action)
 
@@ -576,5 +572,10 @@ class DummyComputeAI(DummyAI):
         return super(DummyComputeAI, self).action(state)
 
     
-
+class StayAI():
+    """
+    Always returns "stay" action. Used for debugging
+    """
+    def action(self, state):
+        return 'STAY', None
     

@@ -21,7 +21,7 @@ In order to build and run the development server, which includes a deterministic
 ./up.sh
 ```
 
-After running one of the above commands, navigate to https://localhost:8080
+After running one of the above commands, navigate to https://localhost:80
 
 In order to kill the production server, run
 ```bash
@@ -32,7 +32,7 @@ The branch of `overcooked_ai` imported in both the development and production se
 ```bash
 OVERCOOKED_BRANCH=foo ./up.sh
 ```
-The default branch is currently `overcooked_ai_improvements`
+The default branch is currently `master`
 
 ## Using Pre-trained Agents
 
@@ -49,7 +49,7 @@ The graphics file is dynamically loaded into the docker container and served to 
 ```bash
 GRAPHICS=dummy_graphics.js ./up.sh
 ```
-The default graphics file is currently `overcooked_graphics_v1.js`
+The default graphics file is currently `overcooked_graphics_v2.1.js`
 
 
 ## Configuration
