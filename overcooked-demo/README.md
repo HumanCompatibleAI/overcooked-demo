@@ -49,7 +49,7 @@ The graphics file is dynamically loaded into the docker container and served to 
 ```bash
 GRAPHICS=dummy_graphics.js ./up.sh
 ```
-The default graphics file is currently `overcooked_graphics_v2.js`
+The default graphics file is currently `overcooked_graphics_v2.1.js`
 
 
 ## Configuration

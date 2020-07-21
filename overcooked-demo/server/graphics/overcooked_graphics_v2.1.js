@@ -25,7 +25,7 @@ var scene_config = {
     show_post_cook_time : false,
     cook_time : 20,
     assets_loc : "./static/assets/",
-    hud_size : 100
+    hud_size : 200
 };
 
 var game_config = {
@@ -92,7 +92,8 @@ class OvercookedScene extends Phaser.Scene {
         this.hud_data = {
             score : config.start_state.score,
             time : config.start_state.time_left,
-            bonus_orders : config.start_state.state.bonus_orders
+            bonus_orders : config.start_state.state.bonus_orders,
+            all_orders : config.start_state.state.all_orders
         }
     }
 
@@ -100,6 +101,7 @@ class OvercookedScene extends Phaser.Scene {
         this.hud_data.score = state.score;
         this.hud_data.time = Math.round(state.time_left);
         this.hud_data.bonus_orders = state.state.bonus_orders;
+        this.hud_data.all_orders = state.state.all_orders;
         this.state = state.state;
     }
 
@@ -336,6 +338,9 @@ class OvercookedScene extends Phaser.Scene {
     }
 
     _drawHUD(hud_data, sprites, board_height) {
+        if (typeof(hud_data.all_orders) !== 'undefined') {
+            this._drawAllOrders(hud_data.all_orders, sprites, board_height);
+        }
         if (typeof(hud_data.bonus_orders) !== 'undefined') {
             this._drawBonusOrders(hud_data.bonus_orders, sprites, board_height);
         }
@@ -362,8 +367,8 @@ class OvercookedScene extends Phaser.Scene {
                 for (let i = 0; i < orders.length; i++) {
                     let spriteFrame = this._ingredientsToSpriteFrame(orders[i]['ingredients'], "done");
                     let orderSprite = this.add.sprite(
-                        130 + 70 * i,
-                        board_height - 4,
+                        130 + 40 * i,
+                        board_height + 40,
                         "soups",
                         spriteFrame
                     );
@@ -376,7 +381,7 @@ class OvercookedScene extends Phaser.Scene {
             else {
                 sprites['bonus_orders'] = {};
                 sprites['bonus_orders']['str'] = this.add.text(
-                    5, board_height + 15, orders_str,
+                    5, board_height + 60, orders_str,
                     {
                         font: "20px Arial",
                         fill: "red",
@@ -388,6 +393,46 @@ class OvercookedScene extends Phaser.Scene {
         }
     }
 
+    _drawAllOrders(orders, sprites, board_height) {
+        if (typeof(orders) !== 'undefined' && orders !== null) {
+            let orders_str = "All Orders: ";
+            if (typeof(sprites['all_orders']) !== 'undefined') {
+                // Clear existing orders
+                sprites['all_orders']['orders'].forEach(element => {
+                    element.destroy();
+                });
+                sprites['all_orders']['orders'] = [];
+
+                // Update with new orders
+                for (let i = 0; i < orders.length; i++) {
+                    let spriteFrame = this._ingredientsToSpriteFrame(orders[i]['ingredients'], "done");
+                    let orderSprite = this.add.sprite(
+                        90 + 40 * i,
+                        board_height - 4,
+                        "soups",
+                        spriteFrame
+                    );
+                    sprites['all_orders']['orders'].push(orderSprite);
+                    orderSprite.setDisplaySize(60, 60);
+                    orderSprite.setOrigin(0);
+                    orderSprite.depth = 1;
+                }
+            }
+            else {
+                sprites['all_orders'] = {};
+                sprites['all_orders']['str'] = this.add.text(
+                    5, board_height + 15, orders_str,
+                    {
+                        font: "20px Arial",
+                        fill: "red",
+                        align: "left"
+                    }
+                )
+                sprites['all_orders']['orders'] = []
+            }
+        }
+    }
+
     _drawScore(score, sprites, board_height) {
         score = "Score: "+score;
         if (typeof(sprites['score']) !== 'undefined') {
@@ -395,7 +440,7 @@ class OvercookedScene extends Phaser.Scene {
         }
         else {
             sprites['score'] = this.add.text(
-                5, board_height + 40, score,
+                5, board_height + 90, score,
                 {
                     font: "20px Arial",
                     fill: "red",
@@ -412,7 +457,7 @@ class OvercookedScene extends Phaser.Scene {
         }
         else {
             sprites['time_left'] = this.add.text(
-                5, board_height + 65, time_left,
+                5, board_height + 115, time_left,
                 {
                     font: "20px Arial",
                     fill: "red",
