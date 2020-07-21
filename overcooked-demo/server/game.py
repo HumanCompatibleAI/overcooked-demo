@@ -30,6 +30,14 @@ class Game(ABC):
     # be worth it
 
     EMPTY = 'EMPTY'
+    
+    class Status:
+        DONE = 'done'
+        ACTIVE = 'active'
+        RESET = 'reset'
+        INACTIVE = 'inactive'
+
+
 
     def __init__(self, *args, **kwargs):
         """
@@ -81,6 +89,13 @@ class Game(ABC):
         """
         return self._is_active
 
+    @property
+    def reset_timeout(self):
+        """
+        Number of milliseconds to pause game on reset
+        """
+        return 3000
+
     def apply_actions(self):
         """
         Updates the game state by applying each of the pending actions in the buffer. Is called by the tick method. Subclasses
@@ -109,6 +124,24 @@ class Game(ABC):
         """
         self._is_active = False
 
+    def reset(self):
+        """
+        Restarts the game while keeping all active players by resetting game stats and temporarily disabling `tick`
+        """
+        if not self.is_active:
+            raise ValueError("Inactive Games cannot be reset")
+        if self.is_finished():
+            return self.Status.DONE
+        self.deactivate()
+        self.activate()
+        return self.Status.RESET
+
+    def needs_reset(self):
+        """
+        Returns whether the game should be reset on the next call to `tick`
+        """
+        return False
+
 
     def tick(self):
         """
@@ -120,9 +153,13 @@ class Game(ABC):
         Subclasses should try to override `apply_actions` if possible. Only override this method if necessary
         """ 
         if not self.is_active:
-            return False
+            return self.Status.INACTIVE
+        if self.needs_reset():
+            self.reset()
+            return self.Status.RESET
+
         self.apply_actions()
-        return self.is_finished()
+        return self.Status.DONE if self.is_finished() else self.Status.ACTIVE
     
     def enqueue_action(self, player_id, action):
         """
@@ -131,6 +168,7 @@ class Game(ABC):
         Note: This function IS thread safe
         """
         if not self.is_active:
+            # Could run into issues with is_active not being thread safe
             return
         if player_id not in self.players:
             raise ValueError("Invalid player ID")
@@ -195,9 +233,25 @@ class Game(ABC):
         else:
             return True
 
+    def clear_pending_actions(self):
+        """
+        Remove all queued actions for all players
+        """
+        for i, player in enumerate(self.players):
+            if player != self.EMPTY:
+                queue = self.pending_actions[i]
+                with queue.mutex:
+                    queue.queue.clear()
+
     @property
     def num_players(self):
         return len([player for player in self.players if player != self.EMPTY])
+
+    def get_data(self):
+        """
+        Returns any accumulated data about the game. Used for psiturk data collection
+        """
+        return {}
         
 
 
@@ -283,16 +337,21 @@ class OvercookedGame(Game):
             per forward pass can be higher
         - action_to_overcooked_action (dict): Maps action names returned by client to action names used by OvercookedGridworld
             Note that this is an instance variable and not a static variable for efficiency reasons
+        - trajectory (list(dict)): list of state-action pairs in current trajectory
     
     Methods:
         - npc_policy_consumer: Background process that asynchronously computes NPC policy forward passes. One thread
             spawned for each NPC
+        - _curr_game_over: Determines whether the game on the current mdp has ended
     """
 
-    def __init__(self, layout="cramped_room", mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', **kwargs):
+    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', psiturk_uid=-1, **kwargs):
         super(OvercookedGame, self).__init__()
+        self.psiturk_uid = psiturk_uid
+        self.mdp_params = mdp_params
+        self.layouts = layouts
         self.max_players = int(num_players)
-        self.mdp = OvercookedGridworld.from_layout_name(layout, **mdp_params)
+        self.mdp = None
         self.score = 0
         self.max_time = int(gameTime)
         self.npc_policies = {}
@@ -307,6 +366,7 @@ class OvercookedGame(Game):
         }
         self.ticks_per_ai_action = 4
         self.curr_tick = 0
+        self.trajectory = []
 
         if playerZero != 'human':
             player_zero_id = playerZero + '_0'
@@ -323,11 +383,20 @@ class OvercookedGame(Game):
         if len(self.npc_policies) == self.max_players:
             raise ValueError("At least one player must be a human")
 
+    def _curr_game_over(self):
+        return time() - self.start_time >= self.max_time
+
+
+    def needs_reset(self):
+        return self._curr_game_over() and not self.is_finished()
+
+
     def npc_policy_consumer(self, policy_id):
         queue = self.npc_state_queues[policy_id]
         policy = self.npc_policies[policy_id]
         while self._is_active:
             state = queue.get()
+            # Clear queue to avoid memory leaks
             with queue.mutex:
                 queue.queue.clear()
             npc_action, _ = policy.action(state)
@@ -338,7 +407,8 @@ class OvercookedGame(Game):
         return self.num_players >= self.max_players
 
     def is_finished(self):
-        return time() - self.start_time >= self.max_time
+        val = not self.layouts and self._curr_game_over()
+        return val
 
     def apply_action(self, player_id, action):
         pass
@@ -356,7 +426,8 @@ class OvercookedGame(Game):
                 pass
         
         # Apply overcooked game logic to get state transition
-        self.state, info = self.mdp.get_state_transition(self.state, joint_action)
+        prev_state = self.state
+        self.state, info = self.mdp.get_state_transition(prev_state, joint_action)
 
         # Send next state to all background consumers if needed
         if self.curr_tick % self.ticks_per_ai_action == 0:
@@ -364,11 +435,34 @@ class OvercookedGame(Game):
                 self.npc_state_queues[npc_id].put(self.state, block=False)
 
         # Update score based on soup deliveries that might have occured
-        self.score += sum(info['sparse_reward_by_agent'])
+        curr_reward = sum(info['sparse_reward_by_agent'])
+        self.score += curr_reward
+
+        # Log transition in our current trajectory
+        transition = {
+            "state" : prev_state.to_dict(),
+            "joint_action" : joint_action,
+            "reward" : curr_reward,
+            "time_left" : max(self.max_time - (time() - self.start_time), 0),
+            "score" : self.score,
+            "time_elapsed" : time() - self.start_time,
+            "cur_gameloop" : self.curr_tick,
+            "layout" : self.mdp.terrain_mtx,
+            "layout_name" : self.curr_layout,
+            "trial_id" : self.trial_id
+        }
+        self.trajectory.append(transition)
+        
 
     def enqueue_action(self, player_id, action):
         overcooked_action = self.action_to_overcooked_action[action]
         super(OvercookedGame, self).enqueue_action(player_id, overcooked_action)
+
+    def reset(self):
+        status = super(OvercookedGame, self).reset()
+        if status == self.Status.RESET:
+            # Hacky way of making sure game timer doesn't "start" until after reset timeout has passed
+            self.start_time += self.reset_timeout / 1000
 
 
     def tick(self):
@@ -377,9 +471,13 @@ class OvercookedGame(Game):
 
     def activate(self):
         super(OvercookedGame, self).activate()
-        self.start_time = time()
+        self.curr_layout = self.layouts.pop()
+        self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
         self.state = self.mdp.get_standard_start_state()
+        self.start_time = time()
+        self.score = 0
         self.threads = []
+        self.trial_id = self.psiturk_uid + str(self.start_time)
         for npc_policy in self.npc_policies:
             self.npc_state_queues[npc_policy].put(self.state)
             t = Thread(target=self.npc_policy_consumer, args=(npc_policy,))
@@ -396,6 +494,9 @@ class OvercookedGame(Game):
         for t in self.threads:
             t.join()
 
+        # Clear all action queues
+        self.clear_pending_actions()
+
 
     def get_state(self):
         state_dict = {}
@@ -406,7 +507,7 @@ class OvercookedGame(Game):
 
     def to_json(self):
         obj_dict = {}
-        obj_dict['terrain'] = self.mdp.terrain_mtx
+        obj_dict['terrain'] = self.mdp.terrain_mtx if self._is_active else None
         obj_dict['state'] = self.get_state() if self._is_active else None
         return obj_dict
 
@@ -414,6 +515,15 @@ class OvercookedGame(Game):
         fpath = os.path.join(AGENT_DIR, npc_id, 'agent.pickle')
         with open(fpath, 'rb') as f:
             return pickle.load(f)
+
+    def get_data(self):
+        """
+        Returns and then clears the accumulated trajectory
+        """
+        data = { "uid" : self.psiturk_uid  + "_" + str(time()), "trajectory" : self.trajectory }
+        self.trajectory = []
+        return data
+
 
 
 

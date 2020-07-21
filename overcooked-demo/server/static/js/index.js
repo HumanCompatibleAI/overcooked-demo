@@ -8,6 +8,7 @@ var socket = io();
 $(function() {
     $('#create').click(function () {
         params = arrToJSON($('form').serializeArray());
+        params.layouts = [params.layout]
         data = {
             "params" : params
         };
@@ -40,6 +41,7 @@ window.intervalID = -1;
 socket.on('waiting', function(data) {
     // Show game lobby
     $('#game-over').hide();
+    $('#instructions').hide();
     $("#overcooked").empty();
     $('#lobby').show();
     $('#join').hide();
@@ -74,10 +76,27 @@ socket.on('start_game', function(data) {
     $('#lobby').hide();
     $('#join').hide();
     $('#create').hide();
+    $("#instructions").hide();
     $('#leave').show();
     $('#game-title').show();
     enable_key_listener();
     graphics_start(graphics_config);
+});
+
+socket.on('reset_game', function(data) {
+    graphics_end();
+    disable_key_listener();
+    $("overcooked").empty();
+    $("#reset-game").show();
+    setTimeout(function() {
+        $("reset-game").hide();
+        graphics_config = {
+            container_id : "overcooked",
+            start_info : data.state
+        };
+        graphics_start(graphics_config);
+        enable_key_listener();
+    }, data.timeout);
 });
 
 socket.on('state_pong', function(data) {
@@ -85,7 +104,7 @@ socket.on('state_pong', function(data) {
     drawState(data['state']);
 });
 
-socket.on('end_game', function() {
+socket.on('end_game', function(data) {
     // Hide game data and display game-over html
     graphics_end();
     disable_key_listener();
@@ -93,7 +112,13 @@ socket.on('end_game', function() {
     $('#game-over').show();
     $("#join").show();
     $("#create").show();
+    $("#instructions").show();
     $("#leave").hide();
+    
+    // Game ended unexpectedly
+    if (data.status === 'inactive') {
+        $('#error-exit').show();
+    }
 });
 
 socket.on('end_lobby', function() {
@@ -102,6 +127,7 @@ socket.on('end_lobby', function() {
     $("#join").show();
     $("#create").show();
     $("#leave").hide();
+    $("#instructions").hide();
 
     // Stop trying to join
     clearInterval(window.intervalID);

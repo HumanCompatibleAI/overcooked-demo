@@ -1,5 +1,13 @@
 {
     "layouts" : ["cramped_room", "cramped_room_tomato", "asymmetric_advantages", "coordination_ring", "forced_coordination", "counter_circuit"],
     "MAX_GAMES" : 10,
-    "MAX_FPS" : 30
+    "MAX_FPS" : 30,
+    "psiturk" : {
+        "experimentParams" : {
+            "layouts" : ["counter_circuit", "cramped_room"],
+            "gameTime" : 11,
+            "playerZero" : "DummyAI"
+        },
+        "lobbyWaitTime" : 300000
+    }
 }
