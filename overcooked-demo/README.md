@@ -21,7 +21,7 @@ In order to build and run the development server, which includes a deterministic
 ./up.sh
 ```
 
-After running one of the above commands, navigate to https://localhost:8080
+After running one of the above commands, navigate to https://localhost:80
 
 In order to kill the production server, run
 ```bash
