@@ -6,10 +6,17 @@ services:
             context: ./server
             args:
                 BUILD_ENV: "${BUILD_ENV:-production}"
-                OVERCOOKED_BRANCH: "${OVERCOOKED_BRANCH:-master}"
+                OVERCOOKED_BRANCH: "${OVERCOOKED_BRANCH:-new_mdp_layouts}"
                 GRAPHICS: "${GRAPHICS:-overcooked_graphics_v2.1.js}"
         environment: 
             FLASK_ENV: "${BUILD_ENV:-production}"
+        volumes:
+            - type: bind
+              source: ~/Documents/Berkeley/BAIR/overcooked_ai
+              target: /overcooked_ai
+            - type: bind
+              source: ./server/config.json
+              target: /app/config.json
         ports:
             - "80:5000"
         
