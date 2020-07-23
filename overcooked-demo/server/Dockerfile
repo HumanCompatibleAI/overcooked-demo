@@ -15,7 +15,6 @@ COPY ./*.py ./
 COPY ./graphics/$GRAPHICS ./static/js/graphics.js
 COPY ./config.json ./config.json
 COPY ./temp.sh ./temp.sh
-COPY ./favicon.ico ./favicon.ico
 ENV HOST 0.0.0.0
 ENV PORT 5000
 ENV CONF_PATH config.json
