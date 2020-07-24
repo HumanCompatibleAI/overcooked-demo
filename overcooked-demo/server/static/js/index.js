@@ -87,7 +87,7 @@ socket.on('start_game', function(data) {
 socket.on('reset_game', function(data) {
     graphics_end();
     disable_key_listener();
-    $("overcooked").empty();
+    $("#overcooked").empty();
     $("#reset-game").show();
     setTimeout(function() {
         $("reset-game").hide();

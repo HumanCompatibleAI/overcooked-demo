@@ -10,8 +10,8 @@ import pickle, queue, atexit, json, logging
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import OvercookedGame, OvercookedTutorial
-from game import AGENT_DIR
+from game import OvercookedGame, OvercookedTutorial, Game, AGENT_DIR
+
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
@@ -41,6 +41,9 @@ MAX_FPS = CONFIG['MAX_FPS']
 
 # Default configuration for psiturk experiment
 PSITURK_CONFIG = json.dumps(CONFIG['psiturk'])
+
+# Default configuration for tutorial
+TUTORIAL_CONFIG = json.dumps(CONFIG['tutorialParams'])
 
 # Global queue of available IDs. This is how we synch game creation and keep track of how many games are in memory
 FREE_IDS = queue.Queue(maxsize=MAX_GAMES)
@@ -311,7 +314,7 @@ def instructions():
 
 @app.route('/tutorial')
 def tutorial():
-    return render_template('tutorial.html')
+    return render_template('tutorial.html', config=TUTORIAL_CONFIG)
 
 @app.route('/debug')
 def debug():
@@ -486,7 +489,8 @@ def play_game(game, fps=30):
     
     with game.lock:
         data = game.get_data()
-        socketio.emit('end_game', { "status" : status, "data" : data }, room=game.id)
+        # socketio.emit('end_game', { "status" : status, "data" : data }, room=game.id)
+        socketio.emit('end_game', { "status" : status }, room=game.id)
         game.deactivate()
         ACTIVE_GAMES.remove(game.id)
         cleanup_game(game)

@@ -7,6 +7,8 @@ from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 import random, os, pickle
 
+# TODO: Make base OvercookedGame and PsiturkOvercookedGame separate classes
+
 # Relative path to where all static pre-trained agents are stored on server
 AGENT_DIR = os.path.join(os.curdir, 'static', 'assets', 'agents')
 
@@ -345,7 +347,7 @@ class OvercookedGame(Game):
     """
 
     def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', psiturk_uid="-1", **kwargs):
-        super(OvercookedGame, self).__init__()
+        super(OvercookedGame, self).__init__(**kwargs)
         self.psiturk_uid = psiturk_uid
         self.mdp_params = mdp_params
         self.layouts = layouts
@@ -517,6 +519,7 @@ class OvercookedGame(Game):
         """
         Returns and then clears the accumulated trajectory
         """
+        print("getting data", flush=True)
         data = { "uid" : self.psiturk_uid  + "_" + str(time()), "trajectory" : self.trajectory }
         self.trajectory = []
         return data
@@ -525,22 +528,27 @@ class OvercookedGame(Game):
 class OvercookedTutorial(OvercookedGame):
     
 
-    def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='AI'):
-        super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerZero)
-        self.gameTime = float('inf')
-        self.max_time = 2
+    def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='AI', **kwargs):
+        print("using layouts ", layouts, flush=True)
+        super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, **kwargs)
+        self.max_time = 0
+        self.max_players = 2
+        self.ticks_per_ai_action = 8
         self.curr_phase = 0
+
+    @property
+    def reset_timeout(self):
+        return 1
 
     def needs_reset(self):
         if self.curr_phase == 0:
             return self.score > 0
         elif self.curr_phase == 1:
             return self.score > 0
-        else:
-            return self.score >= float('inf') 
+        return False 
 
     def is_finished(self):
-        return not self.layouts
+        return not self.layouts and self.score >= float('inf')
 
     def reset(self):
         super(OvercookedTutorial, self).reset()
@@ -662,53 +670,59 @@ class TutorialAI():
         'LEFT',
         'LEFT',
         'LEFT',
-        'INTERACT',
+        'SPACE',
 
         # Place onion in pot
         'RIGHT',
         'UP',
-        'INTERACT',
+        'SPACE',
 
         # Grab second onion
         'LEFT',
-        'INTERACT',
+        'SPACE',
 
         # Place onion in pot
         'RIGHT',
         'UP',
-        'INTERACT',
+        'SPACE',
 
         # Grab third onion
         'LEFT',
-        'INTERACT',
+        'SPACE',
 
         # Place onion in pot
         'RIGHT',
         'UP',
-        'INTERACT',
+        'SPACE',
 
         # Cook soup
-        'INTERACT',
-        'STAY',
-        'STAY',
-        'STAY',
+        'SPACE',
+        
+        # Grab plate
+        'RIGHT',
+        'DOWN',
+        'SPACE',
+        'LEFT',
+        'UP',
 
         # Deliver soup
-        'INTERACT',
+        'SPACE',
         'RIGHT',
         'RIGHT',
         'RIGHT',
-        'INTERACT',
+        'SPACE',
         'LEFT'
     ]
 
     def __init__(self):
-        self.curr_phase = 0
-        self.curr_tick = 0
+        self.curr_phase = -1
+        self.curr_tick = -1
 
     def action(self, state):
+        self.curr_tick += 1
         if self.curr_phase == 0:
-            return self.COOK_SOUP_LOOP[self.curr_tick % len(self.COOK_SOUP_LOOP)]
+            return self.COOK_SOUP_LOOP[self.curr_tick % len(self.COOK_SOUP_LOOP)], None
+        return 'STAY', None
 
     def reset(self):
         self.curr_phase += 1

@@ -26,10 +26,14 @@
     <link rel="stylesheet" href="static/css/style.css" type="text/css" />
   </head>
   <body>
+    <div id="config" style="display:none;">{{config}}</div>
     <div id="overcooked-container" class="text-center">
-        <h4 id="game-title" style="display:none"></h4>
-        <h4 id="game-over" style="display:none">Tutorial Complete</h4>
-        <h4 id="tutorial-intructions"></h4>
+        <h3 id="game-title" style="display:none"></h3>
+        <div id="game-over" style="display:none">
+            <h3>Tutorial Complete</h3>
+            <p>You will now be redirected back to the remainder of the HIT</p>
+        </div>
+        <div id="tutorial-intructions"></div>
         <div id="overcooked"></div>
         <div id="error-exit" style="display:none">Tutorial ended unexpectedly (probably due to server side error)</div>
     </div>
