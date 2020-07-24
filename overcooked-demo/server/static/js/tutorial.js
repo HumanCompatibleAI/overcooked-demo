@@ -1,35 +1,31 @@
 // Persistent network connection that will be used to transmit real-time data
 var socket = io();
 
+var tutorial_params = {
+    
+};
+
+var tutorial_instructions = [
+    "first phase",
+    "second phase",
+    "third phase"
+];
+
+var curr_tutorial_phase = 0;
+
 /* * * * * * * * * * * * * * * * 
  * Button click event handlers *
  * * * * * * * * * * * * * * * */
 
 $(function() {
-    $('#create').click(function () {
-        params = arrToJSON($('form').serializeArray());
-        params.layouts = [params.layout]
+    $('#try-again').click(function () {
         data = {
-            "params" : params,
-            "game_name" : "overcooked"
+            "params" : tutorial_params,
+            "game_name" : tutorial
         };
-        socket.emit("create", data);
+        socket.emit("join", data);
     });
 });
-
-$(function() {
-    $('#join').click(function() {
-        socket.emit("join", {});
-    });
-});
-
-$(function() {
-    $('#leave').click(function() {
-        socket.emit('leave', {});
-    });
-});
-
-
 
 
 
@@ -37,67 +33,41 @@ $(function() {
  * Socket event handlers *
  * * * * * * * * * * * * */
 
-window.intervalID = -1;
-
-socket.on('waiting', function(data) {
-    // Show game lobby
-    $('#game-over').hide();
-    $('#instructions').hide();
-    $("#overcooked").empty();
-    $('#lobby').show();
-    $('#join').hide();
-    $('#create').hide();
-    $('#leave').show();
-    if (window.intervalID === -1) {
-        window.intervalID = setInterval(function() {
-            socket.emit('join', {});
-        }, 1000);
-    }
-});
-
 socket.on('creation_failed', function(data) {
     // Tell user what went wrong
     let err = data['error']
     $("#overcooked").empty();
-    $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
+    $('#overcooked').append(`<h4>Sorry, tutorial creation code failed with error: ${JSON.stringify(err)}</>`);
+    $('#try-again').show();
 });
 
 socket.on('start_game', function(data) {
-    // Hide game-over and lobby, show game title header
-    if (window.intervalID !== -1) {
-        clearInterval(window.intervalID);
-        window.intervalID = -1;
-    }
+    curr_tutorial_phase = 0;
     graphics_config = {
         container_id : "overcooked",
         start_info : data
     };
     $("#overcooked").empty();
     $('#game-over').hide();
-    $('#lobby').hide();
-    $('#join').hide();
-    $('#create').hide();
-    $("#instructions").hide();
-    $('#leave').show();
+    $('#try-again').hide();
+    $('#game-title').text(`Tutorial in Progress, Phase ${curr_tutorial_phase}/3`);
     $('#game-title').show();
     enable_key_listener();
     graphics_start(graphics_config);
 });
 
 socket.on('reset_game', function(data) {
+    curr_tutorial_phase++;
     graphics_end();
     disable_key_listener();
     $("overcooked").empty();
-    $("#reset-game").show();
-    setTimeout(function() {
-        $("reset-game").hide();
-        graphics_config = {
-            container_id : "overcooked",
-            start_info : data.state
-        };
-        graphics_start(graphics_config);
-        enable_key_listener();
-    }, data.timeout);
+    $('#game-title').text(`Tutorial in Progress, Phase ${curr_tutorial_phase}/3`);
+    graphics_config = {
+        container_id : "overcooked",
+        start_info : data.state
+    };
+    graphics_start(graphics_config);
+    enable_key_listener();
 });
 
 socket.on('state_pong', function(data) {
@@ -111,29 +81,14 @@ socket.on('end_game', function(data) {
     disable_key_listener();
     $('#game-title').hide();
     $('#game-over').show();
-    $("#join").show();
-    $("#create").show();
-    $("#instructions").show();
-    $("#leave").hide();
     
     // Game ended unexpectedly
     if (data.status === 'inactive') {
         $('#error-exit').show();
     }
+    // Propogate game stats to parent window with psiturk code
+    window.top.postMessage({ name : "tutorial-done", data : data.data}, "*");
 });
-
-socket.on('end_lobby', function() {
-    // Hide lobby
-    $('#lobby').hide();
-    $("#join").show();
-    $("#create").show();
-    $("#leave").hide();
-    $("#instructions").hide();
-
-    // Stop trying to join
-    clearInterval(window.intervalID);
-    window.intervalID = -1;
-})
 
 
 /* * * * * * * * * * * * * * 
@@ -175,6 +130,21 @@ function enable_key_listener() {
 function disable_key_listener() {
     $(document).off('keydown');
 };
+
+/* * * * * * * * * * * * 
+ * Game Initialization *
+ * * * * * * * * * * * */
+
+socket.on("connect", function() {
+    // Config for this specific game
+    let data = {
+        "params" : tutorial_params,
+        "game_name" : "tutorial"
+    };
+
+    // create (or join if it exists) new game
+    socket.emit("join", data);
+});
 
 
 /* * * * * * * * * * *

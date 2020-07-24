@@ -10,7 +10,7 @@ import pickle, queue, atexit, json, logging
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import OvercookedGame as Game
+from game import OvercookedGame, OvercookedTutorial
 from game import AGENT_DIR
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
@@ -66,6 +66,12 @@ WAITING_GAMES = queue.Queue()
 # Mapping of user id's to the current game (room) they are in
 USER_ROOMS = ThreadSafeDict()
 
+# Mapping of string game names to corresponding classes
+GAME_NAME_TO_CLS = {
+    "overcooked" : OvercookedGame,
+    "tutorial" : OvercookedTutorial
+}
+
 
 
 
@@ -90,7 +96,7 @@ app.logger.addHandler(handler)
 # Global Coordination Functions #
 #################################
 
-def try_create_game(**kwargs):
+def try_create_game(game_name ,**kwargs):
     """
     Tries to create a brand new Game object based on parameters in `kwargs`
     
@@ -105,7 +111,8 @@ def try_create_game(**kwargs):
     try:
         curr_id = FREE_IDS.get(block=False)
         assert FREE_MAP[curr_id], "Current id is already in use"
-        game = Game(id=curr_id, **kwargs)
+        game_cls = GAME_NAME_TO_CLS.get(game_name, OvercookedGame)
+        game = game_cls(id=curr_id, **kwargs)
     except queue.Empty:
         err = RuntimeError("Server at max capacity")
         return None, err
@@ -215,8 +222,8 @@ def  _leave_game(user_id):
 
     return was_active
 
-def _create_game(user_id, params={}):
-    game, err = try_create_game(**params)
+def _create_game(user_id, game_name, params={}):
+    game, err = try_create_game(game_name, **params)
     if not game:
         emit("creation_failed", { "error" : err.__repr__() })
         return
@@ -302,6 +309,10 @@ def psiturk():
 def instructions():
     return render_template('instructions.html')
 
+@app.route('/tutorial')
+def tutorial():
+    return render_template('tutorial.html')
+
 @app.route('/debug')
 def debug():
     resp = {}
@@ -362,7 +373,8 @@ def on_create(data):
         return
     
     params = data.get('params', {})
-    _create_game(user_id, params)
+    game_name = data.get('game_name', 'overcooked')
+    _create_game(user_id, game_name, params)
     
 
 @socketio.on('join')
@@ -381,7 +393,8 @@ def on_join(data):
     if not game:
         # No available game was found so create a game
         params = data.get('params', {})
-        _create_game(user_id, params)
+        game_name = data.get('game_name', 'overcooked')
+        _create_game(user_id, game_name, params)
         return
     
     with game.lock:

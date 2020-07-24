@@ -10,5 +10,10 @@
             "playerZero" : "DummyAI"
         },
         "lobbyWaitTime" : 300000
+    },
+    "tutorialParams" : {
+        "layouts" : ["tutorial_0", "tutorial_1", "tutorial_2"],
+        "playerZero" : "human",
+        "playerOne" : "TutorialAI"
     }
 }
