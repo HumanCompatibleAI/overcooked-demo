@@ -67,7 +67,10 @@ WAITING_GAMES = queue.Queue()
 USER_ROOMS = ThreadSafeDict()
 
 
-
+################################################################################################################
+# Mapping of user id's to the current image they are computing
+ACTIVE_IMAGES = ThreadSafeSet()
+################################################################################################################
 
 
 #######################
@@ -161,6 +164,10 @@ def get_waiting_game():
         return get_game(waiting_id)
 
 
+########################################################
+def get_image(user_id):
+    return get_game(get_curr_room(user_id))
+####################################################################################
 
 
 ##########################
@@ -301,6 +308,39 @@ def psiturk():
 @app.route('/instructions')
 def instructions():
     return render_template('instructions.html')
+
+############################
+@app.route('/state2jpeg', methods=['POST'])
+def state2jpeg():
+    print("OKOKOK")
+    json_data = request.get_json()
+    print(json_data)
+
+    game, _ = try_create_game(layouts=["cramped_room"])
+    game.activate()
+
+    print("done!")
+
+    socketio.emit('boi_graphics', game.to_json())
+    
+    return game.to_json()
+
+@socketio.on('boi2jpeg')
+def on_boi2jpeg(data):
+    print("BROTHA")
+    print(data)
+    ACTIVE_IMAGES.add(data)
+    return "nobody was harmed in making this line of code (except myself)"
+
+@app.route('/get_statejpeg', methods=['GET'])
+def get_statejpeg():
+    im = ACTIVE_IMAGES.pop()
+    print(im)
+
+    return im
+########################################################
+########################################################
+
 
 @app.route('/debug')
 def debug():

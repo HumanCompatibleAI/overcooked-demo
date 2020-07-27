@@ -51,6 +51,7 @@ function drawState(state) {
 // Invoked at 'start_game' event
 function graphics_start(graphics_config) {
     graphics = new GraphicsManager(game_config, scene_config, graphics_config);
+    return graphics
 };
 
 // Invoked at 'end_game' event

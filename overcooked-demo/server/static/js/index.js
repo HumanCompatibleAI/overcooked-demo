@@ -61,6 +61,50 @@ socket.on('creation_failed', function(data) {
     $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
 });
 
+///////////////////////////////////////////////////////////////////////////////////////////////
+socket.on('boi_graphics', async function(data) {
+    console.log("Okokok");
+    
+    graphics_config = {
+        container_id : "overcooked",
+        start_info : data
+    };
+    var graphics = graphics_start(graphics_config);
+
+    console.log("graphics", graphics);
+    await new Promise(r => setTimeout(r, 300));
+
+    graphics.game.renderer.snapshot(function (image) {
+        console.log(image);
+        var link = document.getElementById('link');
+        link.setAttribute('download', 'MintyPaper.png');
+        link.setAttribute('href', image.src);
+        link.click();
+        socket.emit('boi2jpeg', image.src);
+    });
+
+    
+    // var url = image.src.replace(/^data:image\/[^;]+/, 'data:application/octet-stream');
+    // console.log(url);
+    // window.open(url);
+
+    // var canvas = $("#overcooked")[0].firstChild;
+
+    
+
+    // console.log("should be done?");
+    // console.log($("#overcooked"));
+    // console.log();
+    // var image = $("#overcooked")[0].firstChild.toDataURL("image/png").replace("image/png", "image/octet-stream");  // here is the most important part because if you dont replace you will get a DOM 18 exception.
+
+
+    // window.location.href=image; // it will save locally
+
+    console.log("should be done?2");
+
+});
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 socket.on('start_game', function(data) {
     // Hide game-over and lobby, show game title header
     if (window.intervalID !== -1) {
