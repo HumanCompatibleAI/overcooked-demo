@@ -11,9 +11,14 @@
         },
         "lobbyWaitTime" : 300000
     },
-    "tutorialParams" : {
-        "layouts" : ["tutorial_2", "tutorial_1", "tutorial_0"],
-        "playerZero" : "human",
-        "playerOne" : "TutorialAI"
+    "tutorial" : {
+        "tutorialParams" : {
+            "layouts" : ["tutorial_3", "tutorial_2", "tutorial_1", "tutorial_0"],
+            "playerZero" : "human",
+            "playerOne" : "TutorialAI",
+            "phaseTwoScore" : 15
+        },
+        "tomato_value" : 5,
+        "onion_value" : 10
     }
 }

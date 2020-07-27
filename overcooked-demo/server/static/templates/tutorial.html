@@ -33,9 +33,20 @@
             <h3>Tutorial Complete</h3>
             <p>You will now be redirected back to the remainder of the HIT</p>
         </div>
-        <div id="tutorial-intructions"></div>
+        <div id="instructions-wrapper" class="text-center">
+            <div id="tutorial-instructions" class="text-left" style="display:inline-block; width: 75%"></div>
+        </div>
+        <div id="hint-wrapper" style="display: none;" class="text-center">
+            <div id="hint" style="display:inline-block; width: 75%" class="text-left"></div>
+        </div>
+        <button id="show-hint">Show Hint</button>
+        <br></br>
         <div id="overcooked"></div>
         <div id="error-exit" style="display:none">Tutorial ended unexpectedly (probably due to server side error)</div>
+    </div>
+    <div id="soup-icons" class="text-center">
+        <h4>Soup Legend</h4>
+        <img src="static/images/soup_icons.png" style="width:200px">
     </div>
     <div id="control" class="text-center">
         <button id="try-again" style="display:none;">Try Again?</button>

@@ -519,7 +519,6 @@ class OvercookedGame(Game):
         """
         Returns and then clears the accumulated trajectory
         """
-        print("getting data", flush=True)
         data = { "uid" : self.psiturk_uid  + "_" + str(time()), "trajectory" : self.trajectory }
         self.trajectory = []
         return data
@@ -528,9 +527,9 @@ class OvercookedGame(Game):
 class OvercookedTutorial(OvercookedGame):
     
 
-    def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='AI', **kwargs):
-        print("using layouts ", layouts, flush=True)
+    def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='AI', phaseTwoScore=15, **kwargs):
         super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, **kwargs)
+        self.phase_two_score = phaseTwoScore
         self.max_time = 0
         self.max_players = 2
         self.ticks_per_ai_action = 8
@@ -544,6 +543,8 @@ class OvercookedTutorial(OvercookedGame):
         if self.curr_phase == 0:
             return self.score > 0
         elif self.curr_phase == 1:
+            return self.score > 0
+        elif self.curr_phase == 2:
             return self.score > 0
         return False 
 
@@ -580,6 +581,9 @@ class OvercookedTutorial(OvercookedGame):
 
         # Update score based on soup deliveries of human agent only
         curr_reward = info['sparse_reward_by_agent'][0]
+
+        # Phase two requires a specific reward to complete
+        curr_reward = curr_reward if self.curr_phase != 2 or curr_reward == self.phase_two_score else 0
         self.score += curr_reward
 
         # Log transition in our current trajectory
@@ -714,6 +718,34 @@ class TutorialAI():
         'LEFT'
     ]
 
+    COOK_SOUP_COOP_LOOP = [
+        # Grab first onion
+        'LEFT',
+        'LEFT',
+        'LEFT',
+        'SPACE',
+
+        # Place onion in pot
+        'RIGHT',
+        'DOWN',
+        'SPACE',
+
+        # Move to start so this loops
+        'RIGHT',
+        'RIGHT',
+
+        # Pause to make cooperation more real time
+        'STAY',
+        'STAY',
+        'STAY',
+        'STAY',
+        'STAY',
+        'STAY',
+        'STAY',
+        'STAY',
+        'STAY'
+    ]
+
     def __init__(self):
         self.curr_phase = -1
         self.curr_tick = -1
@@ -722,9 +754,12 @@ class TutorialAI():
         self.curr_tick += 1
         if self.curr_phase == 0:
             return self.COOK_SOUP_LOOP[self.curr_tick % len(self.COOK_SOUP_LOOP)], None
+        elif self.curr_phase == 2:
+            return self.COOK_SOUP_COOP_LOOP[self.curr_tick % len(self.COOK_SOUP_COOP_LOOP)], None
         return 'STAY', None
 
     def reset(self):
+        self.curr_tick = -1
         self.curr_phase += 1
 
     

@@ -43,7 +43,7 @@ MAX_FPS = CONFIG['MAX_FPS']
 PSITURK_CONFIG = json.dumps(CONFIG['psiturk'])
 
 # Default configuration for tutorial
-TUTORIAL_CONFIG = json.dumps(CONFIG['tutorialParams'])
+TUTORIAL_CONFIG = json.dumps(CONFIG['tutorial'])
 
 # Global queue of available IDs. This is how we synch game creation and keep track of how many games are in memory
 FREE_IDS = queue.Queue(maxsize=MAX_GAMES)
