@@ -10,8 +10,8 @@ import pickle, queue, atexit, json, logging
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import OvercookedGame as Game
-from game import AGENT_DIR
+from game import OvercookedGame, OvercookedTutorial, Game, AGENT_DIR
+
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
@@ -42,6 +42,9 @@ MAX_FPS = CONFIG['MAX_FPS']
 # Default configuration for psiturk experiment
 PSITURK_CONFIG = json.dumps(CONFIG['psiturk'])
 
+# Default configuration for tutorial
+TUTORIAL_CONFIG = json.dumps(CONFIG['tutorial'])
+
 # Global queue of available IDs. This is how we synch game creation and keep track of how many games are in memory
 FREE_IDS = queue.Queue(maxsize=MAX_GAMES)
 
@@ -65,6 +68,12 @@ WAITING_GAMES = queue.Queue()
 
 # Mapping of user id's to the current game (room) they are in
 USER_ROOMS = ThreadSafeDict()
+
+# Mapping of string game names to corresponding classes
+GAME_NAME_TO_CLS = {
+    "overcooked" : OvercookedGame,
+    "tutorial" : OvercookedTutorial
+}
 
 
 
@@ -90,7 +99,7 @@ app.logger.addHandler(handler)
 # Global Coordination Functions #
 #################################
 
-def try_create_game(**kwargs):
+def try_create_game(game_name ,**kwargs):
     """
     Tries to create a brand new Game object based on parameters in `kwargs`
     
@@ -105,7 +114,8 @@ def try_create_game(**kwargs):
     try:
         curr_id = FREE_IDS.get(block=False)
         assert FREE_MAP[curr_id], "Current id is already in use"
-        game = Game(id=curr_id, **kwargs)
+        game_cls = GAME_NAME_TO_CLS.get(game_name, OvercookedGame)
+        game = game_cls(id=curr_id, **kwargs)
     except queue.Empty:
         err = RuntimeError("Server at max capacity")
         return None, err
@@ -215,8 +225,8 @@ def  _leave_game(user_id):
 
     return was_active
 
-def _create_game(user_id, params={}):
-    game, err = try_create_game(**params)
+def _create_game(user_id, game_name, params={}):
+    game, err = try_create_game(game_name, **params)
     if not game:
         emit("creation_failed", { "error" : err.__repr__() })
         return
@@ -302,6 +312,10 @@ def psiturk():
 def instructions():
     return render_template('instructions.html')
 
+@app.route('/tutorial')
+def tutorial():
+    return render_template('tutorial.html', config=TUTORIAL_CONFIG)
+
 @app.route('/debug')
 def debug():
     resp = {}
@@ -362,7 +376,8 @@ def on_create(data):
         return
     
     params = data.get('params', {})
-    _create_game(user_id, params)
+    game_name = data.get('game_name', 'overcooked')
+    _create_game(user_id, game_name, params)
     
 
 @socketio.on('join')
@@ -381,7 +396,8 @@ def on_join(data):
     if not game:
         # No available game was found so create a game
         params = data.get('params', {})
-        _create_game(user_id, params)
+        game_name = data.get('game_name', 'overcooked')
+        _create_game(user_id, game_name, params)
         return
     
     with game.lock:
@@ -473,7 +489,8 @@ def play_game(game, fps=30):
     
     with game.lock:
         data = game.get_data()
-        socketio.emit('end_game', { "status" : status, "data" : data }, room=game.id)
+        # socketio.emit('end_game', { "status" : status, "data" : data }, room=game.id)
+        socketio.emit('end_game', { "status" : status }, room=game.id)
         game.deactivate()
         ACTIVE_GAMES.remove(game.id)
         cleanup_game(game)

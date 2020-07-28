@@ -10,7 +10,8 @@ $(function() {
         params = arrToJSON($('form').serializeArray());
         params.layouts = [params.layout]
         data = {
-            "params" : params
+            "params" : params,
+            "game_name" : "overcooked"
         };
         socket.emit("create", data);
     });
@@ -86,7 +87,7 @@ socket.on('start_game', function(data) {
 socket.on('reset_game', function(data) {
     graphics_end();
     disable_key_listener();
-    $("overcooked").empty();
+    $("#overcooked").empty();
     $("#reset-game").show();
     setTimeout(function() {
         $("reset-game").hide();
