@@ -72,34 +72,20 @@ socket.on('boi_graphics', async function(data) {
     };
     var graphics = graphics_start(graphics_config);
 
-    console.log("graphics", graphics);
-    await new Promise(r => setTimeout(r, 300));
+    // Should be using a promise here with the graphics rather than whatever i'm doing here.
+    await new Promise(r => setTimeout(r, 800));
 
     graphics.game.renderer.snapshot(function (image) {
         console.log(image);
         var link = document.getElementById('link');
-        link.setAttribute('download', 'MintyPaper.png');
+        link.setAttribute('download', 'overcooked_screenshot.png');
         link.setAttribute('href', image.src);
         link.click();
-        socket.emit('boi2jpeg', image.src);
+        // socket.emit('boi2jpeg', image.src);
+
+        $("#overcooked").empty();
+        graphics_end();
     });
-
-    
-    // var url = image.src.replace(/^data:image\/[^;]+/, 'data:application/octet-stream');
-    // console.log(url);
-    // window.open(url);
-
-    // var canvas = $("#overcooked")[0].firstChild;
-
-    
-
-    // console.log("should be done?");
-    // console.log($("#overcooked"));
-    // console.log();
-    // var image = $("#overcooked")[0].firstChild.toDataURL("image/png").replace("image/png", "image/octet-stream");  // here is the most important part because if you dont replace you will get a DOM 18 exception.
-
-
-    // window.location.href=image; // it will save locally
 
     console.log("should be done?2");
 

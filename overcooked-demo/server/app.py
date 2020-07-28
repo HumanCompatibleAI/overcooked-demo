@@ -76,12 +76,6 @@ GAME_NAME_TO_CLS = {
 }
 
 
-################################################################################################################
-# Mapping of user id's to the current image they are computing
-ACTIVE_IMAGES = ThreadSafeSet()
-################################################################################################################
-
-
 #######################
 # Flask Configuration #
 #######################
@@ -319,44 +313,25 @@ def psiturk():
 def instructions():
     return render_template('instructions.html')
 
-<<<<<<< HEAD
-############################
 @app.route('/state2jpeg', methods=['POST'])
 def state2jpeg():
-    print("OKOKOK")
-    json_data = request.get_json()
-    print(json_data)
+    import json
+    from overcooked_ai_py.mdp.overcooked_mdp import OvercookedState
 
-    game, _ = try_create_game(layouts=["cramped_room"])
-    game.activate()
-
-    print("done!")
-
-    socketio.emit('boi_graphics', game.to_json())
+    # NOTE: could possibly use selenium here to handle getting screenshot of canvas
     
+    state_dict = request.get_json()
+    game, _ = try_create_game("overcooked", layouts=["cramped_room"])
+    game.activate()
+    s = OvercookedState.from_dict(state_dict)
+    game.state = s
+    socketio.emit('boi_graphics', game.to_json())
+    cleanup_game(game)
     return game.to_json()
 
-@socketio.on('boi2jpeg')
-def on_boi2jpeg(data):
-    print("BROTHA")
-    print(data)
-    ACTIVE_IMAGES.add(data)
-    return "nobody was harmed in making this line of code (except myself)"
-
-@app.route('/get_statejpeg', methods=['GET'])
-def get_statejpeg():
-    im = ACTIVE_IMAGES.pop()
-    print(im)
-
-    return im
-########################################################
-########################################################
-
-=======
 @app.route('/tutorial')
 def tutorial():
     return render_template('tutorial.html', config=TUTORIAL_CONFIG)
->>>>>>> 35ed5ea729531737d8204f274d01d188afdf25a8
 
 @app.route('/debug')
 def debug():
