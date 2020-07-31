@@ -173,7 +173,8 @@ class Game(ABC):
             # Could run into issues with is_active not being thread safe
             return
         if player_id not in self.players:
-            raise ValueError("Invalid player ID")
+            # Only players actively in game are allowed to enqueue actions
+            return
         try:
             player_idx = self.players.index(player_id)
             self.pending_actions[player_idx].put(action)
@@ -381,8 +382,8 @@ class OvercookedGame(Game):
             self.npc_policies[player_one_id] = self.get_policy(playerOne)
             self.npc_state_queues[player_one_id] = LifoQueue()
 
-        if len(self.npc_policies) == self.max_players:
-            raise ValueError("At least one player must be a human")
+        # if len(self.npc_policies) == self.max_players:
+        #     raise ValueError("At least one player must be a human")
 
     def _curr_game_over(self):
         return time() - self.start_time >= self.max_time

@@ -230,14 +230,17 @@ def _create_game(user_id, game_name, params={}):
     if not game:
         emit("creation_failed", { "error" : err.__repr__() })
         return
+    spectating = True
     with game.lock:
-        game.add_player(user_id)
+        if not game.is_full():
+            spectating = False
+            game.add_player(user_id)
         join_room(game.id)
         set_curr_room(user_id, game.id)
         if game.is_ready():
             game.activate()
             ACTIVE_GAMES.add(game.id)
-            emit('start_game', game.to_json(), room=game.id)
+            emit('start_game', { "spectating" : spectating, "start_info" : game.to_json()}, room=game.id)
             socketio.start_background_task(play_game, game, fps=MAX_FPS)
         else:
             WAITING_GAMES.put(game.id)
@@ -409,7 +412,7 @@ def on_join(data):
             # Game is ready to begin play
             game.activate()
             ACTIVE_GAMES.add(game.id)
-            emit('start_game', game.to_json(), room=game.id)
+            emit('start_game', { "spectating" : False, "start_info" : game.to_json()}, room=game.id)
             socketio.start_background_task(play_game, game)
         else:
             # Still need to keep waiting for players

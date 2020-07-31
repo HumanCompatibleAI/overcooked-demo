@@ -38,6 +38,7 @@ $(function() {
  * * * * * * * * * * * * */
 
 window.intervalID = -1;
+window.spectating = true;
 
 socket.on('waiting', function(data) {
     // Show game lobby
@@ -70,8 +71,9 @@ socket.on('start_game', function(data) {
     }
     graphics_config = {
         container_id : "overcooked",
-        start_info : data
+        start_info : data.start_info
     };
+    window.spectating = data.spectating;
     $("#overcooked").empty();
     $('#game-over').hide();
     $('#lobby').hide();
@@ -80,13 +82,20 @@ socket.on('start_game', function(data) {
     $("#instructions").hide();
     $('#leave').show();
     $('#game-title').show();
-    enable_key_listener();
+    
+    if (!window.spectating) {
+        enable_key_listener();
+    }
+    
     graphics_start(graphics_config);
 });
 
 socket.on('reset_game', function(data) {
     graphics_end();
-    disable_key_listener();
+    if (!window.spectating) {
+        disable_key_listener();
+    }
+    
     $("#overcooked").empty();
     $("#reset-game").show();
     setTimeout(function() {
@@ -95,8 +104,10 @@ socket.on('reset_game', function(data) {
             container_id : "overcooked",
             start_info : data.state
         };
+        if (!window.spectating) {
+            enable_key_listener();
+        }
         graphics_start(graphics_config);
-        enable_key_listener();
     }, data.timeout);
 });
 
@@ -108,7 +119,9 @@ socket.on('state_pong', function(data) {
 socket.on('end_game', function(data) {
     // Hide game data and display game-over html
     graphics_end();
-    disable_key_listener();
+    if (!window.spectating) {
+        disable_key_listener();
+    }
     $('#game-title').hide();
     $('#game-over').show();
     $("#join").show();
