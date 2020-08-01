@@ -39,8 +39,6 @@ class Game(ABC):
         RESET = 'reset'
         INACTIVE = 'inactive'
 
-
-
     def __init__(self, *args, **kwargs):
         """
         players (list): List of IDs of players currently in the game

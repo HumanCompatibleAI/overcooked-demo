@@ -7,6 +7,7 @@ var socket = io();
 
 $(function() {
     $('#create').click(function () {
+        console.log("testing")
         params = arrToJSON($('form').serializeArray());
         params.layouts = [params.layout]
         data = {
@@ -26,6 +27,50 @@ $(function() {
 $(function() {
     $('#leave').click(function() {
         socket.emit('leave', {});
+    });
+});
+
+$(function() {
+    $('#state_json_submit').click(async function() { 
+
+        var json_graphics_config_start_info = $('#state_json').serializeArray()[0].value;
+        console.log(json_graphics_config_start_info);
+
+        var start_info = JSON.parse(json_graphics_config_start_info);
+
+        console.log(start_info);
+
+        graphics_config = {
+            container_id : "overcooked",
+            start_info : start_info
+        };
+        var graphics = graphics_start(graphics_config);
+        console.log(graphics.game.scene.scenes);
+
+        while (true) {
+            await new Promise(r => setTimeout(r, 100));
+            if (graphics.game.scene.scenes.length > 0) {
+                console.log(graphics.game.scene.scenes[0])
+                console.log(graphics.game.scene.scenes[0].is_updated)
+                if (graphics.game.scene.scenes[0].is_updated) {
+                    break;
+                }
+            }
+        }
+
+        graphics.game.renderer.snapshot(function (image) {
+            console.log(image);
+            console.log(graphics.game.scene.scenes);
+            var link = document.getElementById('link');
+            link.setAttribute('download', 'overcooked_screenshot.png');
+            link.setAttribute('href', image.src);
+            link.click();
+            // socket.emit('boi2jpeg', image.src);
+
+            $("#overcooked").empty();
+            graphics_end();
+        });
+        
     });
 });
 
@@ -61,36 +106,6 @@ socket.on('creation_failed', function(data) {
     $("#overcooked").empty();
     $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
 });
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-socket.on('boi_graphics', async function(data) {
-    console.log("Okokok");
-    
-    graphics_config = {
-        container_id : "overcooked",
-        start_info : data
-    };
-    var graphics = graphics_start(graphics_config);
-
-    // Should be using a promise here with the graphics rather than whatever i'm doing here.
-    await new Promise(r => setTimeout(r, 800));
-
-    graphics.game.renderer.snapshot(function (image) {
-        console.log(image);
-        var link = document.getElementById('link');
-        link.setAttribute('download', 'overcooked_screenshot.png');
-        link.setAttribute('href', image.src);
-        link.click();
-        // socket.emit('boi2jpeg', image.src);
-
-        $("#overcooked").empty();
-        graphics_end();
-    });
-
-    console.log("should be done?2");
-
-});
-///////////////////////////////////////////////////////////////////////////////////////////////
 
 socket.on('start_game', function(data) {
     // Hide game-over and lobby, show game title header

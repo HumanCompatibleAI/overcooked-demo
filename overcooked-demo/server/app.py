@@ -89,7 +89,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", logger=app.config['DEBUG'])
 # Attach handler for logging errors to file
 handler = logging.FileHandler(LOGFILE)
 handler.setLevel(logging.ERROR)  
-app.logger.addHandler(handler)  
+app.logger.addHandler(handler)
 
 
 #################################
@@ -312,22 +312,6 @@ def psiturk():
 @app.route('/instructions')
 def instructions():
     return render_template('instructions.html')
-
-@app.route('/state2jpeg', methods=['POST'])
-def state2jpeg():
-    import json
-    from overcooked_ai_py.mdp.overcooked_mdp import OvercookedState
-
-    # NOTE: could possibly use selenium here to handle getting screenshot of canvas
-    
-    state_dict = request.get_json()
-    game, _ = try_create_game("overcooked", layouts=["cramped_room"])
-    game.activate()
-    s = OvercookedState.from_dict(state_dict)
-    game.state = s
-    socketio.emit('boi_graphics', game.to_json())
-    cleanup_game(game)
-    return game.to_json()
 
 @app.route('/tutorial')
 def tutorial():

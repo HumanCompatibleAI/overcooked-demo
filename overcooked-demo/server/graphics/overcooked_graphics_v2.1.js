@@ -68,7 +68,7 @@ class GraphicsManager {
         scene_config.start_state = start_info.state;
         game_config.scene = new OvercookedScene(scene_config);
         game_config.width = scene_config.tileSize*scene_config.terrain[0].length;
-        game_config.height = scene_config.tileSize*scene_config.terrain.length  + scene_config.hud_size;
+        game_config.height = scene_config.tileSize*scene_config.terrain.length;//  + scene_config.hud_size;
         game_config.parent = graphics_config.container_id;
         this.game = new Phaser.Game(game_config);
     }
@@ -96,6 +96,7 @@ class OvercookedScene extends Phaser.Scene {
             bonus_orders : config.start_state.state.bonus_orders,
             all_orders : config.start_state.state.all_orders
         }
+        this.is_updated = false;
     }
 
     set_state(state) {
@@ -125,6 +126,9 @@ class OvercookedScene extends Phaser.Scene {
         this.sprites = {};
         this.drawLevel();
         this._drawState(this.state, this.sprites);
+        // Hack to know when the Scene has been filled for scene
+        // screenshotting purposes
+        this.is_updated = true;
     }
 
     update() {
@@ -133,8 +137,8 @@ class OvercookedScene extends Phaser.Scene {
         }
         if (typeof(this.hud_data) !== 'undefined') {
             let { width, height } = this.game.canvas;
-            let board_height = height - this.hud_size;
-            this._drawHUD(this.hud_data, this.sprites, board_height);
+            // let board_height = height - this.hud_size;
+            // this._drawHUD(this.hud_data, this.sprites, board_height);
         }
     }
     drawLevel() {
