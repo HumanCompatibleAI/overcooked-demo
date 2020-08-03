@@ -10,7 +10,8 @@ import pickle, queue, atexit, json, logging
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import OvercookedGame, OvercookedTutorial, Game, AGENT_DIR
+from game import OvercookedGame, OvercookedTutorial, Game
+import game
 
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
@@ -32,6 +33,12 @@ LOGFILE = CONFIG['logfile']
 
 # Available layout names
 LAYOUTS = CONFIG['layouts']
+
+# Maximum allowable game length (in seconds)
+MAX_GAME_LENGTH = CONFIG['MAX_GAME_LENGTH']
+
+# Path to where pre-trained agents will be stored on server
+AGENT_DIR = CONFIG['AGENT_DIR']
 
 # Maximum number of games that can run concurrently. Contrained by available memory and CPU
 MAX_GAMES = CONFIG['MAX_GAMES']
@@ -74,6 +81,8 @@ GAME_NAME_TO_CLS = {
     "overcooked" : OvercookedGame,
     "tutorial" : OvercookedTutorial
 }
+
+game._configure(MAX_GAME_LENGTH, AGENT_DIR)
 
 
 

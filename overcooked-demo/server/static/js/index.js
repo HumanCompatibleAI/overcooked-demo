@@ -14,6 +14,10 @@ $(function() {
             "game_name" : "overcooked"
         };
         socket.emit("create", data);
+        $('#waiting').show();
+        $('#join').hide();
+        $('#create').hide();
+        $("#instructions").hide();
     });
 });
 
@@ -77,6 +81,7 @@ socket.on('start_game', function(data) {
     $("#overcooked").empty();
     $('#game-over').hide();
     $('#lobby').hide();
+    $('#waiting').hide();
     $('#join').hide();
     $('#create').hide();
     $("#instructions").hide();
