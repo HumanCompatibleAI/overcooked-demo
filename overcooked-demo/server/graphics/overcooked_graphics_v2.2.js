@@ -351,7 +351,8 @@ class OvercookedScene extends Phaser.Scene {
         if (typeof(hud_data.score) !== 'undefined') {
             this._drawScore(hud_data.score, sprites, board_height);
         }
-        if (typeof(hud_data.potential) !== 'undefined') {
+        if (typeof(hud_data.potential) !== 'undefined' && hud_data.potential !== null) {
+            console.log(hud_data.potential)
             this._drawPotential(hud_data.potential, sprites, board_height);
         }
     }

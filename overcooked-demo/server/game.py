@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from threading import Lock, Thread
 from queue import Queue, LifoQueue, Empty, Full
 from time import time
-from human_aware_rl.rllib.rllib import load_agent
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
@@ -358,8 +357,9 @@ class OvercookedGame(Game):
         - _curr_game_over: Determines whether the game on the current mdp has ended
     """
 
-    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', psiturk_uid="-1", **kwargs):
+    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', psiturk_uid="-1", showPotential=False, **kwargs):
         super(OvercookedGame, self).__init__(**kwargs)
+        self.show_potential = showPotential
         self.psiturk_uid = psiturk_uid
         self.mdp_params = mdp_params
         self.layouts = layouts
@@ -367,6 +367,7 @@ class OvercookedGame(Game):
         self.mdp = None
         self.mlp = None
         self.score = 0
+        self.phi = 0
         self.max_time = min(int(gameTime), MAX_GAME_TIME)
         self.npc_policies = {}
         self.npc_state_queues = {}
@@ -440,7 +441,8 @@ class OvercookedGame(Game):
         # Apply overcooked game logic to get state transition
         prev_state = self.state
         self.state, info = self.mdp.get_state_transition(prev_state, joint_action)
-        self.phi = self.mdp.potential_function(prev_state, self.mlp.mp, gamma=0.99)
+        if self.show_potential:
+            self.phi = self.mdp.potential_function(prev_state, self.mlp.mp, gamma=0.99)
 
         # Send next state to all background consumers if needed
         if self.curr_tick % self.ticks_per_ai_action == 0:
@@ -486,9 +488,11 @@ class OvercookedGame(Game):
         super(OvercookedGame, self).activate()
         self.curr_layout = self.layouts.pop()
         self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
-        self.mlp = MediumLevelPlanner.from_pickle_or_compute(self.mdp, NO_COUNTERS_PARAMS)
+        if self.show_potential:
+            self.mlp = MediumLevelPlanner.from_pickle_or_compute(self.mdp, NO_COUNTERS_PARAMS)
         self.state = self.mdp.get_standard_start_state()
-        self.phi = self.mdp.potential_function(self.state, self.mlp.mp, gamma=0.99)
+        if self.show_potential:
+            self.phi = self.mdp.potential_function(self.state, self.mlp.mp, gamma=0.99)
         self.start_time = time()
         self.score = 0
         self.threads = []
@@ -516,7 +520,7 @@ class OvercookedGame(Game):
 
     def get_state(self):
         state_dict = {}
-        state_dict['potential'] = self.phi
+        state_dict['potential'] = self.phi if self.show_potential else None
         state_dict['state'] = self.state.to_dict()
         state_dict['score'] = self.score
         state_dict['time_left'] = max(self.max_time - (time() - self.start_time), 0)
@@ -531,6 +535,7 @@ class OvercookedGame(Game):
     def get_policy(self, npc_id, idx=0):
         if npc_id.lower().startswith("rllib"):
             # Loading rllib agents requires additional helpers
+            from human_aware_rl.rllib.rllib import load_agent
             fpath = os.path.join(AGENT_DIR, npc_id, 'agent', 'agent')
             return load_agent(fpath, agent_index=idx)
         else:
