@@ -46,6 +46,7 @@ window.spectating = true;
 
 socket.on('waiting', function(data) {
     // Show game lobby
+    $('#waiting').hide();
     $('#game-over').hide();
     $('#instructions').hide();
     $("#overcooked").empty();
