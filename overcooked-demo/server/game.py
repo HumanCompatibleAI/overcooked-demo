@@ -6,6 +6,7 @@ from human_aware_rl.rllib.rllib import load_agent
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
+from overcooked_ai_py.planning.planners import MediumLevelPlanner, NO_COUNTERS_PARAMS
 import random, os, pickle
 import ray
 
@@ -364,6 +365,7 @@ class OvercookedGame(Game):
         self.layouts = layouts
         self.max_players = int(num_players)
         self.mdp = None
+        self.mlp = None
         self.score = 0
         self.max_time = min(int(gameTime), MAX_GAME_TIME)
         self.npc_policies = {}
@@ -438,6 +440,7 @@ class OvercookedGame(Game):
         # Apply overcooked game logic to get state transition
         prev_state = self.state
         self.state, info = self.mdp.get_state_transition(prev_state, joint_action)
+        self.phi = self.mdp.potential_function(prev_state, self.mlp.mp, gamma=0.99)
 
         # Send next state to all background consumers if needed
         if self.curr_tick % self.ticks_per_ai_action == 0:
@@ -483,7 +486,9 @@ class OvercookedGame(Game):
         super(OvercookedGame, self).activate()
         self.curr_layout = self.layouts.pop()
         self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
+        self.mlp = MediumLevelPlanner.from_pickle_or_compute(self.mdp, NO_COUNTERS_PARAMS)
         self.state = self.mdp.get_standard_start_state()
+        self.phi = self.mdp.potential_function(self.state, self.mlp.mp, gamma=0.99)
         self.start_time = time()
         self.score = 0
         self.threads = []
@@ -511,6 +516,7 @@ class OvercookedGame(Game):
 
     def get_state(self):
         state_dict = {}
+        state_dict['potential'] = self.phi
         state_dict['state'] = self.state.to_dict()
         state_dict['score'] = self.score
         state_dict['time_left'] = max(self.max_time - (time() - self.start_time), 0)
@@ -589,6 +595,7 @@ class OvercookedTutorial(OvercookedGame):
         
         # Apply overcooked game logic to get state transition
         prev_state = self.state
+        phi_s = self.mdp.potential
         self.state, info = self.mdp.get_state_transition(prev_state, joint_action)
 
         # Send next state to all background consumers if needed

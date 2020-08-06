@@ -64,6 +64,11 @@ socket.on('creation_failed', function(data) {
     // Tell user what went wrong
     let err = data['error']
     $("#overcooked").empty();
+    $('#lobby').hide();
+    $("#instructions").show();
+    $('#waiting').hide();
+    $('#join').show();
+    $('#create').show();
     $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
 });
 
