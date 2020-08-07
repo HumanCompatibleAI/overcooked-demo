@@ -125,7 +125,7 @@ socket.on('start_game', function(data) {
     curr_tutorial_phase = 0;
     graphics_config = {
         container_id : "overcooked",
-        start_info : data
+        start_info : data.start_info
     };
     $("#overcooked").empty();
     $('#game-over').hide();

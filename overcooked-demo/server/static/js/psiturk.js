@@ -61,7 +61,7 @@ socket.on('start_game', function(data) {
     }
     graphics_config = {
         container_id : "overcooked",
-        start_info : data
+        start_info : data.start_info
     };
     $("#overcooked").empty();
     $('#game-over').hide();

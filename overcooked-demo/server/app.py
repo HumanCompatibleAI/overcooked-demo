@@ -10,7 +10,8 @@ import pickle, queue, atexit, json, logging
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import OvercookedGame, OvercookedTutorial, Game, AGENT_DIR
+from game import OvercookedGame, OvercookedTutorial, Game
+import game
 
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
@@ -32,6 +33,12 @@ LOGFILE = CONFIG['logfile']
 
 # Available layout names
 LAYOUTS = CONFIG['layouts']
+
+# Maximum allowable game length (in seconds)
+MAX_GAME_LENGTH = CONFIG['MAX_GAME_LENGTH']
+
+# Path to where pre-trained agents will be stored on server
+AGENT_DIR = CONFIG['AGENT_DIR']
 
 # Maximum number of games that can run concurrently. Contrained by available memory and CPU
 MAX_GAMES = CONFIG['MAX_GAMES']
@@ -74,6 +81,8 @@ GAME_NAME_TO_CLS = {
     "overcooked" : OvercookedGame,
     "tutorial" : OvercookedTutorial
 }
+
+game._configure(MAX_GAME_LENGTH, AGENT_DIR)
 
 
 
@@ -230,14 +239,17 @@ def _create_game(user_id, game_name, params={}):
     if not game:
         emit("creation_failed", { "error" : err.__repr__() })
         return
+    spectating = True
     with game.lock:
-        game.add_player(user_id)
+        if not game.is_full():
+            spectating = False
+            game.add_player(user_id)
         join_room(game.id)
         set_curr_room(user_id, game.id)
         if game.is_ready():
             game.activate()
             ACTIVE_GAMES.add(game.id)
-            emit('start_game', game.to_json(), room=game.id)
+            emit('start_game', { "spectating" : spectating, "start_info" : game.to_json()}, room=game.id)
             socketio.start_background_task(play_game, game, fps=MAX_FPS)
         else:
             WAITING_GAMES.put(game.id)
@@ -409,7 +421,7 @@ def on_join(data):
             # Game is ready to begin play
             game.activate()
             ACTIVE_GAMES.add(game.id)
-            emit('start_game', game.to_json(), room=game.id)
+            emit('start_game', { "spectating" : False, "start_info" : game.to_json()}, room=game.id)
             socketio.start_background_task(play_game, game)
         else:
             # Still need to keep waiting for players
