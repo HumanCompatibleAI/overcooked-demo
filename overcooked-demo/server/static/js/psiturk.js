@@ -61,7 +61,7 @@ socket.on('start_game', function(data) {
     }
     graphics_config = {
         container_id : "overcooked",
-        start_info : data
+        start_info : data.start_info
     };
     $("#overcooked").empty();
     $('#game-over').hide();
@@ -185,7 +185,8 @@ socket.on("connect", function() {
     let params = JSON.parse(JSON.stringify(config.experimentParams));
     params.psiturk_uid = uid;
     let data = {
-        "params" : params
+        "params" : params,
+        "game_name" : "overcooked"
     };
 
     // create (or join if it exists) new game

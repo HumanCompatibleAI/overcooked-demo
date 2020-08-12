@@ -59,6 +59,10 @@
     <label for="gameTime">Game Length (sec)</label>
     <input type="number" id="gameTime" value="30" min="1" max="1800" name="gameTime">
   </div>
+  <div class="form-group col-lg-2">
+    <label for="showPotential">Show Potential?</label>
+    <input type="checkbox" id="showPotential" name="showPotential">
+  </div>
   
       </div>
       </div>
@@ -67,6 +71,9 @@
     <div id="lobby", class="text-center" style="display:none">
         <h4 class="text-center">Game Lobby</h4>
         Waiting for game to start...
+    </div>
+    <div id="waiting", class="text-center" style="display:none">
+      Waiting for game to be created. Please be patient...
     </div>
     <div id="overcooked-container" class="text-center">
         <h4 id="game-title" style="display:none">Game in Progress</h4>
