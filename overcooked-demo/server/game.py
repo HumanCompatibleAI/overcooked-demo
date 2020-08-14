@@ -5,7 +5,7 @@ from time import time
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
-from overcooked_ai_py.planning.planners import MediumLevelPlanner, NO_COUNTERS_PARAMS
+from overcooked_ai_py.planning.planners import MotionPlanner
 import random, os, pickle
 import ray
 
@@ -365,7 +365,7 @@ class OvercookedGame(Game):
         self.layouts = layouts
         self.max_players = int(num_players)
         self.mdp = None
-        self.mlp = None
+        self.mp = None
         self.score = 0
         self.phi = 0
         self.max_time = min(int(gameTime), MAX_GAME_TIME)
@@ -442,7 +442,7 @@ class OvercookedGame(Game):
         prev_state = self.state
         self.state, info = self.mdp.get_state_transition(prev_state, joint_action)
         if self.show_potential:
-            self.phi = self.mdp.potential_function(prev_state, self.mlp.mp, gamma=0.99)
+            self.phi = self.mdp.potential_function(prev_state, self.mp, gamma=0.99)
 
         # Send next state to all background consumers if needed
         if self.curr_tick % self.ticks_per_ai_action == 0:
@@ -489,10 +489,10 @@ class OvercookedGame(Game):
         self.curr_layout = self.layouts.pop()
         self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
         if self.show_potential:
-            self.mlp = MediumLevelPlanner.from_pickle_or_compute(self.mdp, NO_COUNTERS_PARAMS)
+            self.mp = MotionPlanner.from_pickle_or_compute(self.mdp, mp_params={'counter_goals' : self.mdp.get_useful_counter_locations()})
         self.state = self.mdp.get_standard_start_state()
         if self.show_potential:
-            self.phi = self.mdp.potential_function(self.state, self.mlp.mp, gamma=0.99)
+            self.phi = self.mdp.potential_function(self.state, self.mp, gamma=0.99)
         self.start_time = time()
         self.score = 0
         self.threads = []
