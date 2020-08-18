@@ -186,7 +186,7 @@ socket.on("connect", function() {
     params.psiturk_uid = uid;
     let data = {
         "params" : params,
-        "game_name" : "overcooked"
+        "game_name" : "psiturk"
     };
 
     // create (or join if it exists) new game

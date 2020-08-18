@@ -261,7 +261,7 @@ class Game(ABC):
 
     def get_data(self):
         """
-        Returns any accumulated data about the game. Used for psiturk data collection
+        Return any game metadata to server driver. Really only relevant for Psiturk code
         """
         return {}
         
@@ -349,7 +349,6 @@ class OvercookedGame(Game):
             per forward pass can be higher
         - action_to_overcooked_action (dict): Maps action names returned by client to action names used by OvercookedGridworld
             Note that this is an instance variable and not a static variable for efficiency reasons
-        - trajectory (list(dict)): list of state-action pairs in current trajectory
     
     Methods:
         - npc_policy_consumer: Background process that asynchronously computes NPC policy forward passes. One thread
@@ -381,7 +380,6 @@ class OvercookedGame(Game):
         }
         self.ticks_per_ai_action = 4
         self.curr_tick = 0
-        self.trajectory = []
 
         if playerZero != 'human':
             player_zero_id = playerZero + '_0'
@@ -453,20 +451,8 @@ class OvercookedGame(Game):
         curr_reward = sum(info['sparse_reward_by_agent'])
         self.score += curr_reward
 
-        # Log transition in our current trajectory
-        transition = {
-            "state" : prev_state.to_dict(),
-            "joint_action" : joint_action,
-            "reward" : curr_reward,
-            "time_left" : max(self.max_time - (time() - self.start_time), 0),
-            "score" : self.score,
-            "time_elapsed" : time() - self.start_time,
-            "cur_gameloop" : self.curr_tick,
-            "layout" : self.mdp.terrain_mtx,
-            "layout_name" : self.curr_layout,
-            "trial_id" : self.trial_id
-        }
-        self.trajectory.append(transition)
+        # Return about the current transition
+        return prev_state, joint_action, info
         
 
     def enqueue_action(self, player_id, action):
@@ -496,7 +482,6 @@ class OvercookedGame(Game):
         self.start_time = time()
         self.score = 0
         self.threads = []
-        self.trial_id = self.psiturk_uid + str(self.start_time)
         for npc_policy in self.npc_policies:
             self.npc_policies[npc_policy].reset()
             self.npc_state_queues[npc_policy].put(self.state)
@@ -543,6 +528,59 @@ class OvercookedGame(Game):
             with open(fpath, 'rb') as f:
                 return pickle.load(f)
 
+
+class OvercookedPsiturk(OvercookedGame):
+    """
+    Wrapper on OvercookedGame that handles additional housekeeping for Psiturk experiments
+
+    Instance Variables:
+        - trajectory (list(dict)): list of state-action pairs in current trajectory
+        - psiturk_uid (string): Unique id for each psiturk game instance (provided by Psiturk backend)
+            Note, this is not the user id -- two users in the same game will have the same psiturk_uid
+        - trial_id (string): Unique identifier for each psiturk trial, updated on each call to reset
+            Note, one OvercookedPsiturk game handles multiple layouts. This is how we differentiate
+
+    Methods:
+        get_data: Returns the accumulated trajectory data and clears the self.trajectory instance variable
+    
+    """
+
+    def __init__(self, *args, psiturk_uid='-1', **kwargs):
+        super(OvercookedPsiturk, self).__init__(*args, showPotential=False, **kwargs)
+        self.psiturk_uid = psiturk_uid
+        self.trajectory = []
+
+    def activate(self):
+        """
+        Resets trial ID at start of new "game"
+        """
+        super(OvercookedPsiturk, self).activate()
+        self.trial_id = self.psiturk_uid + str(self.start_time)
+
+    def apply_actions(self):
+        """
+        Applies pending actions then logs transition data
+        """
+        # Apply MDP logic
+        prev_state, joint_action, info = super(OvercookedPsiturk, self).apply_actions()
+
+        # Log data to send to psiturk client
+        curr_reward = sum(info['sparse_reward_by_agent'])
+        transition = {
+            "state" : prev_state.to_dict(),
+            "joint_action" : joint_action,
+            "reward" : curr_reward,
+            "time_left" : max(self.max_time - (time() - self.start_time), 0),
+            "score" : self.score,
+            "time_elapsed" : time() - self.start_time,
+            "cur_gameloop" : self.curr_tick,
+            "layout" : self.mdp.terrain_mtx,
+            "layout_name" : self.curr_layout,
+            "trial_id" : self.trial_id
+        }
+
+        self.trajectory.append(transition)
+
     def get_data(self):
         """
         Returns and then clears the accumulated trajectory
@@ -553,11 +591,20 @@ class OvercookedGame(Game):
 
 
 class OvercookedTutorial(OvercookedGame):
+
+    """
+    Wrapper on OvercookedGame that includes additional data for tutorial mechanics, most notably the introduction of tutorial "phases"
+
+    Instance Variables:
+        - curr_phase (int): Indicates what tutorial phase we are currently on
+        - phase_two_score (float): The exact sparse reward the user must obtain to advance past phase 2
+    """
     
 
     def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='AI', phaseTwoScore=15, **kwargs):
-        super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, **kwargs)
+        super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, showPotential=False, **kwargs)
         self.phase_two_score = phaseTwoScore
+        self.phase_two_finished = False
         self.max_time = 0
         self.max_players = 2
         self.ticks_per_ai_action = 8
@@ -573,7 +620,7 @@ class OvercookedTutorial(OvercookedGame):
         elif self.curr_phase == 1:
             return self.score > 0
         elif self.curr_phase == 2:
-            return self.score > 0
+            return self.phase_two_finished
         return False 
 
     def is_finished(self):
@@ -587,48 +634,22 @@ class OvercookedTutorial(OvercookedGame):
         return TutorialAI()
 
     def apply_actions(self):
-        # Default joint action, as NPC policies and clients probably don't enqueue actions fast 
-        # enough to produce one at every tick
-        joint_action = [Action.STAY] * len(self.players)
+        """
+        Apply regular MDP logic with retroactive score adjustment tutorial purposes
+        """
+        _, _, info = super(OvercookedTutorial, self).apply_actions()
 
-        # Synchronize individual player actions into a joint-action as required by overcooked logic
-        for i in range(len(self.players)):
-            try:
-                joint_action[i] = self.pending_actions[i].get(block=False)
-            except Empty:
-                pass
-        
-        # Apply overcooked game logic to get state transition
-        prev_state = self.state
-        phi_s = self.mdp.potential
-        self.state, info = self.mdp.get_state_transition(prev_state, joint_action)
+        human_reward, ai_reward = info['sparse_reward_by_agent']
 
-        # Send next state to all background consumers if needed
-        if self.curr_tick % self.ticks_per_ai_action == 0:
-            for npc_id in self.npc_policies:
-                self.npc_state_queues[npc_id].put(self.state, block=False)
-
-        # Update score based on soup deliveries of human agent only
-        curr_reward = info['sparse_reward_by_agent'][0]
+        # We only want to keep track of the human's score in the tutorial
+        self.score -= ai_reward
 
         # Phase two requires a specific reward to complete
-        curr_reward = curr_reward if self.curr_phase != 2 or curr_reward == self.phase_two_score else 0
-        self.score += curr_reward
+        if self.curr_phase == 2:
+            self.score = 0
+            if human_reward == self.phase_two_score:
+                self.phase_two_finished = True
 
-        # Log transition in our current trajectory
-        transition = {
-            "state" : prev_state.to_dict(),
-            "joint_action" : joint_action,
-            "reward" : curr_reward,
-            "time_left" : max(self.max_time - (time() - self.start_time), 0),
-            "score" : self.score,
-            "time_elapsed" : time() - self.start_time,
-            "cur_gameloop" : self.curr_tick,
-            "layout" : self.mdp.terrain_mtx,
-            "layout_name" : self.curr_layout,
-            "trial_id" : self.trial_id
-        }
-        self.trajectory.append(transition)
 
 
 

@@ -10,7 +10,7 @@ import pickle, queue, atexit, json, logging
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import OvercookedGame, OvercookedTutorial, Game
+from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk
 import game
 
 
@@ -79,7 +79,8 @@ USER_ROOMS = ThreadSafeDict()
 # Mapping of string game names to corresponding classes
 GAME_NAME_TO_CLS = {
     "overcooked" : OvercookedGame,
-    "tutorial" : OvercookedTutorial
+    "tutorial" : OvercookedTutorial,
+    "psiturk" : OvercookedPsiturk
 }
 
 game._configure(MAX_GAME_LENGTH, AGENT_DIR)
