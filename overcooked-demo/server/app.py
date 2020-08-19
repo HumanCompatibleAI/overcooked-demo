@@ -412,7 +412,7 @@ def on_create(data):
 @socketio.on('join')
 def on_join(data):
     user_id = request.sid
-    create_if_not_found = data.get("create_if_not_found", False)
+    create_if_not_found = data.get("create_if_not_found", True)
 
     # Retrieve current game if one exists
     curr_game = get_curr_game(user_id)

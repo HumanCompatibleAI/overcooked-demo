@@ -95,6 +95,7 @@ $(function() {
             "game_name" : "tutorial"
         };
         socket.emit("join", data);
+        $('try-again').attr("disable", true)
     });
 });
 
@@ -119,6 +120,7 @@ socket.on('creation_failed', function(data) {
     $("#overcooked").empty();
     $('#overcooked').append(`<h4>Sorry, tutorial creation code failed with error: ${JSON.stringify(err)}</>`);
     $('#try-again').show();
+    $('#try-again').attr("disabled", false);
 });
 
 socket.on('start_game', function(data) {
@@ -130,6 +132,7 @@ socket.on('start_game', function(data) {
     $("#overcooked").empty();
     $('#game-over').hide();
     $('#try-again').hide();
+    $('#try-again').attr('disabled', true)
     $('#hint-wrapper').hide();
     $('#show-hint').text('Show Hint');
     $('#game-title').text(`Tutorial in Progress, Phase ${curr_tutorial_phase}/${tutorial_instructions.length}`);
