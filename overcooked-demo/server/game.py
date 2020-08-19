@@ -54,12 +54,14 @@ class Game(ABC):
     def __init__(self, *args, **kwargs):
         """
         players (list): List of IDs of players currently in the game
+        spectators (set): Collection of IDs of players that are not allowed to enqueue actions but are currently watching the game
         id (int):   Unique identifier for this game
         pending_actions List[(Queue)]: Buffer of (player_id, action) pairs have submitted that haven't been commited yet
         lock (Lock):    Used to serialize updates to the game state
         is_active(bool): Whether the game is currently being played or not
         """
         self.players = []
+        self.spectators = set()
         self.pending_actions = []
         self.id = kwargs.get('id', id(self))
         self.lock = Lock()
@@ -210,7 +212,7 @@ class Game(ABC):
         """
         Return whether it is safe to garbage collect this game instance
         """
-        return not len(self.players)
+        return not self.num_players
 
     def add_player(self, player_id, idx=None, buff_size=-1):
         """
@@ -233,6 +235,14 @@ class Game(ABC):
         self.players[idx] = player_id
         self.pending_actions[idx] = Queue(maxsize=buff_size)
 
+    def add_spectator(self, spectator_id):
+        """
+        Add spectator_id to list of spectators for this game
+        """
+        if spectator_id in self.players:
+            raise ValueError("Cannot spectate and play at same time")
+        self.spectators.add(spectator_id)
+
     def remove_player(self, player_id):
         """
         Remove player_id from the game
@@ -245,6 +255,18 @@ class Game(ABC):
             return False
         else:
             return True
+
+    def remove_spectator(self, spectator_id):
+        """
+        Removes spectator_id if they are in list of spectators. Returns True if spectator successfully removed, False otherwise
+        """
+        try:
+            self.spectators.remove(spectator_id)
+        except ValueError:
+            return False
+        else:
+            return True
+
 
     def clear_pending_actions(self):
         """
@@ -349,6 +371,8 @@ class OvercookedGame(Game):
             per forward pass can be higher
         - action_to_overcooked_action (dict): Maps action names returned by client to action names used by OvercookedGridworld
             Note that this is an instance variable and not a static variable for efficiency reasons
+        - human_players (set(str)): Collection of all player IDs that correspond to humans
+        - npc_players (set(str)): Collection of all player IDs that correspond to AI
     
     Methods:
         - npc_policy_consumer: Background process that asynchronously computes NPC policy forward passes. One thread
@@ -356,10 +380,9 @@ class OvercookedGame(Game):
         - _curr_game_over: Determines whether the game on the current mdp has ended
     """
 
-    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', psiturk_uid="-1", showPotential=False, **kwargs):
+    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', showPotential=False, **kwargs):
         super(OvercookedGame, self).__init__(**kwargs)
         self.show_potential = showPotential
-        self.psiturk_uid = psiturk_uid
         self.mdp_params = mdp_params
         self.layouts = layouts
         self.max_players = int(num_players)
@@ -380,16 +403,18 @@ class OvercookedGame(Game):
         }
         self.ticks_per_ai_action = 4
         self.curr_tick = 0
+        self.human_players = set()
+        self.npc_players = set()
 
         if playerZero != 'human':
             player_zero_id = playerZero + '_0'
-            self.add_player(player_zero_id, idx=0, buff_size=1)
+            self.add_player(player_zero_id, idx=0, buff_size=1, is_human=False)
             self.npc_policies[player_zero_id] = self.get_policy(playerZero, idx=0)
             self.npc_state_queues[player_zero_id] = LifoQueue()
 
         if playerOne != 'human':
             player_one_id = playerOne + '_1'
-            self.add_player(player_one_id, idx=1, buff_size=1)
+            self.add_player(player_one_id, idx=1, buff_size=1, is_human=False)
             self.npc_policies[player_one_id] = self.get_policy(playerOne, idx=1)
             self.npc_state_queues[player_one_id] = LifoQueue()
 
@@ -403,6 +428,23 @@ class OvercookedGame(Game):
 
     def needs_reset(self):
         return self._curr_game_over() and not self.is_finished()
+
+    def add_player(self, player_id, idx=None, buff_size=-1, is_human=True):
+        super(OvercookedGame, self).add_player(player_id, idx=idx, buff_size=buff_size)
+        if is_human:
+            self.human_players.add(player_id)
+        else:
+            self.npc_players.add(player_id)
+
+    def remove_player(self, player_id):
+        removed = super(OvercookedGame, self).remove_player(player_id)
+        if removed:
+            if player_id in self.human_players:
+                self.human_players.remove(player_id)
+            elif player_id in self.npc_players:
+                self.npc_players.remove(player_id)
+            else:
+                raise ValueError("Inconsistent state")
 
 
     def npc_policy_consumer(self, policy_id):
@@ -420,6 +462,18 @@ class OvercookedGame(Game):
     def is_finished(self):
         val = not self.layouts and self._curr_game_over()
         return val
+
+    def is_empty(self):
+        """
+        Game is considered safe to scrap if there are no active players or if there are no humans (spectating or playing)
+        """
+        return super(OvercookedGame, self).is_empty() or not self.spectators and not self.human_players
+
+    def is_ready(self):
+        """
+        Game is ready to be activated if there are a sufficient number of players and at least one human (spectator or player)
+        """
+        return super(OvercookedGame, self).is_ready() and not self.is_empty()
 
     def apply_action(self, player_id, action):
         pass
@@ -472,6 +526,11 @@ class OvercookedGame(Game):
 
     def activate(self):
         super(OvercookedGame, self).activate()
+
+        # Sanity check at start of each game
+        if not self.npc_players.union(self.human_players) == set(self.players):
+            raise ValueError("Inconsistent State")
+
         self.curr_layout = self.layouts.pop()
         self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
         if self.show_potential:

@@ -11,12 +11,15 @@ $(function() {
         params.layouts = [params.layout]
         data = {
             "params" : params,
-            "game_name" : "overcooked"
+            "game_name" : "overcooked",
+            "create_if_not_found" : false
         };
         socket.emit("create", data);
         $('#waiting').show();
         $('#join').hide();
+        $('#join').attr("disabled", true);
         $('#create').hide();
+        $('#create').attr("disabled", true)
         $("#instructions").hide();
     });
 });
@@ -24,12 +27,15 @@ $(function() {
 $(function() {
     $('#join').click(function() {
         socket.emit("join", {});
+        $('#join').attr("disabled", true);
+        $('#create').attr("disabled", true);
     });
 });
 
 $(function() {
     $('#leave').click(function() {
         socket.emit('leave', {});
+        $('#leave').attr("disabled", true);
     });
 });
 
@@ -46,18 +52,25 @@ window.spectating = true;
 
 socket.on('waiting', function(data) {
     // Show game lobby
+    $('#error-exit').hide();
     $('#waiting').hide();
     $('#game-over').hide();
     $('#instructions').hide();
     $("#overcooked").empty();
     $('#lobby').show();
     $('#join').hide();
+    $('#join').attr("disabled", true)
     $('#create').hide();
+    $('#create').attr("disabled", true)
     $('#leave').show();
-    if (window.intervalID === -1) {
-        window.intervalID = setInterval(function() {
-            socket.emit('join', {});
-        }, 1000);
+    $('#leave').attr("disabled", false);
+    if (!data.in_game) {
+        // Begin pinging to join if not currently in a game
+        if (window.intervalID === -1) {
+            window.intervalID = setInterval(function() {
+                socket.emit('join', {});
+            }, 1000);
+        }
     }
 });
 
@@ -69,7 +82,9 @@ socket.on('creation_failed', function(data) {
     $("#instructions").show();
     $('#waiting').hide();
     $('#join').show();
+    $('#join').attr("disabled", false);
     $('#create').show();
+    $('#create').attr("disabled", false);
     $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
 });
 
@@ -84,14 +99,18 @@ socket.on('start_game', function(data) {
         start_info : data.start_info
     };
     window.spectating = data.spectating;
+    $('#error-exit').hide();
     $("#overcooked").empty();
     $('#game-over').hide();
     $('#lobby').hide();
     $('#waiting').hide();
     $('#join').hide();
+    $('#join').attr("disabled", true);
     $('#create').hide();
+    $('#create').attr("disabled", true)
     $("#instructions").hide();
     $('#leave').show();
+    $('#leave').attr("disabled", false)
     $('#game-title').show();
     
     if (!window.spectating) {
@@ -136,9 +155,12 @@ socket.on('end_game', function(data) {
     $('#game-title').hide();
     $('#game-over').show();
     $("#join").show();
+    $('#join').attr("disabled", false);
     $("#create").show();
+    $('#create').attr("disabled", false)
     $("#instructions").show();
     $("#leave").hide();
+    $('#leave').attr("disabled", true)
     
     // Game ended unexpectedly
     if (data.status === 'inactive') {
@@ -150,9 +172,12 @@ socket.on('end_lobby', function() {
     // Hide lobby
     $('#lobby').hide();
     $("#join").show();
+    $('#join').attr("disabled", false);
     $("#create").show();
+    $('#create').attr("disabled", false)
     $("#leave").hide();
-    $("#instructions").hide();
+    $('#leave').attr("disabled", true)
+    $("#instructions").show();
 
     // Stop trying to join
     clearInterval(window.intervalID);
