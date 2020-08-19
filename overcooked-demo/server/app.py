@@ -7,6 +7,7 @@ if os.getenv('FLASK_ENV', 'production') == 'production':
 
 # All other imports must come after patch to ensure eventlet compatibility
 import pickle, queue, atexit, json, logging
+from threading import Lock
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
@@ -72,6 +73,9 @@ ACTIVE_GAMES = ThreadSafeSet()
 # Queue of games IDs that are waiting for additional players to join. Note that some of these IDs might
 # be stale (i.e. if FREE_MAP[id] = True)
 WAITING_GAMES = queue.Queue()
+
+# Mapping of users to locks associated with the ID. Enforces user-level serialization
+USERS = ThreadSafeDict()
 
 # Mapping of user id's to the current game (room) they are in
 USER_ROOMS = ThreadSafeDict()
@@ -398,69 +402,72 @@ def debug():
 def on_create(data):
     user_id = request.sid
 
-    # Retrieve current game if one exists
-    curr_game = get_curr_game(user_id)
-    if curr_game:
-        # Cannot create if currently in a game
-        return
-    
-    params = data.get('params', {})
-    game_name = data.get('game_name', 'overcooked')
-    _create_game(user_id, game_name, params)
+    with USERS[user_id]:
+        # Retrieve current game if one exists
+        curr_game = get_curr_game(user_id)
+        if curr_game:
+            # Cannot create if currently in a game
+            return
+        
+        params = data.get('params', {})
+        game_name = data.get('game_name', 'overcooked')
+        _create_game(user_id, game_name, params)
     
 
 @socketio.on('join')
 def on_join(data):
     user_id = request.sid
-    create_if_not_found = data.get("create_if_not_found", True)
+    with USERS[user_id]:
+        create_if_not_found = data.get("create_if_not_found", True)
 
-    # Retrieve current game if one exists
-    curr_game = get_curr_game(user_id)
-    if curr_game:
-        # Cannot join if currently in a game
-        return
-    
-    # Retrieve a currently open game if one exists
-    game = get_waiting_game()
+        # Retrieve current game if one exists
+        curr_game = get_curr_game(user_id)
+        if curr_game:
+            # Cannot join if currently in a game
+            return
+        
+        # Retrieve a currently open game if one exists
+        game = get_waiting_game()
 
-    if not game and create_if_not_found:
-        # No available game was found so create a game
-        params = data.get('params', {})
-        game_name = data.get('game_name', 'overcooked')
-        _create_game(user_id, game_name, params)
-        return
+        if not game and create_if_not_found:
+            # No available game was found so create a game
+            params = data.get('params', {})
+            game_name = data.get('game_name', 'overcooked')
+            _create_game(user_id, game_name, params)
+            return
 
-    elif not game:
-        # No available game was found so start waiting to join one
-        emit('waiting', { "in_game" : False })
-    else:
-        # Game was found so join it
-        with game.lock:
+        elif not game:
+            # No available game was found so start waiting to join one
+            emit('waiting', { "in_game" : False })
+        else:
+            # Game was found so join it
+            with game.lock:
 
-            join_room(game.id)
-            set_curr_room(user_id, game.id)
-            game.add_player(user_id)
-                
-            if game.is_ready():
-                # Game is ready to begin play
-                game.activate()
-                ACTIVE_GAMES.add(game.id)
-                emit('start_game', { "spectating" : False, "start_info" : game.to_json()}, room=game.id)
-                socketio.start_background_task(play_game, game)
-            else:
-                # Still need to keep waiting for players
-                WAITING_GAMES.put(game.id)
-                emit('waiting', { "in_game" : True }, room=game.id)
+                join_room(game.id)
+                set_curr_room(user_id, game.id)
+                game.add_player(user_id)
+                    
+                if game.is_ready():
+                    # Game is ready to begin play
+                    game.activate()
+                    ACTIVE_GAMES.add(game.id)
+                    emit('start_game', { "spectating" : False, "start_info" : game.to_json()}, room=game.id)
+                    socketio.start_background_task(play_game, game)
+                else:
+                    # Still need to keep waiting for players
+                    WAITING_GAMES.put(game.id)
+                    emit('waiting', { "in_game" : True }, room=game.id)
 
 @socketio.on('leave')
 def on_leave(data):
     user_id = request.sid
-    was_active = _leave_game(user_id)
+    with USERS[user_id]:
+        was_active = _leave_game(user_id)
 
-    if was_active:
-        emit('end_game', { "status" : Game.Status.DONE, "data" : {}})
-    else:
-        emit('end_lobby')
+        if was_active:
+            emit('end_game', { "status" : Game.Status.DONE, "data" : {}})
+        else:
+            emit('end_lobby')
 
 @socketio.on('action')
 def on_action(data):
@@ -476,14 +483,23 @@ def on_action(data):
 
 @socketio.on('connect')
 def on_connect():
-    # Currently a no-op, user authentification would happen here if necessary
-    pass
+    user_id = request.sid
+
+    if user_id in USERS:
+        return
+
+    USERS[user_id] = Lock()
 
 @socketio.on('disconnect')
 def on_disconnect():
     # Ensure game data is properly cleaned-up in case of unexpected disconnect
     user_id = request.sid
-    _leave_game(user_id)
+    if user_id not in USERS:
+        return
+    with USERS[user_id]:
+        _leave_game(user_id)
+
+    del USERS[user_id]
 
 
 
