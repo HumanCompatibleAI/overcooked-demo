@@ -18,9 +18,9 @@
             "layouts" : ["tutorial_3", "tutorial_2", "tutorial_1", "tutorial_0"],
             "playerZero" : "human",
             "playerOne" : "TutorialAI",
-            "phaseTwoScore" : 28
+            "phaseTwoScore" : 34
         },
-        "tomato_value" : 7,
+        "tomato_value" : 13,
         "onion_value" : 21
     }
 }

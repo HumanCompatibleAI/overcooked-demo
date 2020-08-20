@@ -27,11 +27,11 @@
   </head>
   <body>
     <div id="config" style="display:none;">{{config}}</div>
+    <div id="psiturk" style="display:none">{{psiturk}}</div>
     <div id="overcooked-container" class="text-center">
         <h3 id="game-title" style="display:none"></h3>
         <div id="game-over" style="display:none">
             <h3>Tutorial Complete</h3>
-            <p>You will now be redirected back to the remainder of the HIT</p>
         </div>
         <div id="instructions-wrapper" class="text-center">
             <div id="tutorial-instructions" class="text-left" style="display:inline-block; width: 50%"></div>
@@ -42,6 +42,8 @@
         <button id="show-hint">Show Hint</button>
         <br></br>
         <div id="overcooked"></div>
+        <button id="quit" class="text-center" style="display:none">Quit</button>
+        <button id="finish" class="text-center" style="display:none">Back To Game</button>
         <div id="error-exit" style="display:none">Tutorial ended unexpectedly (probably due to server side error)</div>
     </div>
     <div id="soup-icons" class="text-center">

@@ -4,6 +4,7 @@ var socket = io();
 
 
 var config;
+var psiturk;
 
 var tutorial_instructions = () => [
     `
@@ -80,8 +81,13 @@ var curr_tutorial_phase;
 // Read in game config provided by server
 $(function() {
     config = JSON.parse($('#config').text());
+    psiturk = JSON.parse($('#psiturk').text()).val === 'true';
+    console.log(psiturk);
     tutorial_instructions = tutorial_instructions();
     tutorial_hints = tutorial_hints();
+    if (!psiturk) {
+        $('#quit').show();
+    }
 });
 
 /* * * * * * * * * * * * * * * * 
@@ -95,7 +101,7 @@ $(function() {
             "game_name" : "tutorial"
         };
         socket.emit("join", data);
-        $('try-again').attr("disable", true)
+        $('try-again').attr("disable", true);
     });
 });
 
@@ -105,6 +111,21 @@ $(function() {
         let new_text = text === "Show Hint" ? "Hide Hint" : "Show Hint";
         $('#hint-wrapper').toggle();
         $(this).text(new_text);
+    });
+});
+
+$(function() {
+    $('#quit').click(function() {
+        socket.emit("leave", {});
+        $('quit').attr("disable", true);
+        window.location.href = "./";
+    });
+});
+
+$(function() {
+    $('#finish').click(function() {
+        $('finish').attr("disable", true);
+        window.location.href = "./";
     });
 });
 
@@ -153,7 +174,7 @@ socket.on('reset_game', function(data) {
     $('#hint').empty();
     $("#tutorial-instructions").append(tutorial_instructions[curr_tutorial_phase]);
     $("#hint").append(tutorial_hints[curr_tutorial_phase]);
-    $('#game-title').text(`Tutorial in Progress, Phase ${curr_tutorial_phase}/${tutorial_instructions.length}`);
+    $('#game-title').text(`Tutorial in Progress, Phase ${curr_tutorial_phase + 1}/${tutorial_instructions.length}`);
     
     let button_pressed = $('#show-hint').text() === 'Hide Hint';
     if (button_pressed) {
@@ -181,13 +202,25 @@ socket.on('end_game', function(data) {
     $('#hint-wrapper').hide();
     $('#show-hint').hide();
     $('#game-over').show();
+    $('#quit').hide();
     
-    // Game ended unexpectedly
     if (data.status === 'inactive') {
+        // Game ended unexpectedly
         $('#error-exit').show();
+        if (psiturk) {
+            // Propogate game stats to parent window with psiturk code
+            window.top.postMessage({ name : "error" }, "*");
+        }
+    } else {
+        if (psiturk) {
+            // Propogate game stats to parent window with psiturk code
+            window.top.postMessage({ name : "tutorial-done" }, "*");
+        }
     }
-    // Propogate game stats to parent window with psiturk code
-    window.top.postMessage({ name : "tutorial-done" }, "*");
+
+    if (!psiturk) {
+        $('#finish').show();
+    }
 });
 
 

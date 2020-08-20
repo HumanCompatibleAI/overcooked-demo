@@ -347,7 +347,9 @@ def instructions():
 
 @app.route('/tutorial')
 def tutorial():
-    return render_template('tutorial.html', config=TUTORIAL_CONFIG)
+    psiturk = request.args.get('psiturk', False)
+    psiturk = json.dumps({ 'val' : psiturk })
+    return render_template('tutorial.html', config=TUTORIAL_CONFIG, psiturk=psiturk)
 
 @app.route('/debug')
 def debug():
