@@ -6,6 +6,26 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <style>
+      img.center {
+        display: block;
+        margin: 0 auto;
+      }
+      table, td, th {  
+        border: 1px solid #ddd;
+        text-align: left;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      th, td {
+        padding: 15px;
+      }
+      tr:nth-child(even) {background-color: #f2f2f2;}
+    </style>
 
     <title>Instructions</title>
     <link rel="Favicon" href="static/favicon.ico" />
@@ -16,27 +36,35 @@
   </head>
   <body>
     <div class="container">
-      <h4 class="text-center"><a href="./">Back to game</a></h4>
+      {% if not psiturk %}
+        <h4 class="text-center"><a href="./">Back to game</a></h4>
+      {% endif %}
       <p>
         Hello! In this task, you will be playing a
         cooking game. You will play one of two chefs
         in a restaurant that serves various soups.
       </p>
-      <p>
-        This is what one level of the game looks like:
-      </p>
-      <img src="static/images/training0.png" style="width:400px">
-      <p>
-        There are a number of objects in the game, labeled here:
-      </p>
-      <img src="static/images/training0-annotated.png" style="width:500px">
 
       <br>
       <hr>
       <br>
 
-      <h3>Movement and interactions</h3>
-      <img src="static/images/space-arrows.png" style="width:250px">
+      <h3 class="text-center">Layouts</h3>
+      <p>
+        This is what one level of the game looks like:
+      </p>
+      <img class="center" src="static/images/training0.png" style="width:500px">
+      <p>
+        There are a number of objects in the game, labeled here:
+      </p>
+      <img class="center" src="static/images/training0-annotated.png" style="width:800px">
+
+      <br>
+      <hr>
+      <br>
+
+      <h3 class="text-center">Movement and interactions</h3>
+      <img class="center" src="static/images/space-arrows.png" style="width:250px">
       <p>
         You can move up, down, left, and right using
         the <b>arrow keys</b>, and interact with objects
@@ -67,8 +95,8 @@
       <hr>
       <br>
 
-      <h3>Cooking</h3>
-      <img src="static/images/soup.png" style="width:250px">
+      <h3 class="text-center">Cooking</h3>
+      <img class="center" src="static/images/soup.png" style="width:250px">
       <p>
         Once an ingredient is in the pot, you can begin cooking a soup by pressing 
         <b>spacebar</b> as noted above. You can place up to 3 ingredients in a pot 
@@ -77,16 +105,21 @@
       <p>
         When a soup begins cooking, you'll notice a red number appear over the pot to 
         denote the cook time. This number counts upward until the soup is done. Soup 
-        cook time is determined its ingredients; every onion add ONION_COOK_TIME and 
-        every tomato adds TOMATO_COOK_TIME to the cook time.
+        cook time is determined its ingredients; every onion add {{ layout_conf.onion_time }} and 
+        every tomato adds {{ layout_conf.tomato_time }} to the cook time.
+      </p>
+      <p>
+        Additionally, the base 
+        reward for any recipe is determined by its ingredients; each onion adds {{ layout_conf.onion_value }} 
+        points and each tomato adds {{ layout_conf.tomato_value }} points.
       </p>
 
       <br>
       <hr>
       <br>
 
-      <h3>Serving</h3>
-      <img src="static/images/serving-counter.png" style="width:500px">
+      <h3 class="text-center">Serving</h3>
+      <img class="center" src="static/images/serving-counter.png" style="width:800px">
       <p>
         Once the soup is in a bowl, you can serve it by bringing it to
         a grey serving counter.
@@ -96,7 +129,7 @@
       <hr>
       <br>
 
-      <h3>Soups</h3>
+      <h3 class="text-center">Soups</h3>
       <p>
         There are 9 possible soup recipes that can be created from combinations of tomatoes
         and onions, each with its own icon. The recipe icons and the corresponding ingredients are
@@ -106,43 +139,21 @@
         <tr>
           <th>Ingredients</th>
           <th>Icon</th>
+          <th>Base Reward</th>
+          <th>Cook Time</th>
         </tr>
-        <tr>
-          <td>1 onion</td>
-          <td><img src="static/assets/new_sprites/soup_done_tomato_0_onion_1.png" style="width:75px;background-color: #e6b453;"></td>
-        </tr>
-        <tr>
-          <td>2 onion</td>
-          <td><img src="static/assets/new_sprites/soup_done_tomato_0_onion_2.png" style="width:75px;background-color: #e6b453;"></td>
-        </tr>
-        <tr>
-          <td>3 onion</td>
-          <td><img src="static/assets/new_sprites/soup_done_tomato_0_onion_3.png" style="width:75px;background-color: #e6b453;"></td>
-        </tr>
-        <tr>
-          <td>1 tomato</td>
-          <td><img src="static/assets/new_sprites/soup_done_tomato_1_onion_0.png" style="width:75px;background-color: #e6b453;"></td>
-        </tr>
-        <tr>
-          <td>2 tomato</td>
-          <td><img src="static/assets/new_sprites/soup_done_tomato_2_onion_0.png" style="width:75px;background-color: #e6b453;"></td>
-        </tr>
-        <tr>
-          <td>3 tomato</td>
-          <td><img src="static/assets/new_sprites/soup_done_tomato_3_onion_0.png" style="width:75px;background-color: #e6b453;"></td>
-        </tr>
-        <tr>
-          <td>1 onion 1 tomato</td>
-          <td><img src="static/assets/new_sprites/soup_done_tomato_1_onion_1.png" style="width:75px;background-color: #e6b453;"></td>
-        </tr>
-        <tr>
-          <td>1 onion 2 tomato</td>
-          <td><img src="static/assets/new_sprites/soup_done_tomato_2_onion_1.png" style="width:75px;background-color: #e6b453;"></td>
-        </tr>
-        <tr>
-          <td>2 onion 1 tomato</td>
-          <td><img src="static/assets/new_sprites/soup_done_tomato_1_onion_2.png" style="width:75px;background-color: #e6b453;"></td>
-        </tr>
+        {% for num_tomatoes in range(layout_conf.max_num_ingredients + 1) %}
+          {% for num_onions in range(layout_conf.max_num_ingredients + 1) %}
+            {% if num_tomatoes + num_onions > 0 and num_onions + num_tomatoes <= layout_conf.max_num_ingredients %}
+              <tr>
+                <td>{{ num_onions ~ " Onion" if num_onions }} {{ num_tomatoes ~ " Tomato" if num_tomatoes }}</td>
+                <td><img src="{{ "static/assets/new_sprites/soup_done_tomato_" ~ num_tomatoes ~ "_onion_" ~ num_onions ~ ".png" }}" style="width:75px;background-color: #e6b453;"></td>
+                <td>{{ layout_conf.onion_value * num_onions + layout_conf.tomato_value * num_tomatoes }}</td>
+                <td>{{ layout_conf.onion_time * num_onions + layout_conf.tomato_time * num_tomatoes }}</td>
+              </tr>
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
 
       </table>
 
@@ -150,7 +161,7 @@
       <hr>
       <br>
 
-      <h3>All Orders</h3>
+      <h3 class="text-center">All Orders</h3>
       <p>
         While you are free to cook any 3-ingredient soup you like, only some are worth points. 
         The <b>All Orders</b> list shows which recipes will recieve points. This is important, 
@@ -163,22 +174,22 @@
       <hr>
       <br>
 
-      <h3>Bonus Orders</h3>
+      <h3 class="text-center">Bonus Orders</h3>
       <p>
         In addition to the list of available orders, there is also a list of <b>bonus orders</b>. Any 
-        soup from this list served will be worth its base reward times BONUS_REWARD_FACTOR
+        soup from this list served will be worth its base reward times {{ layout_conf.order_bonus }}
       </p>
 
       <br>
       <hr>
       <br>
 
-      <h3>Score</h3>
+      <h3 class="text-center">Score</h3>
       <p>
         When a soup is served at the serving counter, points could potentially be added to your score.
-        The base score for any recipe is determined by its ingredients; each onion add ONOIN_REWARD 
-        points and each tomato adds TOMATO_REWARD points. Note that serving a soup in the <b>Bonus Orders</b>
-        multiplies the base soup score by BONUS_REWARD_FACTOR. Additionally, serving a soup not in the
+        The base reward for any recipe is determined by its ingredients; each onion adds {{ layout_conf.onion_value }} 
+        points and each tomato adds {{ layout_conf.tomato_value }} points. Note that serving a soup in the <b>Bonus Orders</b>
+        multiplies the base soup score by {{ layout_conf.order_bonus }}. Additionally, serving a soup not in the
         <b>All Orders</b> list results in zero points not matter what!
       </p>
 
@@ -186,8 +197,8 @@
       <hr>
       <br>
 
-      <h3>Goal</h3>
-      <img src="static/images/info-panel.png" style="width:150px">
+      <h3 class="text-center">Goal</h3>
+      <img class="center" src="static/images/info-panel.png" style="width:500px">
       <p>
         Your goal in this task is to serve as many of the orders as you can
         before each level ends.

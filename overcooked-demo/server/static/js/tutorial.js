@@ -4,7 +4,6 @@ var socket = io();
 
 
 var config;
-var psiturk;
 
 var tutorial_instructions = () => [
     `
@@ -81,13 +80,9 @@ var curr_tutorial_phase;
 // Read in game config provided by server
 $(function() {
     config = JSON.parse($('#config').text());
-    psiturk = JSON.parse($('#psiturk').text()).val === 'true';
-    console.log(psiturk);
     tutorial_instructions = tutorial_instructions();
     tutorial_hints = tutorial_hints();
-    if (!psiturk) {
-        $('#quit').show();
-    }
+    $('#quit').show();
 });
 
 /* * * * * * * * * * * * * * * * 
@@ -207,20 +202,14 @@ socket.on('end_game', function(data) {
     if (data.status === 'inactive') {
         // Game ended unexpectedly
         $('#error-exit').show();
-        if (psiturk) {
-            // Propogate game stats to parent window with psiturk code
-            window.top.postMessage({ name : "error" }, "*");
-        }
+        // Propogate game stats to parent window with psiturk code
+        window.top.postMessage({ name : "error" }, "*");
     } else {
-        if (psiturk) {
-            // Propogate game stats to parent window with psiturk code
-            window.top.postMessage({ name : "tutorial-done" }, "*");
-        }
+        // Propogate game stats to parent window with psiturk code
+        window.top.postMessage({ name : "tutorial-done" }, "*");
     }
 
-    if (!psiturk) {
-        $('#finish').show();
-    }
+    $('#finish').show();
 });
 
 

@@ -35,6 +35,9 @@ LOGFILE = CONFIG['logfile']
 # Available layout names
 LAYOUTS = CONFIG['layouts']
 
+# Values that are standard across layouts
+LAYOUT_GLOBALS = CONFIG['layout_globals']
+
 # Maximum allowable game length (in seconds)
 MAX_GAME_LENGTH = CONFIG['MAX_GAME_LENGTH']
 
@@ -343,12 +346,12 @@ def psiturk():
 
 @app.route('/instructions')
 def instructions():
-    return render_template('instructions.html')
+    psiturk = request.args.get('psiturk', False)
+    return render_template('instructions.html', layout_conf=LAYOUT_GLOBALS, psiturk=psiturk)
 
 @app.route('/tutorial')
 def tutorial():
     psiturk = request.args.get('psiturk', False)
-    psiturk = json.dumps({ 'val' : psiturk })
     return render_template('tutorial.html', config=TUTORIAL_CONFIG, psiturk=psiturk)
 
 @app.route('/debug')
