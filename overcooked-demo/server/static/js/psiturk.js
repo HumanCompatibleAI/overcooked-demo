@@ -23,11 +23,15 @@ socket.on('waiting', function(data) {
     $('#game-over').hide();
     $("#overcooked").empty();
     $('#lobby').show();
-    if (window.intervalID === -1) {
-        // Occassionally ping server to try and join
-        window.intervalID = setInterval(function() {
-            socket.emit('join', {});
-        }, 1000);
+    if (!data.in_game) {
+        if (window.intervalID === -1) {
+            // Occassionally ping server to try and join
+            window.intervalID = setInterval(function() {
+                socket.emit('join', {});
+            }, 1000);
+        }
+    }
+    if (window.lobbyTimeout === -1) {
         // Waiting animation
         window.ellipses = setInterval(function () {
             var e = $("#ellipses").text();
@@ -55,9 +59,13 @@ socket.on('start_game', function(data) {
     // Hide game-over and lobby, show game title header
     if (window.intervalID !== -1) {
         clearInterval(window.intervalID);
+        window.intervalID = -1;
+    }
+    if (window.lobbyTimeout !== -1) {
         clearInterval(window.ellipses);
         clearTimeout(window.lobbyTimeout);
-        window.intervalID = -1;
+        window.lobbyTimeout = -1;
+        window.ellipses = -1;
     }
     graphics_config = {
         container_id : "overcooked",
