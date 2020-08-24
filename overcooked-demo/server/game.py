@@ -6,7 +6,7 @@ from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.planning.planners import MotionPlanner
-import random, os, pickle
+import random, os, pickle, json
 import ray
 
 # TODO: Make base OvercookedGame and PsiturkOvercookedGame separate classes
@@ -539,6 +539,7 @@ class OvercookedGame(Game):
         if self.show_potential:
             self.phi = self.mdp.potential_function(self.state, self.mp, gamma=0.99)
         self.start_time = time()
+        self.curr_tick = 0
         self.score = 0
         self.threads = []
         for npc_policy in self.npc_policies:
@@ -626,16 +627,20 @@ class OvercookedPsiturk(OvercookedGame):
         # Log data to send to psiturk client
         curr_reward = sum(info['sparse_reward_by_agent'])
         transition = {
-            "state" : prev_state.to_dict(),
-            "joint_action" : joint_action,
+            "state" : json.dumps(prev_state.to_dict()),
+            "joint_action" : json.dumps(joint_action),
             "reward" : curr_reward,
             "time_left" : max(self.max_time - (time() - self.start_time), 0),
             "score" : self.score,
             "time_elapsed" : time() - self.start_time,
             "cur_gameloop" : self.curr_tick,
-            "layout" : self.mdp.terrain_mtx,
+            "layout" : json.dumps(self.mdp.terrain_mtx),
             "layout_name" : self.curr_layout,
-            "trial_id" : self.trial_id
+            "trial_id" : self.trial_id,
+            "player_0_id" : self.players[0],
+            "player_1_id" : self.players[1],
+            "player_0_is_human" : self.players[0] in self.human_players,
+            "player_1_is_human" : self.players[1] in self.human_players
         }
 
         self.trajectory.append(transition)
