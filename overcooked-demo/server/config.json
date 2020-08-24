@@ -10,7 +10,8 @@
             "layouts" : ["counter_circuit", "cramped_room"],
             "gameTime" : 11,
             "playerZero" : "human",
-            "playerOne" : "human"
+            "playerOne" : "human",
+            "randomized" : true
         },
         "lobbyWaitTime" : 300000
     },

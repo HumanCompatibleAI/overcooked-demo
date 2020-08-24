@@ -373,6 +373,7 @@ class OvercookedGame(Game):
             Note that this is an instance variable and not a static variable for efficiency reasons
         - human_players (set(str)): Collection of all player IDs that correspond to humans
         - npc_players (set(str)): Collection of all player IDs that correspond to AI
+        - randomized (boolean): Whether the order of the layouts should be randomized
     
     Methods:
         - npc_policy_consumer: Background process that asynchronously computes NPC policy forward passes. One thread
@@ -380,7 +381,7 @@ class OvercookedGame(Game):
         - _curr_game_over: Determines whether the game on the current mdp has ended
     """
 
-    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', showPotential=False, **kwargs):
+    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', showPotential=False, randomized=False, **kwargs):
         super(OvercookedGame, self).__init__(**kwargs)
         self.show_potential = showPotential
         self.mdp_params = mdp_params
@@ -405,6 +406,9 @@ class OvercookedGame(Game):
         self.curr_tick = 0
         self.human_players = set()
         self.npc_players = set()
+
+        if randomized:
+            random.shuffle(self.layouts)
 
         if playerZero != 'human':
             player_zero_id = playerZero + '_0'
