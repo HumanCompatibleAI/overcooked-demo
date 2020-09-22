@@ -11,6 +11,7 @@ A web application where humans can play Overcooked with trained AI agents.
 * [Using Pre-trained Agents](#using-pre-trained-agents)
 * [Updating Overcooked_ai](#updating-overcooked_ai)
 * [Configuration](#configuration)
+* [Legacy Code](#legacy-code)
 
 ## Installation
 
@@ -66,3 +67,7 @@ The default graphics file is currently `overcooked_graphics_v2.1.js`
 ## Configuration
 
 Basic game settings can be configured by changing the values in [config.json](server/config.json)
+
+## Legacy Code
+
+For legacy code compatible with the Neurips2019 submission please see [this](https://github.com/HumanCompatibleAI/overcooked-demo/tree/legacy) branch of this repo. 
