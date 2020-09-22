@@ -16,6 +16,7 @@ import game
 
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
+# Should make game driver code more error robust -- if overcooked randomlly errors we should catch it and report it to user
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
 # Could use a monitor on a conditional to block all global ops during calls to _ensure_consistent_state for debugging
 # Could cap number of sinlge- and multi-player games separately since the latter has much higher RAM and CPU usage

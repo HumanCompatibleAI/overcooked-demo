@@ -48,6 +48,7 @@ class Game(ABC):
         ACTIVE = 'active'
         RESET = 'reset'
         INACTIVE = 'inactive'
+        ERROR = 'error'
 
 
 
@@ -538,7 +539,7 @@ class OvercookedGame(Game):
         self.curr_layout = self.layouts.pop()
         self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
         if self.show_potential:
-            self.mp = MotionPlanner.from_pickle_or_compute(self.mdp, mp_params={'counter_goals' : self.mdp.get_useful_counter_locations()})
+            self.mp = MotionPlanner.from_pickle_or_compute(self.mdp, counter_goals=self.mdp.get_useful_counter_locations())
         self.state = self.mdp.get_standard_start_state()
         if self.show_potential:
             self.phi = self.mdp.potential_function(self.state, self.mp, gamma=0.99)

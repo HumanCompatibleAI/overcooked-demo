@@ -21,6 +21,7 @@ $(function() {
         $('#create').hide();
         $('#create').attr("disabled", true)
         $("#instructions").hide();
+        $('#tutorial').hide();
     });
 });
 
@@ -56,6 +57,7 @@ socket.on('waiting', function(data) {
     $('#waiting').hide();
     $('#game-over').hide();
     $('#instructions').hide();
+    $('#tutorial').hide();
     $("#overcooked").empty();
     $('#lobby').show();
     $('#join').hide();
@@ -80,6 +82,7 @@ socket.on('creation_failed', function(data) {
     $("#overcooked").empty();
     $('#lobby').hide();
     $("#instructions").show();
+    $('#tutorial').show();
     $('#waiting').hide();
     $('#join').show();
     $('#join').attr("disabled", false);
@@ -109,6 +112,7 @@ socket.on('start_game', function(data) {
     $('#create').hide();
     $('#create').attr("disabled", true)
     $("#instructions").hide();
+    $('#tutorial').hide();
     $('#leave').show();
     $('#leave').attr("disabled", false)
     $('#game-title').show();
@@ -159,6 +163,7 @@ socket.on('end_game', function(data) {
     $("#create").show();
     $('#create').attr("disabled", false)
     $("#instructions").show();
+    $('#tutorial').show();
     $("#leave").hide();
     $('#leave').attr("disabled", true)
     
@@ -178,6 +183,7 @@ socket.on('end_lobby', function() {
     $("#leave").hide();
     $('#leave').attr("disabled", true)
     $("#instructions").show();
+    $('#tutorial').show();
 
     // Stop trying to join
     clearInterval(window.intervalID);
