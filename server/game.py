@@ -5,7 +5,7 @@ from time import time
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
-from overcooked_ai_py.planning.planners import MotionPlanner
+from overcooked_ai_py.planning.planners import MotionPlanner, NO_COUNTERS_PARAMS
 import random, os, pickle, json
 import ray
 
@@ -539,7 +539,7 @@ class OvercookedGame(Game):
         self.curr_layout = self.layouts.pop()
         self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
         if self.show_potential:
-            self.mp = MotionPlanner.from_pickle_or_compute(self.mdp, counter_goals=self.mdp.get_useful_counter_locations())
+            self.mp = MotionPlanner.from_pickle_or_compute(self.mdp, counter_goals=NO_COUNTERS_PARAMS)
         self.state = self.mdp.get_standard_start_state()
         if self.show_potential:
             self.phi = self.mdp.potential_function(self.state, self.mp, gamma=0.99)

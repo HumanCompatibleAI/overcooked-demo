@@ -5,6 +5,13 @@
 
 A web application where humans can play Overcooked with trained AI agents.
 
+* [Installation](#installation)
+* [Usage](#usage)
+* [Dependencies](#dependencies)
+* [Using Pre-trained Agents](#using-pre-trained-agents)
+* [Updating Overcooked_ai](#updating-overcooked_ai)
+* [Configuration](#configuration)
+
 ## Installation
 
 Building the server image requires [Docker](https://docs.docker.com/get-docker/)
@@ -21,18 +28,22 @@ In order to build and run the development server, which includes a deterministic
 ./up.sh
 ```
 
-After running one of the above commands, navigate to http://localhost:80
+After running one of the above commands, navigate to http://localhost
 
 In order to kill the production server, run
 ```bash
 ./down.sh
 ```
 
-The branch of `overcooked_ai` imported in both the development and production server can be specified by the `OVERCOOKED_BRANCH` environment variable. For example, to use the branch `foo` run
+## Dependencies
+
+The Overcooked-Demo server relies on both the [overcooked-ai](https://github.com/HumanCompatibleAI/overcooked_ai) and [human-aware-rl](https://github.com/HumanCompatibleAI/human_aware_rl) repos. The former contains the game logic, the latter contains the rl training code required for managing agents. Both repos are automatically cloned and installed in the Docker builds.
+
+The branch of `overcooked_ai` and `human_aware_rl` imported in both the development and production servers can be specified by the `OVERCOOKED_BRANCH` and `HARL_BRANCH` environment variables, respectively. For example, to use the branch `foo` from `overcooked-ai` and branch `bar` from `human_aware_rl`, run
 ```bash
-OVERCOOKED_BRANCH=foo ./up.sh
+OVERCOOKED_BRANCH=foo HARL_BRANCH=bar ./up.sh
 ```
-The default branch is currently `master`
+The default branch for both repos is currently `master`.
 
 ## Using Pre-trained Agents
 
