@@ -25,11 +25,16 @@ RUN echo "import os; DATA_DIR=os.path.abspath('.')" >> /human_aware_rl/human_awa
 RUN pip install -e /overcooked_ai
 RUN pip install -e /human_aware_rl
 
+RUN apt-get update
+RUN apt-get install -y libgl1-mesa-dev
+
 # Copy over remaining files
 COPY ./static ./static
 COPY ./*.py ./
 COPY ./graphics/$GRAPHICS ./static/js/graphics.js
 COPY ./config.json ./config.json
+
+
 
 # Set environment variables that will be used by app.py
 ENV HOST 0.0.0.0
