@@ -17,13 +17,20 @@ A directory with the structure above can be trained with the [human_aware_rl](ht
 
 Please follow the [conda environment setup guide](https://github.com/HumanCompatibleAI/human_aware_rl#conda-environment-setup) to setup `harl_rllib` conda env. 
 
-After `harl_rllib` is successfully installed and activated, please run a command along the line of
+After `harl_rllib` is successfully installed and activated, please run something along the line of
 
 ```
-(harl_rllib) $ python human_aware_rl/ppo/ppo_rllib_client with experiment_name="MyAgent"
+(harl_rllib) $ python human_aware_rl/ppo/ppo_rllib_client.py with experiment_name="MyAgent"
 ```
 
 This might create a directory such as  `~/ray_results/MyAgent_0_2020-09-24_01-24-43m6jg7brh/checkpoint_<i>`. Note the timestamp and id will vary.
+
+For reproducibility, the command used to generate this sepcific `RllibSelfPlay_CrampedRoom` agent is
+```
+(harl_rllib) $ python human_aware_rl/ppo/ppo_rllib_client.py with num_workers=16 train_batch_size=12800 sgd_minibatch_size=8000 num_training_iters=300 evaluation_interval=20 use_phi=False entropy_coeff_start=0.2 entropy_coeff_end=0.0005 num_sgd_iter=8 lr=1e-3 seeds=[0]
+```
+And we are using `checkpoint_300`
+
 
 ## Moving the Agent into Demo
 
