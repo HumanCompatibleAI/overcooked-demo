@@ -13,13 +13,17 @@ In the future, the naming convenction will probably be more flexible, but for no
 
 ## Training the Agent
 
-A directory with the structure above can be trained with the [human_aware_rl](TODO) repo. 
+A directory with the structure above can be trained with the [human_aware_rl](https://github.com/HumanCompatibleAI/human_aware_rl) repo. 
 
-For example, running a command like 
+Please follow the [conda environment setup guide](https://github.com/HumanCompatibleAI/human_aware_rl#conda-environment-setup) to setup `harl_rllib` conda env. 
+
+After `harl_rllib` is successfully installed and activated, please run a command along the line of
+
 ```
-python ppo_rllib_client with experiment_name="MyAgent"
+(harl_rllib) $ python human_aware_rl/ppo/ppo_rllib_client with experiment_name="MyAgent"
 ```
-Might create a directory such as  `~/ray_results/MyAgent_0_2020-09-24_01-24-43m6jg7brh/checkpoint_<i>`. Note the timestamp and id will vary.
+
+This might create a directory such as  `~/ray_results/MyAgent_0_2020-09-24_01-24-43m6jg7brh/checkpoint_<i>`. Note the timestamp and id will vary.
 
 ## Moving the Agent into Demo
 
