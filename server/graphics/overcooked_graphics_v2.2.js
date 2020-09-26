@@ -24,7 +24,10 @@ var scene_config = {
     show_post_cook_time : false,
     cook_time : 20,
     assets_loc : "./static/assets/",
-    hud_size : 150
+    hud_height : 150,
+    force_orders_list_use: false, // used to force view that shows order timer and distinguish if order is bonus by font colour
+    bonus_order_colour: "green",
+    non_bonus_order_colour: "yellow"
 };
 
 var game_config = {
@@ -57,7 +60,7 @@ function graphics_end() {
     graphics.game.renderer.destroy();
     graphics.game.loop.stop();
     graphics.game.destroy();
-}
+};
 
 class GraphicsManager {
     constructor(game_config, scene_config, graphics_config) {
@@ -66,7 +69,7 @@ class GraphicsManager {
         scene_config.start_state = start_info.state;
         game_config.scene = new OvercookedScene(scene_config);
         game_config.width = scene_config.tileSize*scene_config.terrain[0].length;
-        game_config.height = scene_config.tileSize*scene_config.terrain.length  + scene_config.hud_size;
+        game_config.height = scene_config.tileSize*scene_config.terrain.length + scene_config.hud_height;
         game_config.parent = graphics_config.container_id;
         this.game = new Phaser.Game(game_config);
     }
@@ -74,6 +77,27 @@ class GraphicsManager {
     set_state(state) {
         this.game.scene.getScene('PlayGame').set_state(state);
     }
+}
+
+function may_contain_temporary_order(orders_list) {
+    function is_temporary_order(order){
+        return Number.isInteger(order.time_to_expire);
+    }
+    if (typeof(orders_list) == "undefined"){
+        return false;
+    }
+    if (orders_list.orders.some(is_temporary_order) || orders_list.orders_to_add.some(is_temporary_order))
+        return true;
+    else{
+        return false;
+    }
+}
+
+function clear_sprites_array(a) {
+    a.forEach(element => {
+        element.destroy();
+    });
+    a = [];
 }
 
 class OvercookedScene extends Phaser.Scene {
@@ -87,11 +111,15 @@ class OvercookedScene extends Phaser.Scene {
         this.show_post_cook_time = config.show_post_cook_time;
         this.cook_time = config.cook_time;
         this.assets_loc = config.assets_loc;
-        this.hud_size = config.hud_size
+        this.hud_height = config.hud_height;
+        this.use_orders_list = config.force_orders_list_use || may_contain_temporary_order(config.start_state.state.orders_list);
+        this.bonus_order_colour = config.bonus_order_colour;
+        this.non_bonus_order_colour = config.non_bonus_order_colour;
         this.hud_data = {
             potential : config.start_state.potential,
             score : config.start_state.score,
             time : config.start_state.time_left,
+            orders_list: config.start_state.state.orders_list,
             bonus_orders : config.start_state.state.bonus_orders,
             all_orders : config.start_state.state.all_orders
         }
@@ -101,6 +129,7 @@ class OvercookedScene extends Phaser.Scene {
         this.hud_data.potential = state.potential;
         this.hud_data.score = state.score;
         this.hud_data.time = Math.round(state.time_left);
+        this.hud_data.orders_list = state.state.orders_list;
         this.hud_data.bonus_orders = state.state.bonus_orders;
         this.hud_data.all_orders = state.state.all_orders;
         this.state = state.state;
@@ -133,7 +162,7 @@ class OvercookedScene extends Phaser.Scene {
         }
         if (typeof(this.hud_data) !== 'undefined') {
             let { width, height } = this.game.canvas;
-            let board_height = height - this.hud_size;
+            let board_height = height - this.hud_height;
             this._drawHUD(this.hud_data, this.sprites, board_height);
         }
     }
@@ -339,11 +368,18 @@ class OvercookedScene extends Phaser.Scene {
     }
 
     _drawHUD(hud_data, sprites, board_height) {
-        if (typeof(hud_data.all_orders) !== 'undefined') {
-            this._drawAllOrders(hud_data.all_orders, sprites, board_height);
+        if (this.use_orders_list) {
+            if (typeof(hud_data.orders_list) !== 'undefined') {
+                this._drawOrdersList(hud_data.orders_list, sprites, board_height);
+            }
         }
-        if (typeof(hud_data.bonus_orders) !== 'undefined') {
-            this._drawBonusOrders(hud_data.bonus_orders, sprites, board_height);
+        else {
+            if (typeof(hud_data.all_orders) !== 'undefined') {
+                this._drawAllOrders(hud_data.all_orders, sprites, board_height);
+            }
+            if (typeof(hud_data.bonus_orders) !== 'undefined') {
+                this._drawBonusOrders(hud_data.bonus_orders, sprites, board_height);
+            }
         }
         if (typeof(hud_data.time) !== 'undefined') {
             this._drawTimeLeft(hud_data.time, sprites, board_height);
@@ -361,12 +397,7 @@ class OvercookedScene extends Phaser.Scene {
         if (typeof(orders) !== 'undefined' && orders !== null) {
             let orders_str = "Bonus Orders: ";
             if (typeof(sprites['bonus_orders']) !== 'undefined') {
-                // Clear existing orders
-                sprites['bonus_orders']['orders'].forEach(element => {
-                    element.destroy();
-                });
-                sprites['bonus_orders']['orders'] = [];
-
+                clear_sprites_array(sprites['bonus_orders']['orders'])
                 // Update with new orders
                 for (let i = 0; i < orders.length; i++) {
                     let spriteFrame = this._ingredientsToSpriteFrame(orders[i]['ingredients'], "done");
@@ -402,10 +433,7 @@ class OvercookedScene extends Phaser.Scene {
             let orders_str = "All Orders: ";
             if (typeof(sprites['all_orders']) !== 'undefined') {
                 // Clear existing orders
-                sprites['all_orders']['orders'].forEach(element => {
-                    element.destroy();
-                });
-                sprites['all_orders']['orders'] = [];
+                clear_sprites_array(sprites['all_orders']['orders'])
 
                 // Update with new orders
                 for (let i = 0; i < orders.length; i++) {
@@ -433,6 +461,80 @@ class OvercookedScene extends Phaser.Scene {
                     }
                 )
                 sprites['all_orders']['orders'] = []
+            }
+        }
+    }
+    _drawOrdersList(orders_list, sprites, board_height) {
+        if (typeof(orders_list) !== 'undefined' && orders_list !== null) {
+            var orders = orders_list.orders;
+        }
+        else {
+            var orders = null;
+        }
+        if (typeof(orders) !== 'undefined' && orders !== null) {
+            let orders_str = "All Orders: ";
+            if (typeof(sprites['orders_list']) !== 'undefined') {
+                // Clear existing orders
+                clear_sprites_array(sprites['orders_list']['recipes'])
+                clear_sprites_array(sprites['orders_list']['descs'])
+
+                var order_recipe_y = board_height - 4;
+                var order_desc_y = board_height + 60;
+                // Update with new orders
+                for (let i = 0; i < orders.length; i++) {
+                    let spriteFrame = this._ingredientsToSpriteFrame(orders[i]["recipe"]['ingredients'], "done");
+                    let orderRecipeSprite = this.add.sprite(
+                        90 + 40 * i,
+                        order_recipe_y,
+                        "soups",
+                        spriteFrame
+                    );
+                    sprites['orders_list']['recipes'].push(orderRecipeSprite);
+                    orderRecipeSprite.setDisplaySize(60, 60);
+                    orderRecipeSprite.setOrigin(0);
+                    orderRecipeSprite.depth = 1;
+
+                    var time_to_expire = orders[i]["time_to_expire"]
+                    if (time_to_expire === null){
+                        var time_to_expire_str = "∞";
+                        var font_str = "28px Arial";
+                    }
+                    else {
+                        var time_to_expire_str = time_to_expire.toString();
+                        var font_str = "20px Arial";
+                    }
+
+                    if (orders[i]["is_bonus"]){
+                        var font_fill_str = this.bonus_order_colour
+                    }
+                    else {
+                        var font_fill_str = this.non_bonus_order_colour
+                    }
+                    var orderDesc = this.add.text(
+                        120 + 40 * i,
+                        order_desc_y,
+                        time_to_expire_str,
+                        {
+                            font: font_str,
+                            fill: font_fill_str
+                        }
+                    );
+                    orderDesc.setOrigin(0.5);
+                    sprites['orders_list']['descs'].push(orderDesc);
+                }
+            }
+            else {
+                sprites['orders_list'] = {};
+                sprites['orders_list']['str'] = this.add.text(
+                    5, board_height + 15, orders_str,
+                    {
+                        font: "20px Arial",
+                        fill: "red",
+                        align: "left"
+                    }
+                )
+                sprites['orders_list']['recipes'] = []
+                sprites['orders_list']['descs'] = []
             }
         }
     }
