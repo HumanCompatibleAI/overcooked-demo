@@ -1,0 +1,11 @@
+{
+	"inner_shape": [7, 5],
+	"prop_empty": 0.7,
+	"prop_feats": 0.4,
+	"start_all_orders": [{
+		"ingredients": ["onion", "onion", "onion"]
+	}],
+	"recipe_values": [20],
+	"recipe_times": [20],
+	"display": false
+}
