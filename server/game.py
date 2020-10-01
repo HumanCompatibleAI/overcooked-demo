@@ -6,13 +6,15 @@ from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.planning.planners import MotionPlanner, NO_COUNTERS_PARAMS
+from overcooked_ai_py.utils import load_from_json
+from overcooked_ai_py.mdp.layout_generator import LayoutGenerator
 from human_aware_rl.rllib.rllib import load_agent
 import random, os, pickle, json
 import ray
 
 # Relative path to where all static pre-trained agents are stored on server
 AGENT_DIR = None
-
+LAYOUT_GEN_PARAMS_DIR = os.path.join("static", "layout_generation_params")
 # Maximum allowable game time (in seconds)
 MAX_GAME_TIME = None
 
@@ -533,7 +535,13 @@ class OvercookedGame(Game):
             raise ValueError("Inconsistent State")
 
         self.curr_layout = self.layouts.pop()
-        self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
+
+        try:
+            mdp_gen_params = load_from_json(os.path.join(LAYOUT_GEN_PARAMS_DIR, self.curr_layout))
+            self.mdp = LayoutGenerator.mdp_gen_fn_from_dict(mdp_gen_params, outer_shape=mdp_gen_params["inner_shape"])()
+        except FileNotFoundError:
+            self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
+
         if self.show_potential:
             self.mp = MotionPlanner.from_pickle_or_compute(self.mdp, counter_goals=NO_COUNTERS_PARAMS)
         self.state = self.mdp.get_standard_start_state()
