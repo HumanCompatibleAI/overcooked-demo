@@ -14,7 +14,6 @@ from flask_socketio import SocketIO, join_room, leave_room, emit
 from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk
 import game
 
-
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Should make game driver code more error robust -- if overcooked randomlly errors we should catch it and report it to user
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
@@ -44,6 +43,8 @@ MAX_GAME_LENGTH = CONFIG['MAX_GAME_LENGTH']
 
 # Path to where pre-trained agents will be stored on server
 AGENT_DIR = CONFIG['AGENT_DIR']
+
+TRAJECTORIES_DIR = CONFIG["TRAJECTORIES_DIR"]
 
 # Maximum number of games that can run concurrently. Contrained by available memory and CPU
 MAX_GAMES = CONFIG['MAX_GAMES']
@@ -91,7 +92,7 @@ GAME_NAME_TO_CLS = {
     "psiturk" : OvercookedPsiturk
 }
 
-game._configure(MAX_GAME_LENGTH, AGENT_DIR)
+game._configure(MAX_GAME_LENGTH, AGENT_DIR, TRAJECTORIES_DIR)
 
 
 
