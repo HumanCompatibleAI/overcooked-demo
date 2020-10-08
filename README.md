@@ -1,6 +1,6 @@
 # Overcooked Demo
 <p align="center">
-<img src="https://i.imgur.com/Rk2Hp55.png" >
+<img src="./server/static/images/browser_view.png" >
 </p>
 
 A web application where humans can play Overcooked with trained AI agents.
@@ -48,9 +48,9 @@ The default branch for both repos is currently `master`.
 
 ## Using Pre-trained Agents
 
-Overcooked-Demo can dynamically load pre-trained agents provided by the user. In order to use a pre-trained agent, a pickle file should be added to the `agents` directory. The final structure will look like `static/assets/agents/<agent_name>/agent.pickle`
+Overcooked-Demo can dynamically load pre-trained agents provided by the user. In order to use a pre-trained agent, a pickle file should be added to the `agents` directory. The final structure will look like `static/assets/agents/<agent_name>/agent.pickle`. Note, to use the pre-defined rllib loading routine, the agent directory name must start with 'rllib', and contain the appropriate rllib checkpoint, config, and metadata files. For more detailed info and instructions see the [RllibDummy_CrampedRoom](server/static/assets/agents/RllibDummy_CrampedRoom/) example agent.
 
-If a more complex loading routing is necessary, one can subclass the `OvercookedGame` class and override the `get_policy` method, as done in [DummyOvercookedGame](server/game.py#L420). Make sure the subclass is properly imported [here](server/app.py#L5)
+If a more complex or custom loading routing is necessary, one can subclass the `OvercookedGame` class and override the `get_policy` method, as done in [DummyOvercookedGame](server/game.py#L420). Make sure the subclass is properly imported [here](server/app.py#L5)
 
 ## Updating Overcooked_ai
 This repo was designed to be as flexible to changes in overcooked_ai as possible. To change the branch used, use the `OVERCOOKED_BRANCH` environment variable shown above.

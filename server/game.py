@@ -6,10 +6,9 @@ from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.planning.planners import MotionPlanner, NO_COUNTERS_PARAMS
+from human_aware_rl.rllib.rllib import load_agent
 import random, os, pickle, json
 import ray
-
-# TODO: Make base OvercookedGame and PsiturkOvercookedGame separate classes
 
 # Relative path to where all static pre-trained agents are stored on server
 AGENT_DIR = None
@@ -422,10 +421,7 @@ class OvercookedGame(Game):
             self.add_player(player_one_id, idx=1, buff_size=1, is_human=False)
             self.npc_policies[player_one_id] = self.get_policy(playerOne, idx=1)
             self.npc_state_queues[player_one_id] = LifoQueue()
-
-        if ray.is_initialized():
-            # Kill all Ray bloat once NPC policies are loaded
-            ray.shutdown()
+        
 
     def _curr_game_over(self):
         return time() - self.start_time >= self.max_time
@@ -584,14 +580,24 @@ class OvercookedGame(Game):
 
     def get_policy(self, npc_id, idx=0):
         if npc_id.lower().startswith("rllib"):
-            # Loading rllib agents requires additional helpers
-            from human_aware_rl.rllib.rllib import load_agent
-            fpath = os.path.join(AGENT_DIR, npc_id, 'agent', 'agent')
-            return load_agent(fpath, agent_index=idx)
+            try:
+                # Loading rllib agents requires additional helpers
+                fpath = os.path.join(AGENT_DIR, npc_id, 'agent', 'agent')
+                agent =  load_agent(fpath, agent_index=idx)
+                return agent
+            except Exception as e:
+                raise IOError("Error loading Rllib Agent\n{}".format(e.__repr__()))
+            finally:
+                # Always kill ray after loading agent, otherwise, ray will crash once process exits
+                if ray.is_initialized():
+                    ray.shutdown()
         else:
-            fpath = os.path.join(AGENT_DIR, npc_id, 'agent.pickle')
-            with open(fpath, 'rb') as f:
-                return pickle.load(f)
+            try:
+                fpath = os.path.join(AGENT_DIR, npc_id, 'agent.pickle')
+                with open(fpath, 'rb') as f:
+                    return pickle.load(f)
+            except Exception as e:
+                raise IOError("Error loading agent\n{}".format(e.__repr__()))
 
 
 class OvercookedPsiturk(OvercookedGame):
