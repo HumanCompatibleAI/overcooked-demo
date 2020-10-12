@@ -6,7 +6,7 @@ if os.getenv('FLASK_ENV', 'production') == 'production':
     eventlet.monkey_patch()
 
 # All other imports must come after patch to ensure eventlet compatibility
-import pickle, queue, atexit, json, logging
+import pickle, queue, atexit, json, logging, jsmin
 from threading import Lock
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
@@ -28,7 +28,8 @@ import game
 # Read in global config
 CONF_PATH = os.getenv('CONF_PATH', 'config.json')
 with open(CONF_PATH, 'r') as f:
-    CONFIG = json.load(f)
+    # Minify before parsing to remove comments
+    CONFIG = json.loads(jsmin.jsmin(f.read()))
 
 # Where errors will be logged
 LOGFILE = CONFIG['logfile']
@@ -91,7 +92,7 @@ GAME_NAME_TO_CLS = {
     "psiturk" : OvercookedPsiturk
 }
 
-game._configure(MAX_GAME_LENGTH, AGENT_DIR)
+game._configure(MAX_GAME_LENGTH, AGENT_DIR, MAX_FPS)
 
 
 
@@ -275,7 +276,7 @@ def _create_game(user_id, game_name, params={}):
             game.activate()
             ACTIVE_GAMES.add(game.id)
             emit('start_game', { "spectating" : spectating, "start_info" : game.to_json()}, room=game.id)
-            socketio.start_background_task(play_game, game, fps=MAX_FPS)
+            socketio.start_background_task(play_game, game, game.fps)
         else:
             WAITING_GAMES.put(game.id)
             emit('waiting', { "in_game" : True }, room=game.id)
@@ -458,7 +459,7 @@ def on_join(data):
                     game.activate()
                     ACTIVE_GAMES.add(game.id)
                     emit('start_game', { "spectating" : False, "start_info" : game.to_json()}, room=game.id)
-                    socketio.start_background_task(play_game, game)
+                    socketio.start_background_task(play_game, game, game.fps)
                 else:
                     # Still need to keep waiting for players
                     WAITING_GAMES.put(game.id)
@@ -523,7 +524,7 @@ def on_exit():
 # Game Loop #
 #############
 
-def play_game(game, fps=30):
+def play_game(game, fps=MAX_FPS):
     """
     Asynchronously apply real-time game updates and broadcast state to all clients currently active
     in the game. Note that this loop must be initiated by a parallel thread for each active game
@@ -532,6 +533,7 @@ def play_game(game, fps=30):
                             room id for all clients connected to this game
     fps (int):              Number of game ticks that should happen every second
     """
+    fps = min(fps, MAX_FPS)
     status = Game.Status.ACTIVE
     while status != Game.Status.DONE and status != Game.Status.INACTIVE:
         with game.lock:

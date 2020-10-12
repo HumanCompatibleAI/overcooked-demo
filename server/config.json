@@ -1,30 +1,54 @@
 {
+    // Global log file for server process logs
+    // Note that this file only exists inside docker container. Either create a volume, ssh into running container, or run `docker logs` to view
     "logfile" : "app.log",
+
+    // All available layouts
     "layouts" : ["cramped_room", "cramped_room_tomato", "asymmetric_advantages", "coordination_ring", "forced_coordination", "counter_circuit", "cramped_corridor", "marshmallow_experiment", "long_cook_time", "forced_coordination_tomato", "asymmetric_advantages_tomato", "marshmallow_experiment_coordination", "pipeline", "you_shall_not_pass", "tutorial_3"],
+
+    // Maximum number of parallel games the server can handle
     "MAX_GAMES" : 10,
+
+    // Maximum number of seconds allowed in a game
     "MAX_GAME_LENGTH" : 120,
+
+    // root directory that contains all the pickled agent files
     "AGENT_DIR" : "./static/assets/agents",
+
+    // Maximum number of game ticks per second the server allows. This is the default for newly created games
     "MAX_FPS" : 30,
+
+    // Psiturk experiment game params
     "psiturk" : {
+        // Passed into OvercookedPsiturk constructor. See `game.py` for details
         "experimentParams" : {
             "layouts" : ["counter_circuit", "cramped_room"],
             "gameTime" : 11,
             "playerZero" : "human",
             "playerOne" : "human",
-            "randomized" : true
+            "randomized" : true,
+            "fps" : 6.666666666666667
         },
+
+        // Maximum number of milliseconds we wait to find human-human pairing before giving up
         "lobbyWaitTime" : 300000
     },
+
+    // Tutorial Game params
     "tutorial" : {
+        // Passed into OvercookedTutorial. See `game.py` for details
         "tutorialParams" : {
             "layouts" : ["tutorial_3", "tutorial_2", "tutorial_1", "tutorial_0"],
             "playerZero" : "human",
             "playerOne" : "TutorialAI",
-            "phaseTwoScore" : 34
+            "phaseTwoScore" : 34,
+            "fps" : 6.666666666666667
         },
         "tomato_value" : 13,
         "onion_value" : 21
     },
+
+    // Values that are shared across all layouts
     "layout_globals" : {
         "onion_value" : 21,
         "tomato_value" : 13,

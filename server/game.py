@@ -16,10 +16,14 @@ AGENT_DIR = None
 # Maximum allowable game time (in seconds)
 MAX_GAME_TIME = None
 
-def _configure(max_game_time, agent_dir):
-    global AGENT_DIR, MAX_GAME_TIME
+# Maximum number of frames per second a game is allowed to run at
+MAX_FPS = None
+
+def _configure(max_game_time, agent_dir, max_fps):
+    global AGENT_DIR, MAX_GAME_TIME, MAX_FPS
     MAX_GAME_TIME = max_game_time
     AGENT_DIR = agent_dir
+    MAX_FPS = max_fps
 
 class Game(ABC):
 
@@ -59,6 +63,7 @@ class Game(ABC):
         pending_actions List[(Queue)]: Buffer of (player_id, action) pairs have submitted that haven't been commited yet
         lock (Lock):    Used to serialize updates to the game state
         is_active(bool): Whether the game is currently being played or not
+        fps (int): Number of times `tick` will be called per second
         """
         self.players = []
         self.spectators = set()
@@ -66,6 +71,7 @@ class Game(ABC):
         self.id = kwargs.get('id', id(self))
         self.lock = Lock()
         self._is_active = False
+        self.fps = min(kwargs.get('fps', MAX_FPS), MAX_FPS)
 
     @abstractmethod
     def is_full(self):

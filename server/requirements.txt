@@ -15,3 +15,4 @@ six==1.15.0
 Werkzeug==1.0.1
 tensorflow==2.0.3
 requests==2.23.0
+jsmin==2.2.2

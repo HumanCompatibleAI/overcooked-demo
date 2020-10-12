@@ -145,6 +145,9 @@ socket.on('end_lobby', function() {
 
 function enable_key_listener() {
     $(document).on('keydown', function(e) {
+        if (e.originalEvent.repeat) { // Holding down key only counts as one keypress
+            return;
+        }
         let action = 'STAY'
         switch (e.which) {
             case 37: // left
