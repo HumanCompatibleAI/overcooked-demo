@@ -22,8 +22,8 @@
     "psiturk" : {
         // Passed into OvercookedPsiturk constructor. See `game.py` for details
         "experimentParams" : {
-            "layouts" : ["counter_circuit", "cramped_room"],
-            "gameTime" : 11,
+            "layouts" : ["soup_coordination", "cramped_corridor", "marshmallow_experiment", "marshmallow_experiment_coordination", "inverse_marshmallow_experiment", "you_shall_not_pass", "counter_circuit_tomato", "asymmetric_advantages_tomato"],
+            "gameTime" : 60,
             "playerZero" : "human",
             "playerOne" : "human",
             "randomized" : true,
