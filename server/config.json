@@ -41,7 +41,9 @@
             "layouts" : ["tutorial_3", "tutorial_2", "tutorial_1", "tutorial_0"],
             "playerZero" : "human",
             "playerOne" : "TutorialAI",
+            "ticks_per_ai_action" : 2,
             "phaseTwoScore" : 34,
+            "phaseOneCookTime" : 45,
             "fps" : 6.666666666666667
         },
         "tomato_value" : 13,

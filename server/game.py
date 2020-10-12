@@ -7,7 +7,7 @@ from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.planning.planners import MotionPlanner, NO_COUNTERS_PARAMS
 from human_aware_rl.rllib.rllib import load_agent
-import random, os, pickle, json
+import random, os, pickle, json, math
 import ray
 
 # Relative path to where all static pre-trained agents are stored on server
@@ -387,7 +387,7 @@ class OvercookedGame(Game):
         - _curr_game_over: Determines whether the game on the current mdp has ended
     """
 
-    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', showPotential=False, randomized=False, **kwargs):
+    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', showPotential=False, randomized=False, ticks_per_ai_action=4, **kwargs):
         super(OvercookedGame, self).__init__(**kwargs)
         self.show_potential = showPotential
         self.mdp_params = mdp_params
@@ -408,7 +408,7 @@ class OvercookedGame(Game):
             "RIGHT" : Direction.EAST,
             "SPACE" : Action.INTERACT
         }
-        self.ticks_per_ai_action = 4
+        self.ticks_per_ai_action = ticks_per_ai_action
         self.curr_tick = 0
         self.human_players = set()
         self.npc_players = set()
@@ -679,16 +679,17 @@ class OvercookedTutorial(OvercookedGame):
     Instance Variables:
         - curr_phase (int): Indicates what tutorial phase we are currently on
         - phase_two_score (float): The exact sparse reward the user must obtain to advance past phase 2
+        - phase_one_cook_time (int): Number of timesteps required to cook soup in first phase
     """
     
 
-    def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='AI', phaseTwoScore=15, **kwargs):
-        super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, showPotential=False, **kwargs)
+    def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='AI', phaseTwoScore=15, phaseOneCookTime=45, **kwargs):
         self.phase_two_score = phaseTwoScore
+        self.phase_one_cook_time = phaseOneCookTime
         self.phase_two_finished = False
+        super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, showPotential=False, **kwargs)
         self.max_time = 0
         self.max_players = 2
-        self.ticks_per_ai_action = 8
         self.curr_phase = 0
 
     @property
@@ -712,7 +713,7 @@ class OvercookedTutorial(OvercookedGame):
         self.curr_phase += 1
 
     def get_policy(self, *args, **kwargs):
-        return TutorialAI()
+        return TutorialAI(self.ticks_per_ai_action, self.phase_one_cook_time)
 
     def apply_actions(self):
         """
@@ -800,7 +801,7 @@ class StayAI():
 
 class TutorialAI():
 
-    COOK_SOUP_LOOP = [
+    COOK_SOUP_ACTIONS = [
         # Grab first onion
         Direction.WEST,
         Direction.WEST,
@@ -831,15 +832,19 @@ class TutorialAI():
         Action.INTERACT,
 
         # Cook soup
-        Action.INTERACT,
-        
+        Action.INTERACT
+    ]
+
+    GRAB_PLATE_ACTIONS = [
         # Grab plate
         Direction.EAST,
         Direction.SOUTH,
         Action.INTERACT,
         Direction.WEST,
         Direction.NORTH,
+    ]
 
+    DELIVER_SOUP_ACTIONS = [
         # Deliver soup
         Action.INTERACT,
         Direction.EAST,
@@ -877,9 +882,23 @@ class TutorialAI():
         Action.STAY
     ]
 
-    def __init__(self):
+    def __init__(self, ticks_per_action=8, soup_cook_time=45):
+        if ticks_per_action <= 0 or soup_cook_time <= 0:
+            raise ValueError("Ticks per action and soup cook time must both be >= 0!")
         self.curr_phase = -1
         self.curr_tick = -1
+        self._build_cooking_loop(ticks_per_action, soup_cook_time)
+
+        
+    def _build_cooking_loop(self, ticks_per_action, soup_cook_time):
+        # Calculate number of "STAY" actions necessary to wait for soup to cook
+        grab_plate_ticks = 2 * (ticks_per_action - 1) + len(self.GRAB_PLATE_ACTIONS) * ticks_per_action
+        cook_ticks_remaining = max(0, soup_cook_time - grab_plate_ticks)
+        num_noops = math.ceil(cook_ticks_remaining / ticks_per_action)
+
+        # Concatenate all Cooking routines
+        self.WAIT_TO_COOK_ACTIONS = [Action.STAY] * num_noops
+        self.COOK_SOUP_LOOP = [*self.COOK_SOUP_ACTIONS, *self.GRAB_PLATE_ACTIONS, *self.WAIT_TO_COOK_ACTIONS, *self.DELIVER_SOUP_ACTIONS]
 
     def action(self, state):
         self.curr_tick += 1
