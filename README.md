@@ -3,7 +3,7 @@
 <img src="./server/static/images/browser_view.png" >
 </p>
 
-A web application where humans can play Overcooked with trained AI agents.
+A web application where humans can play Overcooked with trained AI agents and replay trajectories.
 
 * [Installation](#installation)
 * [Usage](#usage)
@@ -55,6 +55,10 @@ If a more complex or custom loading routing is necessary, one can subclass the `
 
 ## Saving trajectories
 Trajectories from games run in overcooked-demo can be saved. By using `--trajectories-dir` you can specify directory that will be used to save trajectories. By default trajectories are saved inside `static/assets/trajectories` directory.
+
+
+## Replying trajectories
+Trajectories from specified `--trajectories-dir` can be replayed in `http://localhost/replay`.
 
 
 ## Updating Overcooked_ai

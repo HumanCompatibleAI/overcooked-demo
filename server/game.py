@@ -385,7 +385,8 @@ class OvercookedGame(Game):
         - _curr_game_over: Determines whether the game on the current mdp has ended
     """
 
-    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', showPotential=False, randomized=False, saveTrajectory=False, **kwargs):
+    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', showPotential=False, randomized=False, saveTrajectory=False,
+         trajectoryFilenameTemplate="{millis_timestamp}-trajectory", **kwargs):
         super(OvercookedGame, self).__init__(**kwargs)
         self.show_potential = showPotential
         self.mdp_params = mdp_params
@@ -426,6 +427,7 @@ class OvercookedGame(Game):
             self.npc_policies[player_one_id] = self.get_policy(playerOne, idx=1)
             self.npc_state_queues[player_one_id] = LifoQueue()
         self.trajectory = []
+        self.filename_template = trajectoryFilenameTemplate
 
     @property
     def mdp(self):
@@ -514,8 +516,16 @@ class OvercookedGame(Game):
         return trajectories
 
     def _create_trajectory_filename(self):
-        milis_timestamp = str(int(time()*1000))
-        return "trajectory-"+milis_timestamp + ".json"
+        time_secs = time()
+        milis_timestamp = str(int(time_secs*1000))
+        secs_timestamp = str(int(time_secs))
+        layout_name = self.curr_layout
+        #TODO: add proper templating if there will be more variables
+        filename = self.filename_template.replace("{millis_timestamp}", milis_timestamp)
+        filename = filename.replace("{secs_timestamp}", secs_timestamp)
+        filename = filename.replace("{layout_name}", layout_name)
+        filename = filename + ".json"
+        return filename
 
     def get_data(self):
         if self.save_trajectory:

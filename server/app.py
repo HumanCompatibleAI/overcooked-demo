@@ -13,6 +13,7 @@ from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk
 import game
+from overcooked_ai_py.utils import load_from_json, cumulative_rewards_from_rew_list
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Should make game driver code more error robust -- if overcooked randomlly errors we should catch it and report it to user
@@ -327,6 +328,10 @@ def _ensure_consistent_state():
 def get_agent_names():
     return [d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d))]
 
+def get_trajectories_names():
+    def remove_file_extension(name):
+        return name.split(".")[0]
+    return sorted([remove_file_extension(name) for name in os.listdir(TRAJECTORIES_DIR) if name.endswith(".json")])
 
 ######################
 # Application routes #
@@ -339,6 +344,10 @@ def get_agent_names():
 def index():
     agent_names = get_agent_names()
     return render_template('index.html', agent_names=agent_names, layouts=LAYOUTS)
+
+@app.route('/replay')
+def replay():
+    return render_template('replay.html', trajectories=get_trajectories_names())
 
 @app.route('/psiturk')
 def psiturk():
@@ -509,6 +518,21 @@ def on_disconnect():
     del USERS[user_id]
 
 
+
+@socketio.on('trajectory_selected')
+def on_trajectory_selected(data):
+    traj_idx = int(data["trajectory_idx"] or 0)
+    trajectories = load_from_json(os.path.join(TRAJECTORIES_DIR, data["trajectory_file"]))
+    trajectory_states = trajectories["ep_states"][traj_idx]
+    trajectory_rewards = trajectories["ep_rewards"][traj_idx]
+    scores = cumulative_rewards_from_rew_list(trajectory_rewards)
+    states = [{"state":state, "time_left": time_left, "score": score} for state, score, time_left in zip(trajectory_states, scores, reversed(range(len(trajectory_states))))]
+    terrain = trajectories["mdp_params"][traj_idx]["terrain"]
+    start_info = {
+        "terrain": terrain,
+        "state": states[0],
+    }
+    socketio.emit("replay_trajectory",  {"start_info": start_info, "states": states, "max_trajectory_idx": len(trajectories["ep_states"])-1})
 
 
 # Exit handler for server
