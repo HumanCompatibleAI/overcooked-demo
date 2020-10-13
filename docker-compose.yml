@@ -2,6 +2,8 @@ version : '3.7'
 
 services:
     app:
+        env_file:
+        - .env
         build:
             context: ./server
             args:
@@ -13,4 +15,6 @@ services:
             FLASK_ENV: "${BUILD_ENV:-production}"
         ports:
             - "80:5000"
-        
+        volumes:
+            - "${AGENTS_DIR:-./server/static/assets/agents}:/app/static/assets/agents"
+            - "${TRAJECTORIES_DIR:-./server/static/assets/trajectories}:/app/static/assets/trajectories"
