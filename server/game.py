@@ -467,8 +467,7 @@ class OvercookedGame(Game):
         return self.num_players >= self.max_players
 
     def is_finished(self):
-        val = not self.layouts and self._curr_game_over()
-        return val
+        return not self.layouts and self._curr_game_over()
 
     def is_empty(self):
         """
@@ -681,39 +680,48 @@ class OvercookedTutorial(OvercookedGame):
         - phase_two_score (float): The exact sparse reward the user must obtain to advance past phase 2
         - phase_one_cook_time (int): Number of timesteps required to cook soup in first phase
     """
+
+    # Lis of all currently supported tutorial layouts and what phase they correspond to
+    LAYOUT_TO_PHASE = {
+        'tutorial_0' : 0,
+        'tutorial_1' : 1,
+        'tutorial_2' : 2,
+        'tutorial_3' : 3
+    }
     
 
     def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='AI', phaseTwoScore=15, phaseOneCookTime=45, **kwargs):
+        if not set(layouts).issubset(self.LAYOUT_TO_PHASE):
+            raise ValueError("One or more layouts is not currently supported as a valid tutorial layout!")
         self.phase_two_score = phaseTwoScore
         self.phase_one_cook_time = phaseOneCookTime
         self.phase_two_finished = False
         super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, showPotential=False, **kwargs)
         self.max_time = 0
         self.max_players = 2
-        self.curr_phase = 0
+        self.curr_phase = -1
 
     @property
     def reset_timeout(self):
         return 1
 
-    def needs_reset(self):
+    def _curr_game_over(self):
         if self.curr_phase == 0:
             return self.score > 0
         elif self.curr_phase == 1:
             return self.score > 0
         elif self.curr_phase == 2:
             return self.phase_two_finished
-        return False 
+        elif self.curr_phase == 3:
+            return self.score >= float('inf')
+        return False
 
-    def is_finished(self):
-        return not self.layouts and self.score >= float('inf')
-
-    def reset(self):
-        super(OvercookedTutorial, self).reset()
-        self.curr_phase += 1
+    def activate(self):
+        super(OvercookedTutorial, self).activate()
+        self.curr_phase = self.LAYOUT_TO_PHASE[self.curr_layout]
 
     def get_policy(self, *args, **kwargs):
-        return TutorialAI(self.ticks_per_ai_action, self.phase_one_cook_time)
+        return TutorialAI(self.LAYOUT_TO_PHASE, self.layouts, self.ticks_per_ai_action, self.phase_one_cook_time)
 
     def apply_actions(self):
         """
@@ -882,9 +890,12 @@ class TutorialAI():
         Action.STAY
     ]
 
-    def __init__(self, ticks_per_action=8, soup_cook_time=45):
+    def __init__(self, layout_to_phase_map, layouts=['tutorial_0'], ticks_per_action=8, soup_cook_time=45):
         if ticks_per_action <= 0 or soup_cook_time <= 0:
             raise ValueError("Ticks per action and soup cook time must both be >= 0!")
+        self.layout_to_phase = layout_to_phase_map
+        self.layouts = layouts.copy()
+        self.curr_layout = None
         self.curr_phase = -1
         self.curr_tick = -1
         self._build_cooking_loop(ticks_per_action, soup_cook_time)
@@ -909,7 +920,8 @@ class TutorialAI():
         return Action.STAY, None
 
     def reset(self):
+        self.curr_layout = self.layouts.pop()
+        self.curr_phase = self.layout_to_phase[self.curr_layout]
         self.curr_tick = -1
-        self.curr_phase += 1
 
     

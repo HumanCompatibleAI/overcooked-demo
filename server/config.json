@@ -38,7 +38,7 @@
     "tutorial" : {
         // Passed into OvercookedTutorial. See `game.py` for details
         "tutorialParams" : {
-            "layouts" : ["tutorial_3", "tutorial_2", "tutorial_1", "tutorial_0"],
+            "layouts" : ["tutorial_3", "tutorial_1", "tutorial_0"],
             "playerZero" : "human",
             "playerOne" : "TutorialAI",
             "ticks_per_ai_action" : 2,

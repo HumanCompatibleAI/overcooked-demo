@@ -247,3 +247,12 @@ h1 {
     padding: 10px;
     text-align: center;
 }
+
+.big-btn {
+    width: 130px;
+    height: 50px;
+    background-color: cornflowerblue;
+    color: white;
+    padding: 2px;
+    font-size: 22px;
+}
