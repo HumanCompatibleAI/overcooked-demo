@@ -623,7 +623,7 @@ class OvercookedPsiturk(OvercookedGame):
 
     def __init__(self, *args, psiturk_uid='-1', **kwargs):
         super(OvercookedPsiturk, self).__init__(*args, showPotential=False, **kwargs)
-        self.psiturk_uid = psiturk_uid
+        self.psiturk_uid = str(psiturk_uid)
         self.trajectory = []
 
     def activate(self):
@@ -696,7 +696,8 @@ class OvercookedTutorial(OvercookedGame):
         self.phase_two_score = phaseTwoScore
         self.phase_one_cook_time = phaseOneCookTime
         self.phase_two_finished = False
-        super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, showPotential=False, **kwargs)
+        super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, **kwargs)
+        self.show_potential = False
         self.max_time = 0
         self.max_players = 2
         self.curr_phase = -1
@@ -727,7 +728,7 @@ class OvercookedTutorial(OvercookedGame):
         """
         Apply regular MDP logic with retroactive score adjustment tutorial purposes
         """
-        _, _, info = super(OvercookedTutorial, self).apply_actions()
+        prev_state, joint_action, info = super(OvercookedTutorial, self).apply_actions()
 
         human_reward, ai_reward = info['sparse_reward_by_agent']
 
@@ -739,6 +740,60 @@ class OvercookedTutorial(OvercookedGame):
             self.score = 0
             if human_reward == self.phase_two_score:
                 self.phase_two_finished = True
+
+        return prev_state, joint_action, human_reward
+
+
+
+class OvercookedTutorialPsiturk(OvercookedTutorial):
+
+
+    def __init__(self, *args, psiturk_uid='-1', **kwargs):
+        super(OvercookedTutorialPsiturk, self).__init__(*args, **kwargs)
+        self.psiturk_uid = str(psiturk_uid)
+        self.trajectory = []
+
+    def activate(self):
+        """
+        Resets trial ID at start of new "game"
+        """
+        super(OvercookedTutorialPsiturk, self).activate()
+        self.trial_id = self.psiturk_uid + '_tutorial_' + str(self.start_time)
+
+    def apply_actions(self):
+        """
+        Applies pending actions then logs transition data
+        """
+        # Apply MDP logic
+        prev_state, joint_action, human_reward = super(OvercookedTutorialPsiturk, self).apply_actions()
+
+        # Log data to send to psiturk client
+        transition = {
+            "state" : json.dumps(prev_state.to_dict()),
+            "joint_action" : json.dumps(joint_action),
+            "reward" : human_reward,
+            "time_left" : max(self.max_time - (time() - self.start_time), 0),
+            "score" : self.score,
+            "time_elapsed" : time() - self.start_time,
+            "cur_gameloop" : self.curr_tick,
+            "layout" : json.dumps(self.mdp.terrain_mtx),
+            "layout_name" : self.curr_layout,
+            "trial_id" : self.trial_id,
+            "player_0_id" : self.players[0],
+            "player_1_id" : self.players[1],
+            "player_0_is_human" : self.players[0] in self.human_players,
+            "player_1_is_human" : self.players[1] in self.human_players
+        }
+
+        self.trajectory.append(transition)
+
+    def get_data(self):
+        """
+        Returns and then clears the accumulated trajectory
+        """
+        data = { "uid" : self.psiturk_uid  + "_" + str(time()), "tutorial_trajectory" : self.trajectory }
+        self.trajectory = []
+        return data
 
 
 

@@ -11,7 +11,7 @@ from threading import Lock
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk
+from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk, OvercookedTutorialPsiturk
 import game
 
 
@@ -89,7 +89,8 @@ USER_ROOMS = ThreadSafeDict()
 GAME_NAME_TO_CLS = {
     "overcooked" : OvercookedGame,
     "tutorial" : OvercookedTutorial,
-    "psiturk" : OvercookedPsiturk
+    "psiturk" : OvercookedPsiturk,
+    "psiturk_tutorial" : OvercookedTutorialPsiturk
 }
 
 game._configure(MAX_GAME_LENGTH, AGENT_DIR, MAX_FPS)
@@ -353,8 +354,9 @@ def instructions():
 
 @app.route('/tutorial')
 def tutorial():
+    uid = request.args.get("UID", "-1")
     psiturk = request.args.get('psiturk', False)
-    return render_template('tutorial.html', config=TUTORIAL_CONFIG, psiturk=psiturk)
+    return render_template('tutorial.html', config=TUTORIAL_CONFIG, psiturk=psiturk, uid=uid)
 
 @app.route('/debug')
 def debug():

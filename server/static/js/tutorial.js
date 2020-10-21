@@ -4,6 +4,7 @@ var socket = io();
 
 
 var config;
+var uid;
 
 var get_tutorial_instructions = function(config) {
     let layout_to_instructions = 
@@ -51,9 +52,10 @@ var get_tutorial_instructions = function(config) {
             `
     };
     let final_instructions = [];
-    for (let i = config['tutorialParams']['layouts'].length-1; i >= 0; i--) {
+    let layouts = config.psiturk ? config.psiturkTutorialParams.layouts : config.tutorialParams;
+    for (let i = layouts.length-1; i >= 0; i--) {
         // Iterate backwards through layouts list because that's what python server does
-        let layout = config['tutorialParams']['layouts'][i];
+        let layout = layouts[i];
         final_instructions.push(layout_to_instructions[layout]);
     }
     return final_instructions;
@@ -100,9 +102,10 @@ var get_tutorial_hints = function(config) {
             `
     };
     let final_hints = [];
-    for (let i = config['tutorialParams']['layouts'].length - 1; i >= 0; i--) {
+    let layouts = config.psiturk ? config.psiturkTutorialParams.layouts : config.tutorialParams;
+    for (let i = layouts.length - 1; i >= 0; i--) {
         // Iterate backwards through layouts list because that's what python server does
-        let layout = config['tutorialParams']['layouts'][i];
+        let layout = layouts[i];
         final_hints.push(layout_to_hint[layout]);
     }
     return final_hints;
@@ -113,6 +116,8 @@ var curr_tutorial_phase;
 // Read in game config provided by server
 $(function() {
     config = JSON.parse($('#config').text());
+    uid = JSON.parse($('#uid').text());
+    config.psiturk = JSON.parse($('#psiturk').text());
     tutorial_instructions = get_tutorial_instructions(config);
     tutorial_hints = get_tutorial_hints(config);
     $('#quit').show();
@@ -214,6 +219,9 @@ socket.on('reset_game', function(data) {
     };
     graphics_start(graphics_config);
     enable_key_listener();
+
+    // Propogate game stats to parent window (psiturk)
+    window.top.postMessage({ name : "data", data : data.data, done : false}, "*");
 });
 
 socket.on('state_pong', function(data) {
@@ -236,10 +244,10 @@ socket.on('end_game', function(data) {
         // Game ended unexpectedly
         $('#error-exit').show();
         // Propogate game stats to parent window with psiturk code
-        window.top.postMessage({ name : "error" }, "*");
+        window.top.postMessage({ name : "error", data : data.data }, "*");
     } else {
         // Propogate game stats to parent window with psiturk code
-        window.top.postMessage({ name : "tutorial-done" }, "*");
+        window.top.postMessage({ name : "tutorial-done", data: data.data }, "*");
     }
 
     $('#finish').show();
@@ -294,11 +302,22 @@ function disable_key_listener() {
  * * * * * * * * * * * */
 
 socket.on("connect", function() {
+    let data;
     // Config for this specific game
-    let data = {
-        "params" : config['tutorialParams'],
-        "game_name" : "tutorial"
-    };
+    if (config.psiturk) {
+        let params = JSON.parse(JSON.stringify(config.psiturkTutorialParams));
+        params.psiturk_uid = uid;
+        data = {
+            "params" : params,
+            "game_name" : "psiturk_tutorial"
+        };
+        
+    } else {
+        data = {
+            "params" : config['tutorialParams'],
+            "game_name" : "tutorial"
+        };
+    }
 
     // create (or join if it exists) new game
     socket.emit("join", data);
