@@ -517,7 +517,7 @@ def on_disconnect():
 def on_exit():
     # Force-terminate all games on server termination
     for game_id in GAMES:
-        socketio.emit('end_game', { "status" : Game.Status.INACTIVE, "data" : get_game(game_id).get_data() }, room=game_id)
+        socketio.emit('end_game', { "status" : Game.Status.INACTIVE, "data" : json.dumps(get_game(game_id).get_data()) }, room=game_id)
 
 
 
@@ -543,7 +543,7 @@ def play_game(game, fps=MAX_FPS):
         if status == Game.Status.RESET:
             with game.lock:
                 data = game.get_data()
-            socketio.emit('reset_game', { "state" : game.to_json(), "timeout" : game.reset_timeout, "data" : data}, room=game.id)
+            socketio.emit('reset_game', { "state" : game.to_json(), "timeout" : game.reset_timeout, "data" : json.dumps(data)}, room=game.id)
             socketio.sleep(game.reset_timeout/1000)
         else:
             socketio.emit('state_pong', { "state" : game.get_state() }, room=game.id)
@@ -551,7 +551,7 @@ def play_game(game, fps=MAX_FPS):
     
     with game.lock:
         data = game.get_data()
-        socketio.emit('end_game', { "status" : status, "data" : data }, room=game.id)
+        socketio.emit('end_game', { "status" : status, "data" : json.dumps(data) }, room=game.id)
 
         if status != Game.Status.INACTIVE:
             game.deactivate()

@@ -52,7 +52,7 @@ var get_tutorial_instructions = function(config) {
             `
     };
     let final_instructions = [];
-    let layouts = config.psiturk ? config.psiturkTutorialParams.layouts : config.tutorialParams;
+    let layouts = config.psiturk ? config.psiturkTutorialParams.layouts : config.tutorialParams.layouts;
     for (let i = layouts.length-1; i >= 0; i--) {
         // Iterate backwards through layouts list because that's what python server does
         let layout = layouts[i];
@@ -116,8 +116,8 @@ var curr_tutorial_phase;
 // Read in game config provided by server
 $(function() {
     config = JSON.parse($('#config').text());
-    uid = JSON.parse($('#uid').text());
-    config.psiturk = JSON.parse($('#psiturk').text());
+    uid = $('#uid').text();
+    config.psiturk = JSON.parse($('#psiturk').text().toLowerCase());
     tutorial_instructions = get_tutorial_instructions(config);
     tutorial_hints = get_tutorial_hints(config);
     $('#quit').show();
