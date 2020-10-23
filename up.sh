@@ -28,8 +28,20 @@ case $key in
         shift # past argument
         shift # past value
         ;;
+    --overcooked-url)
+        ENV_FILE+="OVERCOOKED_URL=$2
+"
+        shift # past argument
+        shift # past value
+        ;;
     --harl-branch)
         ENV_FILE+="HARL_BRANCH=$2
+"
+        shift # past argument
+        shift # past value
+        ;;
+    --harl-url)
+        ENV_FILE+="HARL_URL=$2
 "
         shift # past argument
         shift # past value
