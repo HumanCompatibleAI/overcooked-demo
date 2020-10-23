@@ -6,7 +6,7 @@ if os.getenv('FLASK_ENV', 'production') == 'production':
     eventlet.monkey_patch()
 
 # All other imports must come after patch to ensure eventlet compatibility
-import pickle, queue, atexit, json, logging
+import pickle, queue, atexit, json, logging, copy
 from threading import Lock
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
@@ -14,7 +14,12 @@ from flask_socketio import SocketIO, join_room, leave_room, emit
 from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk
 import game
 from overcooked_ai_py.utils import load_from_json, cumulative_rewards_from_rew_list
-
+from overcooked_ai_py.visualization.extract_events import extract_events
+from overcooked_ai_py.visualization.visualization_utils import DEFAULT_EVENT_CHART_SETTINGS
+from overcooked_ai_py.agents.benchmarking import AgentEvaluator
+from overcooked_ai_py.mdp.overcooked_mdp import Recipe
+if not Recipe._configured:
+    Recipe.configure({})
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Should make game driver code more error robust -- if overcooked randomlly errors we should catch it and report it to user
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
@@ -522,17 +527,27 @@ def on_disconnect():
 @socketio.on('trajectory_selected')
 def on_trajectory_selected(data):
     traj_idx = int(data["trajectory_idx"] or 0)
-    trajectories = load_from_json(os.path.join(TRAJECTORIES_DIR, data["trajectory_file"]))
-    trajectory_states = trajectories["ep_states"][traj_idx]
-    trajectory_rewards = trajectories["ep_rewards"][traj_idx]
+    trajectory_path = os.path.join(TRAJECTORIES_DIR, data["trajectory_file"])
+    trajectories = AgentEvaluator.load_traj_from_json(trajectory_path)
+    trajectories_json = load_from_json(trajectory_path)
+    trajectory_states = trajectories_json["ep_states"][traj_idx]
+    trajectory_rewards = trajectories_json["ep_rewards"][traj_idx]
     scores = cumulative_rewards_from_rew_list(trajectory_rewards)
     states = [{"state":state, "time_left": time_left, "score": score} for state, score, time_left in zip(trajectory_states, scores, reversed(range(len(trajectory_states))))]
-    terrain = trajectories["mdp_params"][traj_idx]["terrain"]
+    terrain = trajectories_json["mdp_params"][traj_idx]["terrain"]
+    settings = copy.deepcopy(DEFAULT_EVENT_CHART_SETTINGS)
+    settings["show_cumulative_data"] = False
+    settings["chart_box_view_box"] = "0 0 800 150"
+
     start_info = {
         "terrain": terrain,
-        "state": states[0],
+        "state": states[0]
     }
-    socketio.emit("replay_trajectory",  {"start_info": start_info, "states": states, "max_trajectory_idx": len(trajectories["ep_states"])-1})
+    socketio.emit("replay_trajectory", {"start_info": start_info,
+                                        "states": states,
+                                        "max_trajectory_idx": len(trajectories["ep_states"])-1,
+                                        "trajectory_chart_events": extract_events(trajectories, traj_idx),
+                                        "trajectory_chart_settings": settings})
 
 
 # Exit handler for server

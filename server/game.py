@@ -500,6 +500,7 @@ class OvercookedGame(Game):
         trajectories = { k:[] for k in self.env.DEFAULT_TRAJ_KEYS }
         trajectory = np.array(self.trajectory)
         obs, actions, rews, dones, infos = trajectory.T[0], trajectory.T[1], trajectory.T[2], trajectory.T[3], trajectory.T[4]
+        infos[-1] = self.env._add_episode_info(infos[-1])
         trajectories["ep_states"].append(obs)
         trajectories["ep_actions"].append(actions)
         trajectories["ep_rewards"].append(rews)

@@ -1,0 +1,28 @@
+/* set same width and max_width for chart-box(#trajectory-chart), legends(#trajectory-chart-legend)  */ 
+.chart-box {
+    width: 100%;
+    max-width: 800px;
+}
+
+#trajectory-chart-legend {
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
+}
+
+.legends {
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
+}
+
+/* set same width and max_width for chart-area and #timestep-slider-container */ 
+.chart-area {
+    width: 700px; /* inside of the viewbox 0 0 800 150 */
+}
+
+#timestep-slider-container {
+    width: 87.5%; /* chart-area width (700)/ chart-box width(800) - this way slider will align with timesteps on the chart*/
+    max-width: 700px;
+    margin: auto;
+}
