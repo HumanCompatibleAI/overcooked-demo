@@ -7,3 +7,5 @@ node_modules/
 **/master_agents/
 **/__pycache__/
 **/agents/
+**/trajectories/
+.env

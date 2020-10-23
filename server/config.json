@@ -4,6 +4,7 @@
     "MAX_GAMES" : 10,
     "MAX_GAME_LENGTH" : 120,
     "AGENT_DIR" : "./static/assets/agents",
+    "TRAJECTORIES_DIR": "./static/assets/trajectories",
     "MAX_FPS" : 30,
     "psiturk" : {
         "experimentParams" : {

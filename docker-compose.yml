@@ -2,15 +2,21 @@ version : '3.7'
 
 services:
     app:
+        env_file:
+        - .env
         build:
             context: ./server
             args:
                 BUILD_ENV: "${BUILD_ENV:-production}"
+                OVERCOOKED_URL: "${OVERCOOKED_URL:-https://github.com/HumanCompatibleAI/overcooked_ai.git}"
                 OVERCOOKED_BRANCH: "${OVERCOOKED_BRANCH:-master}"
+                HARL_URL: "${HARL_URL:-https://github.com/HumanCompatibleAI/human_aware_rl.git}"
                 HARL_BRANCH: "${HARL_BRANCH:-master}"
                 GRAPHICS: "${GRAPHICS:-overcooked_graphics_v2.2.js}"
         environment: 
             FLASK_ENV: "${BUILD_ENV:-production}"
         ports:
             - "80:5000"
-        
+        volumes:
+            - "${AGENTS_DIR:-./server/static/assets/agents}:/app/static/assets/agents"
+            - "${TRAJECTORIES_DIR:-./server/static/assets/trajectories}:/app/static/assets/trajectories"

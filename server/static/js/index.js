@@ -4,6 +4,20 @@ var socket = io();
 /* * * * * * * * * * * * * * * * 
  * Button click event handlers *
  * * * * * * * * * * * * * * * */
+$( document ).ready(function(){
+    $("#trajectoryFilenameTemplate").val("{millis_timestamp}-{layout_name}-trajectory");
+    }
+)
+$(function() {
+    $("#saveTrajectory").change(function(){
+        if ($("#saveTrajectory").is(":checked")){
+            $("#filename-container").show();
+        }
+        else {
+            $("#filename-container").hide();
+        }
+    });
+});
 
 $(function() {
     $('#create').click(function () {

@@ -6,15 +6,20 @@ if os.getenv('FLASK_ENV', 'production') == 'production':
     eventlet.monkey_patch()
 
 # All other imports must come after patch to ensure eventlet compatibility
-import pickle, queue, atexit, json, logging
+import pickle, queue, atexit, json, logging, copy
 from threading import Lock
 from utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk
 import game
-
-
+from overcooked_ai_py.utils import load_from_json, cumulative_rewards_from_rew_list
+from overcooked_ai_py.visualization.extract_events import extract_events
+from overcooked_ai_py.visualization.visualization_utils import DEFAULT_EVENT_CHART_SETTINGS
+from overcooked_ai_py.agents.benchmarking import AgentEvaluator
+from overcooked_ai_py.mdp.overcooked_mdp import Recipe
+if not Recipe._configured:
+    Recipe.configure({})
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Should make game driver code more error robust -- if overcooked randomlly errors we should catch it and report it to user
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
@@ -44,6 +49,8 @@ MAX_GAME_LENGTH = CONFIG['MAX_GAME_LENGTH']
 
 # Path to where pre-trained agents will be stored on server
 AGENT_DIR = CONFIG['AGENT_DIR']
+
+TRAJECTORIES_DIR = CONFIG["TRAJECTORIES_DIR"]
 
 # Maximum number of games that can run concurrently. Contrained by available memory and CPU
 MAX_GAMES = CONFIG['MAX_GAMES']
@@ -91,7 +98,7 @@ GAME_NAME_TO_CLS = {
     "psiturk" : OvercookedPsiturk
 }
 
-game._configure(MAX_GAME_LENGTH, AGENT_DIR)
+game._configure(MAX_GAME_LENGTH, AGENT_DIR, TRAJECTORIES_DIR)
 
 
 
@@ -326,6 +333,10 @@ def _ensure_consistent_state():
 def get_agent_names():
     return [d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d))]
 
+def get_trajectories_names():
+    def remove_file_extension(name):
+        return name.split(".")[0]
+    return sorted([remove_file_extension(name) for name in os.listdir(TRAJECTORIES_DIR) if name.endswith(".json")])
 
 ######################
 # Application routes #
@@ -338,6 +349,10 @@ def get_agent_names():
 def index():
     agent_names = get_agent_names()
     return render_template('index.html', agent_names=agent_names, layouts=LAYOUTS)
+
+@app.route('/replay')
+def replay():
+    return render_template('replay.html', trajectories=get_trajectories_names())
 
 @app.route('/psiturk')
 def psiturk():
@@ -508,6 +523,31 @@ def on_disconnect():
     del USERS[user_id]
 
 
+
+@socketio.on('trajectory_selected')
+def on_trajectory_selected(data):
+    traj_idx = int(data["trajectory_idx"] or 0)
+    trajectory_path = os.path.join(TRAJECTORIES_DIR, data["trajectory_file"])
+    trajectories = AgentEvaluator.load_traj_from_json(trajectory_path)
+    trajectories_json = load_from_json(trajectory_path)
+    trajectory_states = trajectories_json["ep_states"][traj_idx]
+    trajectory_rewards = trajectories_json["ep_rewards"][traj_idx]
+    scores = cumulative_rewards_from_rew_list(trajectory_rewards)
+    states = [{"state":state, "time_left": time_left, "score": score} for state, score, time_left in zip(trajectory_states, scores, reversed(range(len(trajectory_states))))]
+    terrain = trajectories_json["mdp_params"][traj_idx]["terrain"]
+    settings = copy.deepcopy(DEFAULT_EVENT_CHART_SETTINGS)
+    settings["show_cumulative_data"] = False
+    settings["chart_box_view_box"] = "0 0 800 150"
+
+    start_info = {
+        "terrain": terrain,
+        "state": states[0]
+    }
+    socketio.emit("replay_trajectory", {"start_info": start_info,
+                                        "states": states,
+                                        "max_trajectory_idx": len(trajectories["ep_states"])-1,
+                                        "trajectory_chart_events": extract_events(trajectories, traj_idx),
+                                        "trajectory_chart_settings": settings})
 
 
 # Exit handler for server
