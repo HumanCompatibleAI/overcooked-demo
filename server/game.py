@@ -7,6 +7,7 @@ from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.planning.planners import MotionPlanner, NO_COUNTERS_PARAMS
 from human_aware_rl.rllib.rllib import load_agent
+from utils import SafeGameMethod
 import random, os, pickle, json, math
 import ray
 
@@ -70,18 +71,18 @@ class Game(ABC):
         self.pending_actions = []
         self.id = kwargs.get('id', id(self))
         self.lock = Lock()
-        self._is_active = False
+        self._is_active_ = False
         self.fps = min(kwargs.get('fps', MAX_FPS), MAX_FPS)
 
     @abstractmethod
-    def is_full(self):
+    def _is_full(self):
         """
         Returns whether there is room for additional players to join or not
         """
         pass
 
     @abstractmethod
-    def apply_action(self, player_idx, action):
+    def _apply_action(self, player_idx, action):
         """
         Updates the game state by applying a single (player_idx, action) tuple. Subclasses should try to override this method
         if possible
@@ -90,24 +91,39 @@ class Game(ABC):
 
 
     @abstractmethod
-    def is_finished(self):
+    def _is_finished(self):
         """
         Returns whether the game has concluded or not
         """
         pass
 
-    def is_ready(self):
+    def _is_ready(self):
         """
         Returns whether the game can be started. Defaults to having enough players
         """
         return self.is_full()
 
-    @property
-    def is_active(self):
+    @SafeGameMethod
+    def is_full(self):
+        return self._is_full()
+
+    @SafeGameMethod
+    def is_finished(self):
+        return self._is_finished()
+
+    @SafeGameMethod
+    def is_ready(self):
+        return self._is_ready()
+
+    def _is_active(self):
         """
         Whether the game is currently being played
         """
-        return self._is_active
+        return self._is_active_
+
+    @SafeGameMethod
+    def is_active(self):
+        return self._is_active()
 
     @property
     def reset_timeout(self):
@@ -116,7 +132,7 @@ class Game(ABC):
         """
         return 3000
 
-    def apply_actions(self):
+    def _apply_actions(self):
         """
         Updates the game state by applying each of the pending actions in the buffer. Is called by the tick method. Subclasses
         should override this method if joint actions are necessary. If actions can be serialized, overriding `apply_action` is 
@@ -126,44 +142,56 @@ class Game(ABC):
             try:
                 while True:
                     action = self.pending_actions[i].get(block=False)
-                    self.apply_action(i, action)
+                    self._apply_action(i, action)
             except Empty:
                 pass
-
-    def activate(self):
+    
+    def _activate(self):
         """
         Activates the game to let server know real-time updates should start. Provides little functionality but useful as
         a check for debugging
         """
-        self._is_active = True
+        self._is_active_ = True
 
-    def deactivate(self):
+    def _deactivate(self):
         """
         Deactives the game such that subsequent calls to `tick` will be no-ops. Used to handle case where game ends but 
         there is still a buffer of client pings to handle
         """
-        self._is_active = False
+        self._is_active_ = False
 
-    def reset(self):
+    @SafeGameMethod
+    def activate(self):
+        return self._activate()
+
+    @SafeGameMethod
+    def deactivate(self):
+        return self._deactivate()
+
+    def _reset(self):
         """
         Restarts the game while keeping all active players by resetting game stats and temporarily disabling `tick`
         """
-        if not self.is_active:
+        if not self._is_active():
             raise ValueError("Inactive Games cannot be reset")
-        if self.is_finished():
+        if self._is_finished():
             return self.Status.DONE
-        self.deactivate()
-        self.activate()
+        self._deactivate()
+        self._activate()
         return self.Status.RESET
 
-    def needs_reset(self):
+    @SafeGameMethod
+    def reset(self):
+        return self._reset()
+
+    def _needs_reset(self):
         """
         Returns whether the game should be reset on the next call to `tick`
         """
         return False
 
 
-    def tick(self):
+    def _tick(self):
         """
         Updates the game state by applying each of the pending actions. This is done so that players cannot directly modify
         the game state, offering an additional level of safety and thread security. 
@@ -172,22 +200,26 @@ class Game(ABC):
 
         Subclasses should try to override `apply_actions` if possible. Only override this method if necessary
         """ 
-        if not self.is_active:
+        if not self._is_active():
             return self.Status.INACTIVE
-        if self.needs_reset():
-            self.reset()
+        if self._needs_reset():
+            self._reset()
             return self.Status.RESET
 
-        self.apply_actions()
+        self._apply_actions()
         return self.Status.DONE if self.is_finished() else self.Status.ACTIVE
+
+    @SafeGameMethod
+    def tick(self):
+        return self._tick()
     
-    def enqueue_action(self, player_id, action):
+    def _enqueue_action(self, player_id, action):
         """
         Add (player_id, action) pair to the pending action queue, without modifying underlying game state
 
         Note: This function IS thread safe
         """
-        if not self.is_active:
+        if not self._is_active():
             # Could run into issues with is_active not being thread safe
             return
         if player_id not in self.players:
@@ -198,8 +230,12 @@ class Game(ABC):
             self.pending_actions[player_idx].put(action)
         except Full:
             pass
+    
+    @SafeGameMethod
+    def enqueue_action(self, player_id, action):
+        return self._enqueue_action(player_id, action)
 
-    def get_state(self):
+    def _get_state(self):
         """
         Return a JSON compatible serialized state of the game. Note that this should be as minimalistic as possible
         as the size of the game state will be the most important factor in game performance. This is sent to the client
@@ -207,26 +243,38 @@ class Game(ABC):
         """
         return { "players" : self.players }
 
-    def to_json(self):
+    @SafeGameMethod
+    def get_state(self):
+        return self._get_state()
+
+    def _to_json(self):
         """
         Return a JSON compatible serialized state of the game. Contains all information about the game, does not need to
         be minimalistic. This is sent to the client only once, upon game creation
         """
         return self.get_state()
 
-    def is_empty(self):
+    @SafeGameMethod
+    def to_json(self):
+        return self._to_json()
+
+    def _is_empty(self):
         """
         Return whether it is safe to garbage collect this game instance
         """
         return not self.num_players
 
-    def add_player(self, player_id, idx=None, buff_size=-1):
+    @SafeGameMethod
+    def is_empty(self):
+        return self._is_empty()
+
+    def _add_player(self, player_id, idx=None, buff_size=-1):
         """
         Add player_id to the game
         """
-        if self.is_full():
+        if self._is_full():
             raise ValueError("Cannot add players to full game")
-        if self.is_active:
+        if self._is_active():
             raise ValueError("Cannot add players to active games")
         if not idx and self.EMPTY in self.players:
             idx = self.players.index(self.EMPTY)
@@ -241,7 +289,11 @@ class Game(ABC):
         self.players[idx] = player_id
         self.pending_actions[idx] = Queue(maxsize=buff_size)
 
-    def add_spectator(self, spectator_id):
+    @SafeGameMethod
+    def add_player(self, player_id, idx=None, buff_size=-1):
+        return self._add_player(player_id, idx, buff_size)
+
+    def _add_spectator(self, spectator_id):
         """
         Add spectator_id to list of spectators for this game
         """
@@ -249,7 +301,11 @@ class Game(ABC):
             raise ValueError("Cannot spectate and play at same time")
         self.spectators.add(spectator_id)
 
-    def remove_player(self, player_id):
+    @SafeGameMethod
+    def add_spectator(self, spectator_id):
+        return self._add_spectator(spectator_id)
+
+    def _remove_player(self, player_id):
         """
         Remove player_id from the game
         """
@@ -262,7 +318,7 @@ class Game(ABC):
         else:
             return True
 
-    def remove_spectator(self, spectator_id):
+    def _remove_spectator(self, spectator_id):
         """
         Removes spectator_id if they are in list of spectators. Returns True if spectator successfully removed, False otherwise
         """
@@ -273,8 +329,16 @@ class Game(ABC):
         else:
             return True
 
+    @SafeGameMethod
+    def remove_spectator(self, spectator_id):
+        return self._remove_spectator(spectator_id)
 
-    def clear_pending_actions(self):
+    @SafeGameMethod
+    def remove_player(self, player_id):
+        return self._remove_player(player_id)
+
+
+    def _clear_pending_actions(self):
         """
         Remove all queued actions for all players
         """
@@ -283,15 +347,23 @@ class Game(ABC):
                 queue = self.pending_actions[i]
                 queue.queue.clear()
 
-    @property
-    def num_players(self):
+    def _num_players(self):
         return len([player for player in self.players if player != self.EMPTY])
 
-    def get_data(self):
+    @property
+    @SafeGameMethod
+    def num_players(self):
+        return self._num_players()
+
+    def _get_data(self):
         """
         Return any game metadata to server driver. Really only relevant for Psiturk code
         """
         return {}
+
+    @SafeGameMethod
+    def get_data(self):
+        return self._get_data()
         
 
 
@@ -305,20 +377,20 @@ class DummyGame(Game):
         super(DummyGame, self).__init__(**kwargs)
         self.counter = 0
 
-    def is_full(self):
+    def _is_full(self):
         return self.num_players == 2
 
-    def apply_action(self, idx, action):
+    def _apply_action(self, idx, action):
         pass
 
-    def apply_actions(self):
+    def _apply_actions(self):
         self.counter += 1
 
-    def is_finished(self):
+    def _is_finished(self):
         return self.counter >= 100
 
-    def get_state(self):
-        state = super(DummyGame, self).get_state()
+    def _get_state(self):
+        state = super(DummyGame, self)._get_state()
         state['count'] = self.counter
         return state
 
@@ -336,29 +408,57 @@ class DummyInteractiveGame(Game):
         self.counter = 0
         self.counts = [0] * self.max_players
 
-    def is_full(self):
+    def _is_full(self):
         return self.num_players == self.max_players
 
-    def is_finished(self):
+    def _is_finished(self):
         return max(self.counts) >= self.max_count
 
-    def apply_action(self, player_idx, action):
+    def _apply_action(self, player_idx, action):
         if action.upper() == Direction.NORTH:
             self.counts[player_idx] += 1
         if action.upper() == Direction.SOUTH:
             self.counts[player_idx] -= 1
 
-    def apply_actions(self):
-        super(DummyInteractiveGame, self).apply_actions()
+    def _apply_actions(self):
+        super(DummyInteractiveGame, self)._apply_actions()
         self.counter += 1
 
-    def get_state(self):
-        state = super(DummyInteractiveGame, self).get_state()
+    def _get_state(self):
+        state = super(DummyInteractiveGame, self)._get_state()
         state['count'] = self.counter
         for i in range(self.num_players):
             state['player_{}_count'.format(i)] = self.counts[i]
         return state
 
+class BuggyGame(DummyInteractiveGame):
+    def __init__(self, *args, buggy_activate=False, buggy_tick=True, buggy_add_player=False, buggy_enqueue_action=False, **kwargs):
+        super(BuggyGame, self).__init__(*args, **kwargs)
+        self.buggy_activate = buggy_activate
+        self.buggy_tick = buggy_tick
+        self.buggy_add_player = buggy_add_player
+        self.buggy_enqueue_action = buggy_enqueue_action
+
+
+    def _activate(self):
+        super(BuggyGame, self)._activate()
+        if self.buggy_activate:
+            raise Exception("This is a bug!")
+
+    def _tick(self):
+        super(BuggyGame, self)._tick()
+        if self.buggy_tick:
+            raise Exception("This is a bug!")
+
+    def _add_player(self, *args, **kwargs):
+        super(BuggyGame, self)._add_player(*args, **kwargs)
+        if self.buggy_add_player:
+            raise Exception("This is a bug!")
+
+    def _enqueue_action(self, *args, **kwargs):
+        super(BuggyGame, self)._enqueue_action(*args, **kwargs)
+        if self.buggy_enqueue_action:
+            raise Exception("This is a bug!")
     
 class OvercookedGame(Game):
     """
@@ -418,33 +518,34 @@ class OvercookedGame(Game):
 
         if playerZero != 'human':
             player_zero_id = playerZero + '_0'
-            self.add_player(player_zero_id, idx=0, buff_size=1, is_human=False)
-            self.npc_policies[player_zero_id] = self.get_policy(playerZero, idx=0)
+            self._add_player(player_zero_id, idx=0, buff_size=1, is_human=False)
+            self.npc_policies[player_zero_id] = self._get_policy(playerZero, idx=0)
             self.npc_state_queues[player_zero_id] = LifoQueue()
 
         if playerOne != 'human':
             player_one_id = playerOne + '_1'
-            self.add_player(player_one_id, idx=1, buff_size=1, is_human=False)
-            self.npc_policies[player_one_id] = self.get_policy(playerOne, idx=1)
+            self._add_player(player_one_id, idx=1, buff_size=1, is_human=False)
+            self.npc_policies[player_one_id] = self._get_policy(playerOne, idx=1)
             self.npc_state_queues[player_one_id] = LifoQueue()
+
         
 
     def _curr_game_over(self):
         return time() - self.start_time >= self.max_time
 
 
-    def needs_reset(self):
-        return self._curr_game_over() and not self.is_finished()
+    def _needs_reset(self):
+        return self._curr_game_over() and not self._is_finished()
 
-    def add_player(self, player_id, idx=None, buff_size=-1, is_human=True):
-        super(OvercookedGame, self).add_player(player_id, idx=idx, buff_size=buff_size)
+    def _add_player(self, player_id, idx=None, buff_size=-1, is_human=True):
+        super(OvercookedGame, self)._add_player(player_id, idx=idx, buff_size=buff_size)
         if is_human:
             self.human_players.add(player_id)
         else:
             self.npc_players.add(player_id)
 
-    def remove_player(self, player_id):
-        removed = super(OvercookedGame, self).remove_player(player_id)
+    def _remove_player(self, player_id):
+        removed = super(OvercookedGame, self)._remove_player(player_id)
         if removed:
             if player_id in self.human_players:
                 self.human_players.remove(player_id)
@@ -454,37 +555,37 @@ class OvercookedGame(Game):
                 raise ValueError("Inconsistent state")
 
 
-    def npc_policy_consumer(self, policy_id):
+    def _npc_policy_consumer(self, policy_id):
         queue = self.npc_state_queues[policy_id]
         policy = self.npc_policies[policy_id]
-        while self._is_active:
+        while self._is_active():
             state = queue.get()
             npc_action, _ = policy.action(state)
-            super(OvercookedGame, self).enqueue_action(policy_id, npc_action)
+            super(OvercookedGame, self)._enqueue_action(policy_id, npc_action)
 
 
-    def is_full(self):
+    def _is_full(self):
         return self.num_players >= self.max_players
 
-    def is_finished(self):
+    def _is_finished(self):
         return not self.layouts and self._curr_game_over()
 
-    def is_empty(self):
+    def _is_empty(self):
         """
         Game is considered safe to scrap if there are no active players or if there are no humans (spectating or playing)
         """
-        return super(OvercookedGame, self).is_empty() or not self.spectators and not self.human_players
+        return super(OvercookedGame, self)._is_empty() or not self.spectators and not self.human_players
 
-    def is_ready(self):
+    def _is_ready(self):
         """
         Game is ready to be activated if there are a sufficient number of players and at least one human (spectator or player)
         """
-        return super(OvercookedGame, self).is_ready() and not self.is_empty()
+        return super(OvercookedGame, self)._is_ready() and not self._is_empty()
 
-    def apply_action(self, player_id, action):
+    def _apply_action(self, player_id, action):
         pass
 
-    def apply_actions(self):
+    def _apply_actions(self):
         # Default joint action, as NPC policies and clients probably don't enqueue actions fast 
         # enough to produce one at every tick
         joint_action = [Action.STAY] * len(self.players)
@@ -515,23 +616,23 @@ class OvercookedGame(Game):
         return prev_state, joint_action, info
         
 
-    def enqueue_action(self, player_id, action):
+    def _enqueue_action(self, player_id, action):
         overcooked_action = self.action_to_overcooked_action[action]
-        super(OvercookedGame, self).enqueue_action(player_id, overcooked_action)
+        super(OvercookedGame, self)._enqueue_action(player_id, overcooked_action)
 
-    def reset(self):
-        status = super(OvercookedGame, self).reset()
+    def _reset(self):
+        status = super(OvercookedGame, self)._reset()
         if status == self.Status.RESET:
             # Hacky way of making sure game timer doesn't "start" until after reset timeout has passed
             self.start_time += self.reset_timeout / 1000
 
 
-    def tick(self):
+    def _tick(self):
         self.curr_tick += 1
-        return super(OvercookedGame, self).tick()
+        return super(OvercookedGame, self)._tick()
 
-    def activate(self):
-        super(OvercookedGame, self).activate()
+    def _activate(self):
+        super(OvercookedGame, self)._activate()
 
         # Sanity check at start of each game
         if not self.npc_players.union(self.human_players) == set(self.players):
@@ -551,12 +652,12 @@ class OvercookedGame(Game):
         for npc_policy in self.npc_policies:
             self.npc_policies[npc_policy].reset()
             self.npc_state_queues[npc_policy].put(self.state)
-            t = Thread(target=self.npc_policy_consumer, args=(npc_policy,))
+            t = Thread(target=self._npc_policy_consumer, args=(npc_policy,))
             self.threads.append(t)
             t.start()
 
-    def deactivate(self):
-        super(OvercookedGame, self).deactivate()
+    def _deactivate(self):
+        super(OvercookedGame, self)._deactivate()
         # Ensure the background consumers do not hang
         for npc_policy in self.npc_policies:
             self.npc_state_queues[npc_policy].put(self.state)
@@ -566,10 +667,10 @@ class OvercookedGame(Game):
             t.join()
 
         # Clear all action queues
-        self.clear_pending_actions()
+        self._clear_pending_actions()
 
 
-    def get_state(self):
+    def _get_state(self):
         state_dict = {}
         state_dict['potential'] = self.phi if self.show_potential else None
         state_dict['state'] = self.state.to_dict()
@@ -577,13 +678,13 @@ class OvercookedGame(Game):
         state_dict['time_left'] = max(self.max_time - (time() - self.start_time), 0)
         return state_dict
 
-    def to_json(self):
+    def _to_json(self):
         obj_dict = {}
-        obj_dict['terrain'] = self.mdp.terrain_mtx if self._is_active else None
-        obj_dict['state'] = self.get_state() if self._is_active else None
+        obj_dict['terrain'] = self.mdp.terrain_mtx if self._is_active() else None
+        obj_dict['state'] = self.get_state() if self._is_active() else None
         return obj_dict
 
-    def get_policy(self, npc_id, idx=0):
+    def _get_policy(self, npc_id, idx=0):
         if npc_id.lower().startswith("rllib"):
             try:
                 # Loading rllib agents requires additional helpers
@@ -626,19 +727,19 @@ class OvercookedPsiturk(OvercookedGame):
         self.psiturk_uid = str(psiturk_uid)
         self.trajectory = []
 
-    def activate(self):
+    def _activate(self):
         """
         Resets trial ID at start of new "game"
         """
-        super(OvercookedPsiturk, self).activate()
+        super(OvercookedPsiturk, self)._activate()
         self.trial_id = self.psiturk_uid + str(self.start_time)
 
-    def apply_actions(self):
+    def _apply_actions(self):
         """
         Applies pending actions then logs transition data
         """
         # Apply MDP logic
-        prev_state, joint_action, info = super(OvercookedPsiturk, self).apply_actions()
+        prev_state, joint_action, info = super(OvercookedPsiturk, self)._apply_actions()
 
         # Log data to send to psiturk client
         curr_reward = sum(info['sparse_reward_by_agent'])
@@ -661,7 +762,7 @@ class OvercookedPsiturk(OvercookedGame):
 
         self.trajectory.append(transition)
 
-    def get_data(self):
+    def _get_data(self):
         """
         Returns and then clears the accumulated trajectory
         """
@@ -717,18 +818,18 @@ class OvercookedTutorial(OvercookedGame):
             return self.score >= float('inf')
         return False
 
-    def activate(self):
-        super(OvercookedTutorial, self).activate()
+    def _activate(self):
+        super(OvercookedTutorial, self)._activate()
         self.curr_phase = self.LAYOUT_TO_PHASE[self.curr_layout]
 
-    def get_policy(self, *args, **kwargs):
+    def _get_policy(self, *args, **kwargs):
         return TutorialAI(self.LAYOUT_TO_PHASE, self.layouts, self.ticks_per_ai_action, self.phase_one_cook_time)
 
-    def apply_actions(self):
+    def _apply_actions(self):
         """
         Apply regular MDP logic with retroactive score adjustment tutorial purposes
         """
-        prev_state, joint_action, info = super(OvercookedTutorial, self).apply_actions()
+        prev_state, joint_action, info = super(OvercookedTutorial, self)._apply_actions()
 
         human_reward, ai_reward = info['sparse_reward_by_agent']
 
@@ -753,19 +854,19 @@ class OvercookedTutorialPsiturk(OvercookedTutorial):
         self.psiturk_uid = str(psiturk_uid)
         self.trajectory = []
 
-    def activate(self):
+    def _activate(self):
         """
         Resets trial ID at start of new "game"
         """
-        super(OvercookedTutorialPsiturk, self).activate()
+        super(OvercookedTutorialPsiturk, self)._activate()
         self.trial_id = self.psiturk_uid + '_tutorial_' + str(self.start_time)
 
-    def apply_actions(self):
+    def _apply_actions(self):
         """
         Applies pending actions then logs transition data
         """
         # Apply MDP logic
-        prev_state, joint_action, human_reward = super(OvercookedTutorialPsiturk, self).apply_actions()
+        prev_state, joint_action, human_reward = super(OvercookedTutorialPsiturk, self)._apply_actions()
 
         # Log data to send to psiturk client
         transition = {
@@ -787,7 +888,7 @@ class OvercookedTutorialPsiturk(OvercookedTutorial):
 
         self.trajectory.append(transition)
 
-    def get_data(self):
+    def _get_data(self):
         """
         Returns and then clears the accumulated trajectory
         """

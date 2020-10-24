@@ -36,6 +36,7 @@ var game_config = {
 };
 
 var graphics;
+var graphics_running = false;
 
 // Invoked at every state_pong event from server
 function drawState(state) {
@@ -49,14 +50,17 @@ function drawState(state) {
 
 // Invoked at 'start_game' event
 function graphics_start(graphics_config) {
+    graphics_running = true;
     graphics = new GraphicsManager(game_config, scene_config, graphics_config);
 };
 
 // Invoked at 'end_game' event
 function graphics_end() {
-    graphics.game.renderer.destroy();
-    graphics.game.loop.stop();
-    graphics.game.destroy();
+    if (graphics_running) {
+        graphics.game.renderer.destroy();
+        graphics.game.loop.stop();
+        graphics.game.destroy();
+    }
 }
 
 class GraphicsManager {

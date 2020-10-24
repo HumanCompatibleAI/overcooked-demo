@@ -4,7 +4,7 @@
     "logfile" : "app.log",
 
     // All available layouts
-    "layouts" : ["cramped_room", "cramped_room_tomato", "asymmetric_advantages", "coordination_ring", "forced_coordination", "counter_circuit", "cramped_corridor", "marshmallow_experiment", "long_cook_time", "forced_coordination_tomato", "asymmetric_advantages_tomato", "marshmallow_experiment_coordination", "pipeline", "you_shall_not_pass", "tutorial_3"],
+    "layouts" : ["soup_coordination", "cramped_corridor", "marshmallow_experiment", "marshmallow_experiment_coordination", "inverse_marshmallow_experiment", "you_shall_not_pass", "counter_circuit", "asymmetric_advantages_tomato"],
 
     // Maximum number of parallel games the server can handle
     "MAX_GAMES" : 10,
@@ -22,7 +22,7 @@
     "psiturk" : {
         // Passed into OvercookedPsiturk constructor. See `game.py` for details
         "experimentParams" : {
-            "layouts" : ["soup_coordination", "cramped_corridor", "marshmallow_experiment", "marshmallow_experiment_coordination", "inverse_marshmallow_experiment", "you_shall_not_pass", "counter_circuit_tomato", "asymmetric_advantages_tomato"],
+            "layouts" : ["soup_coordination", "cramped_corridor", "marshmallow_experiment", "marshmallow_experiment_coordination", "inverse_marshmallow_experiment", "you_shall_not_pass", "counter_circuit", "asymmetric_advantages_tomato"],
             "gameTime" : 60,
             "playerZero" : "human",
             "playerOne" : "human",

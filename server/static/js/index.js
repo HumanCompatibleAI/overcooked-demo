@@ -173,6 +173,53 @@ socket.on('end_game', function(data) {
     }
 });
 
+socket.on("game_error", function(data) {
+    // Hide game data and display error html
+    graphics_end();
+    if (!window.spectating) {
+        disable_key_listener();
+    }
+    $('#lobby').hide();
+    $('#waiting').hide();
+    $('#game-title').hide();
+    $('#game-over').show();
+    $("#join").show();
+    $('#join').attr("disabled", false);
+    $("#create").show();
+    $('#create').attr("disabled", false)
+    $("#instructions").show();
+    $('#tutorial').show();
+    $("#leave").hide();
+    $('#leave').attr("disabled", true)
+
+    // Game ended unexpectedly
+    $('#error-exit').show();
+});
+
+socket.on("server_error", function(data) {
+    // Something has gone horribly wrong!
+    socket.disconnect();
+    graphics_end();
+    if (!window.spectating) {
+        disable_key_listener();
+    }
+    $('#lobby').hide();
+    $('#waiting').hide();
+    $('#game-title').hide();
+    $('#game-over').show();
+    $("#join").show();
+    $('#join').attr("disabled", true);
+    $("#create").show();
+    $('#create').attr("disabled", true)
+    $("#instructions").show();
+    $('#tutorial').show();
+    $("#leave").hide();
+    $('#leave').attr("disabled", true)
+
+    // Game ended unexpectedly
+    $('#server-error').show();
+});
+
 socket.on('end_lobby', function() {
     // Hide lobby
     $('#lobby').hide();

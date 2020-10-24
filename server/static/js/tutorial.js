@@ -253,6 +253,47 @@ socket.on('end_game', function(data) {
     $('#finish').show();
 });
 
+socket.on("game_error", function(data) {
+    // Hide game data and display game-over html
+    graphics_end();
+    disable_key_listener();
+    $('#error-exit').show();
+    $('#game-title').hide();
+    $('#instructions-wrapper').hide();
+    $('#hint-wrapper').hide();
+    $('#show-hint').hide();
+    $('#quit').hide();
+    $('#overcooked').append(`<h4>Sorry, tutorial failed with error: ${JSON.stringify(data.error)}</>`);
+    $('#overcooked').show();
+
+    // Propogate game stats to parent window with psiturk code
+    let overcooked_data = JSON.stringify({});
+    if (typeof data.data !== 'undefined') {
+        overcooked_data = data.data;
+    }
+    window.top.postMessage({ name : "error", data : overcooked_data }, "*");
+});
+
+socket.on("server_error", function(data) {
+    // Something has gone horribly wrong!
+    socket.disconnect();
+    graphics_end();
+    disable_key_listener();
+    $('#server-error').show();
+    $('#game-title').hide();
+    $('#instructions-wrapper').hide();
+    $('#hint-wrapper').hide();
+    $('#show-hint').hide();
+    $('#quit').hide();
+
+    // Propogate game stats to parent window with psiturk code
+    let overcooked_data = JSON.stringify({});
+    if (typeof data.data !== 'undefined') {
+        overcooked_data = data.data;
+    }
+    window.top.postMessage({ name : "error", data : overcooked_data }, "*");
+});
+
 
 /* * * * * * * * * * * * * * 
  * Game Key Event Listener *

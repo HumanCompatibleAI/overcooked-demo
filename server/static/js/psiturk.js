@@ -136,7 +136,70 @@ socket.on('end_lobby', function() {
 
     // Let parent window (psiturk) know what happened
     window.top.postMessage({ name : "timeout" }, "*");
-})
+});
+
+socket.on("game_error", function(data) {
+    // Hide game-over and lobby, show game title header
+    if (window.intervalID !== -1) {
+        clearInterval(window.intervalID);
+        window.intervalID = -1;
+    }
+    if (window.lobbyTimeout !== -1) {
+        clearInterval(window.ellipses);
+        clearTimeout(window.lobbyTimeout);
+        window.lobbyTimeout = -1;
+        window.ellipses = -1;
+    }
+
+    // Game crashed
+    graphics_end();
+    disable_key_listener();
+    $('#game-title').hide();
+    $('#game-over').show();
+    $("#overcooked").empty();
+    $('#lobby').hide();
+    $("#error").show();
+    $("#error-exit").show();
+
+    // Propogate game stats to parent window with psiturk code
+    let overcooked_data = JSON.stringify({});
+    if (typeof data.data !== 'undefined') {
+        overcooked_data = data.data;
+    }
+    window.top.postMessage({ name : "error", data : overcooked_data }, "*");
+});
+
+socket.on("server_error", function(data) {
+    // Hide game-over and lobby, show game title header
+    if (window.intervalID !== -1) {
+        clearInterval(window.intervalID);
+        window.intervalID = -1;
+    }
+    if (window.lobbyTimeout !== -1) {
+        clearInterval(window.ellipses);
+        clearTimeout(window.lobbyTimeout);
+        window.lobbyTimeout = -1;
+        window.ellipses = -1;
+    }
+
+    // Something has gone horribly wrong!
+    socket.disconnect();
+    graphics_end();
+    disable_key_listener();
+    $('#game-title').hide();
+    $('#game-over').show();
+    $("#overcooked").empty();
+    $('#lobby').hide();
+    $("#error").show();
+    $("#error-exit").show();
+
+    // Propogate game stats to parent window with psiturk code
+    let overcooked_data = JSON.stringify({});
+    if (typeof data.data !== 'undefined') {
+        overcooked_data = data.data;
+    }
+    window.top.postMessage({ name : "error", data : overcooked_data }, "*");
+});
 
 
 /* * * * * * * * * * * * * * 

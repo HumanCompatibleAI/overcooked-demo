@@ -1,4 +1,4 @@
-import os
+import os, traceback
 
 # Import and patch the production eventlet server if necessary
 if os.getenv('FLASK_ENV', 'production') == 'production':
@@ -8,10 +8,10 @@ if os.getenv('FLASK_ENV', 'production') == 'production':
 # All other imports must come after patch to ensure eventlet compatibility
 import pickle, queue, atexit, json, logging, jsmin
 from threading import Lock
-from utils import ThreadSafeSet, ThreadSafeDict
+from utils import ThreadSafeSet, ThreadSafeDict, GameError
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk, OvercookedTutorialPsiturk
+from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk, OvercookedTutorialPsiturk, BuggyGame
 import game
 
 
@@ -153,6 +153,8 @@ def cleanup_game(game):
     # User tracking
     for user_id in game.players:
         leave_curr_room(user_id)
+    for user_id in game.spectators:
+        leave_curr_room(user_id)
 
     # Socketio tracking
     socketio.close_room(game.id)
@@ -164,6 +166,13 @@ def cleanup_game(game):
 
     if game.id in ACTIVE_GAMES:
         ACTIVE_GAMES.remove(game.id)
+
+    try:
+        if game.is_active():
+            game.deactivate()
+    except Exception:
+        # TODO: figure out how to ensure the 'play_game' thread always exits
+        pass
 
 def get_game(game_id):
     return GAMES.get(game_id, None)
@@ -220,43 +229,47 @@ def  _leave_game(user_id):
         # Cannot leave a game if not currently in one
         return False
     
-    # Acquire this game's lock to ensure all global state updates are atomic
-    with game.lock:
-        # Update socket state maintained by socketio
-        leave_room(game.id)
+    try:
+        # Acquire this game's lock to ensure all global state updates are atomic
+        with game.lock:
+            # Update socket state maintained by socketio
+            leave_room(game.id)
 
-        # Update user data maintained by this app
-        leave_curr_room(user_id)
+            # Update user data maintained by this app
+            leave_curr_room(user_id)
 
-        # Update game state maintained by game object
-        if user_id in game.players:
-            game.remove_player(user_id)
-        else:
-            game.remove_spectator(user_id)
-        
-        # Whether the game was active before the user left
-        was_active = game.id in ACTIVE_GAMES
-
-        # Rebroadcast data and handle cleanup based on the transition caused by leaving
-        if was_active and game.is_empty():
-            # Active -> Empty
-            game.deactivate()
-        elif game.is_empty():
-            # Waiting -> Empty
-            cleanup_game(game)
-        elif not was_active:
-            # Waiting -> Waiting
-            emit('waiting', { "in_game" : True }, room=game.id)
-        elif was_active and game.is_ready():
-            # Active -> Active
-            pass
-        elif was_active and not game.is_empty():
-            # Active -> Waiting
-            game.deactivate()
+            # Update game state maintained by game object
+            if user_id in game.players:
+                game.remove_player(user_id)
+            else:
+                game.remove_spectator(user_id)
             
-            
+            # Whether the game was active before the user left
+            was_active = game.id in ACTIVE_GAMES
 
-    return was_active
+            # Rebroadcast data and handle cleanup based on the transition caused by leaving
+            if was_active and game.is_empty():
+                # Active -> Empty
+                game.deactivate()
+            elif game.is_empty():
+                # Waiting -> Empty
+                cleanup_game(game)
+            elif not was_active:
+                # Waiting -> Waiting
+                emit('waiting', { "in_game" : True }, room=game.id)
+            elif was_active and game.is_ready():
+                # Active -> Active
+                pass
+            elif was_active and not game.is_empty():
+                # Active -> Waiting
+                game.deactivate()
+
+            return was_active
+
+    except GameError as ge:
+        emit("game_error", {"error" : traceback.format_exc()}, room=game.id)
+        cleanup_game(game)
+        return False
 
 def _create_game(user_id, game_name, params={}):
     game, err = try_create_game(game_name, **params)
@@ -264,23 +277,28 @@ def _create_game(user_id, game_name, params={}):
         emit("creation_failed", { "error" : err.__repr__() })
         return
     spectating = True
-    with game.lock:
-        if not game.is_full():
-            spectating = False
-            game.add_player(user_id)
-        else:
-            spectating = True
-            game.add_spectator(user_id)
-        join_room(game.id)
-        set_curr_room(user_id, game.id)
-        if game.is_ready():
-            game.activate()
-            ACTIVE_GAMES.add(game.id)
-            emit('start_game', { "spectating" : spectating, "start_info" : game.to_json()}, room=game.id)
-            socketio.start_background_task(play_game, game, game.fps)
-        else:
-            WAITING_GAMES.put(game.id)
-            emit('waiting', { "in_game" : True }, room=game.id)
+    try:
+        with game.lock:
+            if not game.is_full():
+                spectating = False
+                game.add_player(user_id)
+            else:
+                spectating = True
+                game.add_spectator(user_id)
+            join_room(game.id)
+            set_curr_room(user_id, game.id)
+            if game.is_ready():
+                game.activate()
+                ACTIVE_GAMES.add(game.id)
+                emit('start_game', { "spectating" : spectating, "start_info" : game.to_json()}, room=game.id)
+                socketio.start_background_task(play_game, game, game.fps)
+            else:
+                WAITING_GAMES.put(game.id)
+                emit('waiting', { "in_game" : True }, room=game.id)
+    except GameError as ge:
+        emit("game_error", { "error" : traceback.format_exc() }, room=game.id)
+        cleanup_game(game)
+
 
 
 
@@ -411,61 +429,72 @@ def debug():
 def on_create(data):
     user_id = request.sid
 
-    with USERS[user_id]:
-        # Retrieve current game if one exists
-        curr_game = get_curr_game(user_id)
-        if curr_game:
-            # Cannot create if currently in a game
-            return
-        
-        params = data.get('params', {})
-        game_name = data.get('game_name', 'overcooked')
-        _create_game(user_id, game_name, params)
+    try:
+        with USERS[user_id]:
+            # Retrieve current game if one exists
+            curr_game = get_curr_game(user_id)
+            if curr_game:
+                # Cannot create if currently in a game
+                return
+            
+            params = data.get('params', {})
+            game_name = data.get('game_name', 'overcooked')
+            _create_game(user_id, game_name, params)
+    except Exception as e:
+        emit("server_error", { "error" : traceback.format_exc() })
     
 
 @socketio.on('join')
 def on_join(data):
     user_id = request.sid
-    with USERS[user_id]:
-        create_if_not_found = data.get("create_if_not_found", True)
 
-        # Retrieve current game if one exists
-        curr_game = get_curr_game(user_id)
-        if curr_game:
-            # Cannot join if currently in a game
-            return
-        
-        # Retrieve a currently open game if one exists
-        game = get_waiting_game()
+    try:
+        with USERS[user_id]:
+            create_if_not_found = data.get("create_if_not_found", True)
 
-        if not game and create_if_not_found:
-            # No available game was found so create a game
-            params = data.get('params', {})
-            game_name = data.get('game_name', 'overcooked')
-            _create_game(user_id, game_name, params)
-            return
+            # Retrieve current game if one exists
+            curr_game = get_curr_game(user_id)
+            if curr_game:
+                # Cannot join if currently in a game
+                return
+            
+            # Retrieve a currently open game if one exists
+            game = get_waiting_game()
 
-        elif not game:
-            # No available game was found so start waiting to join one
-            emit('waiting', { "in_game" : False })
-        else:
-            # Game was found so join it
-            with game.lock:
+            if not game and create_if_not_found:
+                # No available game was found so create a game
+                params = data.get('params', {})
+                game_name = data.get('game_name', 'overcooked')
+                _create_game(user_id, game_name, params)
+                return
 
-                join_room(game.id)
-                set_curr_room(user_id, game.id)
-                game.add_player(user_id)
-                    
-                if game.is_ready():
-                    # Game is ready to begin play
-                    game.activate()
-                    ACTIVE_GAMES.add(game.id)
-                    emit('start_game', { "spectating" : False, "start_info" : game.to_json()}, room=game.id)
-                    socketio.start_background_task(play_game, game, game.fps)
-                else:
-                    # Still need to keep waiting for players
-                    WAITING_GAMES.put(game.id)
-                    emit('waiting', { "in_game" : True }, room=game.id)
+            elif not game:
+                # No available game was found so start waiting to join one
+                emit('waiting', { "in_game" : False })
+            else:
+                try:
+                    # Game was found so join it
+                    with game.lock:
+
+                        join_room(game.id)
+                        set_curr_room(user_id, game.id)
+                        game.add_player(user_id)
+                            
+                        if game.is_ready():
+                            # Game is ready to begin play
+                            game.activate()
+                            ACTIVE_GAMES.add(game.id)
+                            emit('start_game', { "spectating" : False, "start_info" : game.to_json()}, room=game.id)
+                            socketio.start_background_task(play_game, game, game.fps)
+                        else:
+                            # Still need to keep waiting for players
+                            WAITING_GAMES.put(game.id)
+                            emit('waiting', { "in_game" : True }, room=game.id)
+                except GameError as ge:
+                    emit("game_error", { "error" : traceback.format_exc() }, room=game.id)
+                    cleanup_game(game)
+    except Exception as e:
+        emit("server_error", { "error" : traceback.format_exc() })
 
 @socketio.on('leave')
 def on_leave(data):
@@ -494,21 +523,28 @@ def on_action(data):
 def on_connect():
     user_id = request.sid
 
-    if user_id in USERS:
-        return
+    try:
+        if user_id in USERS:
+            return
 
-    USERS[user_id] = Lock()
+        USERS[user_id] = Lock()
+    except Exception as e:
+        emit("server_error", { "error" : traceback.format_exc() })
 
 @socketio.on('disconnect')
 def on_disconnect():
     # Ensure game data is properly cleaned-up in case of unexpected disconnect
     user_id = request.sid
-    if user_id not in USERS:
-        return
-    with USERS[user_id]:
-        _leave_game(user_id)
 
-    del USERS[user_id]
+    try:
+        if user_id not in USERS:
+            return
+        with USERS[user_id]:
+            _leave_game(user_id)
+
+        del USERS[user_id]
+    except Exception as e:
+        emit("server_error", { "error" : traceback.format_exc() })
 
 
 
@@ -535,27 +571,43 @@ def play_game(game, fps=MAX_FPS):
                             room id for all clients connected to this game
     fps (int):              Number of game ticks that should happen every second
     """
-    fps = min(fps, MAX_FPS)
-    status = Game.Status.ACTIVE
-    while status != Game.Status.DONE and status != Game.Status.INACTIVE:
-        with game.lock:
-            status = game.tick()
-        if status == Game.Status.RESET:
+    try:
+        fps = min(fps, MAX_FPS)
+        status = Game.Status.ACTIVE
+        while status != Game.Status.DONE and status != Game.Status.INACTIVE:
             with game.lock:
-                data = game.get_data()
-            socketio.emit('reset_game', { "state" : game.to_json(), "timeout" : game.reset_timeout, "data" : json.dumps(data)}, room=game.id)
-            socketio.sleep(game.reset_timeout/1000)
-        else:
-            socketio.emit('state_pong', { "state" : game.get_state() }, room=game.id)
-        socketio.sleep(1/fps)
-    
-    with game.lock:
-        data = game.get_data()
-        socketio.emit('end_game', { "status" : status, "data" : json.dumps(data) }, room=game.id)
+                status = game.tick()
+            if status == Game.Status.RESET:
+                with game.lock:
+                    data = game.get_data()
+                socketio.emit('reset_game', { "state" : game.to_json(), "timeout" : game.reset_timeout, "data" : json.dumps(data)}, room=game.id)
+                socketio.sleep(game.reset_timeout/1000)
+            else:
+                socketio.emit('state_pong', { "state" : game.get_state() }, room=game.id)
+            socketio.sleep(1/fps)
+        
+        with game.lock:
+            data = game.get_data()
+            socketio.emit('end_game', { "status" : status, "data" : json.dumps(data) }, room=game.id)
 
-        if status != Game.Status.INACTIVE:
-            game.deactivate()
+            if status != Game.Status.INACTIVE:
+                game.deactivate()
+            cleanup_game(game)
+    
+    except GameError as ge:
+        data = []
+
+        # Try to recover any data possible
+        try:
+            data = game.get_data()
+        except Exception:
+            pass
+
+        socketio.emit("game_error", {"error" : traceback.format_exc(), "data" : json.dumps(data) }, room=game.id)
         cleanup_game(game)
+    except Exception as e:
+        socketio.emit("server error", {"error" : traceback.format_exc() }, room=game.id)
+
 
 
 
