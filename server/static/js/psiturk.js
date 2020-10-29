@@ -23,7 +23,7 @@ socket.on('waiting', function(data) {
             if (window.intervalID === -1) {
                 // Occassionally ping server to try and join
                 window.intervalID = setInterval(function() {
-                    socket.emit('join', {});
+                    socket.emit('join', {"game_name" : "psiturk"});
                 }, 1000);
             }
         }

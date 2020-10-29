@@ -27,7 +27,7 @@ $(function() {
 
 $(function() {
     $('#join').click(function() {
-        socket.emit("join", {});
+        socket.emit("join", {"game_name" : "overcooked"});
         $('#join').attr("disabled", true);
         $('#create').attr("disabled", true);
     });
@@ -70,7 +70,7 @@ socket.on('waiting', function(data) {
         // Begin pinging to join if not currently in a game
         if (window.intervalID === -1) {
             window.intervalID = setInterval(function() {
-                socket.emit('join', {});
+                socket.emit('join', {"game_name" : "overcooked"});
             }, 1000);
         }
     }

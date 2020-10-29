@@ -142,7 +142,7 @@ $(function() {
             "params" : config['tutorialParams'],
             "game_name" : "tutorial"
         };
-        socket.emit("join", data);
+        socket.emit("create", data);
         $('try-again').attr("disable", true);
     });
 });

@@ -8,6 +8,7 @@ if os.getenv('FLASK_ENV', 'production') == 'production':
 # All other imports must come after patch to ensure eventlet compatibility
 import pickle, queue, atexit, json, logging, jsmin
 from threading import Lock
+from collections import defaultdict
 from utils import ThreadSafeSet, ThreadSafeDict, GameError
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
@@ -16,10 +17,9 @@ import game
 
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
-# Should make game driver code more error robust -- if overcooked randomlly errors we should catch it and report it to user
 # Right now, if one user 'join's before other user's 'join' finishes, they won't end up in same game
 # Could use a monitor on a conditional to block all global ops during calls to _ensure_consistent_state for debugging
-# Could cap number of sinlge- and multi-player games separately since the latter has much higher RAM and CPU usage
+# Could cap number of sinlge- and multi-player games separately since the former has much higher RAM and CPU usage
 
 ###########
 # Globals #
@@ -69,21 +69,6 @@ for i in range(MAX_GAMES):
     FREE_IDS.put(i)
     FREE_MAP[i] = True
 
-# Mapping of game-id to game objects
-GAMES = ThreadSafeDict()
-
-# Set of games IDs that are currently being played
-ACTIVE_GAMES = ThreadSafeSet()
-
-# Queue of games IDs that are waiting for additional players to join. Note that some of these IDs might
-# be stale (i.e. if FREE_MAP[id] = True)
-WAITING_GAMES = queue.Queue()
-
-# Mapping of users to locks associated with the ID. Enforces user-level serialization
-USERS = ThreadSafeDict()
-
-# Mapping of user id's to the current game (room) they are in
-USER_ROOMS = ThreadSafeDict()
 
 # Mapping of string game names to corresponding classes
 GAME_NAME_TO_CLS = {
@@ -93,6 +78,27 @@ GAME_NAME_TO_CLS = {
     "psiturk_tutorial" : OvercookedTutorialPsiturk
 }
 
+GAME_TYPES = ThreadSafeSet(GAME_NAME_TO_CLS)
+
+# Mapping of game-id to game objects
+GAMES = ThreadSafeDict()
+
+# Set of games IDs that are currently being played
+ACTIVE_GAMES = ThreadSafeSet()
+
+# Maps game type to Queue of games IDs that are waiting for additional players to join. Note that some of these IDs might
+# be stale (i.e. if FREE_MAP[id] = True)
+WAITING_GAMES = ThreadSafeDict()
+for game_type in GAME_TYPES:
+    WAITING_GAMES[game_type] = queue.Queue()
+
+# Mapping of users to locks associated with the ID. Enforces user-level serialization
+USERS = ThreadSafeDict()
+
+# Mapping of user id's to the current game (room) they are in
+USER_ROOMS = ThreadSafeDict()
+
+# Sets global variables used by game.py
 game._configure(MAX_GAME_LENGTH, AGENT_DIR, MAX_FPS)
 
 
@@ -189,7 +195,7 @@ def set_curr_room(user_id, room_id):
 def leave_curr_room(user_id):
     del USER_ROOMS[user_id]
 
-def get_waiting_game():
+def get_waiting_game(game_type):
     """
     Return a pointer to a waiting game, if one exists
 
@@ -197,9 +203,9 @@ def get_waiting_game():
     the waiting game's ID is re-added to the WAITING_GAMES queue
     """
     try:
-        waiting_id = WAITING_GAMES.get(block=False)
+        waiting_id = WAITING_GAMES[game_type].get(block=False)
         while FREE_MAP[waiting_id]:
-            waiting_id = WAITING_GAMES.get(block=False)
+            waiting_id = WAITING_GAMES[game_type].get(block=False)
     except queue.Empty:
         return None
     else:
@@ -293,7 +299,7 @@ def _create_game(user_id, game_name, params={}):
                 emit('start_game', { "spectating" : spectating, "start_info" : game.to_json()}, room=game.id)
                 socketio.start_background_task(play_game, game, game.fps)
             else:
-                WAITING_GAMES.put(game.id)
+                WAITING_GAMES[game_name].put(game.id)
                 emit('waiting', { "in_game" : True }, room=game.id)
     except GameError as ge:
         emit("game_error", { "error" : traceback.format_exc() }, room=game.id)
@@ -317,30 +323,39 @@ def _ensure_consistent_state():
 
     - Intersection of WAITING and ACTIVE games must be empty set
     - Union of WAITING and ACTIVE must be equal to GAMES
+    - Union of WAITING[type_i] and WAITING[type_j] is empty set for i != j
     - id \in FREE_IDS => FREE_MAP[id] 
     - id \in ACTIVE_GAMES => Game in active state
     - id \in WAITING_GAMES => Game in inactive state
     """
-    waiting_games = set()
+    waiting_games = defaultdict(list)
     active_games = set()
     all_games = set(GAMES)
 
     for game_id in list(FREE_IDS.queue):
         assert FREE_MAP[game_id], "Freemap in inconsistent state"
 
-    for game_id in list(WAITING_GAMES.queue):
-        if not FREE_MAP[game_id]:
-            waiting_games.add(game_id)
+    for game_name, q in WAITING_GAMES.items():
+        for game_id in list(q.queue):
+            if not FREE_MAP[game_id]:
+                waiting_games[game_name].add(game_id)
 
     for game_id in ACTIVE_GAMES:
         active_games.add(game_id)
 
-    assert waiting_games.union(active_games) == all_games, "WAITING union ACTIVE != ALL"
+    assert set(waiting_games.values()).union(active_games) == all_games, "WAITING union ACTIVE != ALL"
 
-    assert not waiting_games.intersection(active_games), "WAITING intersect ACTIVE != EMPTY"
+    assert not set(waiting_games.values()).intersection(active_games), "WAITING intersect ACTIVE != EMPTY"
 
     assert all([get_game(g_id)._is_active for g_id in active_games]), "Active ID in waiting state"
     assert all([not get_game(g_id)._id_active for g_id in waiting_games]), "Waiting ID in active state"
+
+    waiting_games_keys = list(waiting_games)
+    for i in range(len(waiting_games_keys)):
+        for j in range(i+1, len(waiting_games_keys)):
+            key_i = waiting_games_keys[i]
+            key_j = waiting_games_keys[j]
+            assert not set(waiting_games[key_i]).union(waiting_games[key_j]), "WAITING id queues not disjoint"
 
 
 def get_agent_names():
@@ -383,7 +398,7 @@ def debug():
     resp = {}
     games = []
     active_games = []
-    waiting_games = []
+    waiting_games = defaultdict(list)
     users = []
     free_ids = []
     free_map = {}
@@ -391,10 +406,11 @@ def debug():
         game = get_game(game_id)
         active_games.append({"id" : game_id, "state" : game.to_json()})
 
-    for game_id in list(WAITING_GAMES.queue):
-        game = get_game(game_id)
-        game_state = None if FREE_MAP[game_id] else game.to_json()
-        waiting_games.append({ "id" : game_id, "state" : game_state})
+    for game_type in WAITING_GAMES:
+        for game_id in list(WAITING_GAMES[game_type].queue):
+            game = get_game(game_id)
+            game_state = None if FREE_MAP[game_id] else game.to_json()
+            waiting_games[game_type].append({ "id" : game_id, "state" : game_state})
 
     for game_id in GAMES:
         games.append(game_id)
@@ -453,6 +469,11 @@ def on_join(data):
     try:
         with USERS[user_id]:
             create_if_not_found = data.get("create_if_not_found", True)
+            game_type = data.get('game_name', None)
+
+            if not game_type or not game_type in GAME_TYPES:
+                # User must provide valid game type
+                return
 
             # Retrieve current game if one exists
             curr_game = get_curr_game(user_id)
@@ -461,13 +482,12 @@ def on_join(data):
                 return
             
             # Retrieve a currently open game if one exists
-            game = get_waiting_game()
+            game = get_waiting_game(game_type)
 
             if not game and create_if_not_found:
                 # No available game was found so create a game
                 params = data.get('params', {})
-                game_name = data.get('game_name', 'overcooked')
-                _create_game(user_id, game_name, params)
+                _create_game(user_id, game_type, params)
                 return
 
             elif not game:
@@ -490,7 +510,7 @@ def on_join(data):
                             socketio.start_background_task(play_game, game, game.fps)
                         else:
                             # Still need to keep waiting for players
-                            WAITING_GAMES.put(game.id)
+                            WAITING_GAMES[game_type].put(game.id)
                             emit('waiting', { "in_game" : True }, room=game.id)
                 except GameError as ge:
                     emit("game_error", { "error" : traceback.format_exc() }, room=game.id)
