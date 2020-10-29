@@ -363,7 +363,8 @@ def index():
 def psiturk():
     uid = request.args.get("UID")
     psiturk_config = request.args.get('config', PSITURK_CONFIG)
-    return render_template('psiturk.html', uid=uid, config=psiturk_config)
+    ack_interval = request.args.get('ack_interval', -1)
+    return render_template('psiturk.html', uid=uid, config=psiturk_config, ack_interval=ack_interval)
 
 @app.route('/instructions')
 def instructions():
@@ -374,7 +375,8 @@ def instructions():
 def tutorial():
     uid = request.args.get("UID", "-1")
     psiturk = request.args.get('psiturk', False)
-    return render_template('tutorial.html', config=TUTORIAL_CONFIG, psiturk=psiturk, uid=uid)
+    ack_interval = request.args.get('ack_interval', -1)
+    return render_template('tutorial.html', config=TUTORIAL_CONFIG, psiturk=psiturk, uid=uid, ack_interval=ack_interval)
 
 @app.route('/debug')
 def debug():

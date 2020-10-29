@@ -112,15 +112,24 @@ var get_tutorial_hints = function(config) {
 }
 
 var curr_tutorial_phase;
+window.ackInterval = -1;
 
 // Read in game config provided by server
 $(function() {
-    config = JSON.parse($('#config').text());
-    uid = $('#uid').text();
-    config.psiturk = JSON.parse($('#psiturk').text().toLowerCase());
-    tutorial_instructions = get_tutorial_instructions(config);
-    tutorial_hints = get_tutorial_hints(config);
-    $('#quit').show();
+    try {
+        config = JSON.parse($('#config').text());
+        uid = $('#uid').text();
+        ack_timeout = JSON.parse($('#ack-interval').text());
+        config.psiturk = JSON.parse($('#psiturk').text().toLowerCase());
+        config.ack_timeout = ack_timeout;
+        tutorial_instructions = get_tutorial_instructions(config);
+        tutorial_hints = get_tutorial_hints(config);
+        $('#quit').show();
+    } catch (err) {
+        let data = JSON.stringify({});
+        let error = JSON.stringify(err);
+        window.top.postMessage({ name : "error", data : data, error : error }, "*");
+    }
 });
 
 /* * * * * * * * * * * * * * * * 
@@ -169,59 +178,78 @@ $(function() {
  * * * * * * * * * * * * */
 
 socket.on('creation_failed', function(data) {
-    // Tell user what went wrong
-    let err = data['error']
-    $("#overcooked").empty();
-    $('#overcooked').append(`<h4>Sorry, tutorial creation code failed with error: ${JSON.stringify(err)}</>`);
-    $('#try-again').show();
-    $('#try-again').attr("disabled", false);
+    try {
+        // Tell user what went wrong
+        let err = data['error']
+        $("#overcooked").empty();
+        $('#overcooked').append(`<h4>Sorry, tutorial creation code failed with error: ${JSON.stringify(err)}</>`);
+        $('#try-again').show();
+        $('#try-again').attr("disabled", false);
+        window.top.postMessage({ name : "error", error : "creation failed"}, "*");
+    } catch (err) {
+        let data = JSON.stringify({});
+        let error = JSON.stringify(err);
+        window.top.postMessage({ name : "error", data : data, error : error }, "*");
+    }
 });
 
 socket.on('start_game', function(data) {
-    curr_tutorial_phase = 0;
-    graphics_config = {
-        container_id : "overcooked",
-        start_info : data.start_info
-    };
-    $("#overcooked").empty();
-    $('#game-over').hide();
-    $('#try-again').hide();
-    $('#try-again').attr('disabled', true)
-    $('#hint-wrapper').hide();
-    $('#show-hint').text('Show Hint');
-    $('#game-title').text(`Tutorial in Progress, Phase ${curr_tutorial_phase}/${tutorial_instructions.length}`);
-    $('#game-title').show();
-    $('#tutorial-instructions').append(tutorial_instructions[curr_tutorial_phase]);
-    $('#instructions-wrapper').show();
-    $('#hint').append(tutorial_hints[curr_tutorial_phase]);
-    enable_key_listener();
-    graphics_start(graphics_config);
+    try {
+        curr_tutorial_phase = 0;
+        graphics_config = {
+            container_id : "overcooked",
+            start_info : data.start_info
+        };
+        $("#overcooked").empty();
+        $('#game-over').hide();
+        $('#try-again').hide();
+        $('#try-again').attr('disabled', true)
+        $('#hint-wrapper').hide();
+        $('#show-hint').text('Show Hint');
+        $('#game-title').text(`Tutorial in Progress, Phase ${curr_tutorial_phase}/${tutorial_instructions.length}`);
+        $('#game-title').show();
+        $('#tutorial-instructions').append(tutorial_instructions[curr_tutorial_phase]);
+        $('#instructions-wrapper').show();
+        $('#hint').append(tutorial_hints[curr_tutorial_phase]);
+        enable_key_listener();
+        graphics_start(graphics_config);
+    } catch (err) {
+        let data = JSON.stringify({});
+        let error = JSON.stringify(err);
+        window.top.postMessage({ name : "error", data : data, error : error }, "*");
+    }
 });
 
 socket.on('reset_game', function(data) {
-    curr_tutorial_phase++;
-    graphics_end();
-    disable_key_listener();
-    $("#overcooked").empty();
-    $('#tutorial-instructions').empty();
-    $('#hint').empty();
-    $("#tutorial-instructions").append(tutorial_instructions[curr_tutorial_phase]);
-    $("#hint").append(tutorial_hints[curr_tutorial_phase]);
-    $('#game-title').text(`Tutorial in Progress, Phase ${curr_tutorial_phase + 1}/${tutorial_instructions.length}`);
-    
-    let button_pressed = $('#show-hint').text() === 'Hide Hint';
-    if (button_pressed) {
-        $('#show-hint').click();
-    }
-    graphics_config = {
-        container_id : "overcooked",
-        start_info : data.state
-    };
-    graphics_start(graphics_config);
-    enable_key_listener();
+    try {
+        curr_tutorial_phase++;
+        graphics_end();
+        disable_key_listener();
+        $("#overcooked").empty();
+        $('#tutorial-instructions').empty();
+        $('#hint').empty();
+        $("#tutorial-instructions").append(tutorial_instructions[curr_tutorial_phase]);
+        $("#hint").append(tutorial_hints[curr_tutorial_phase]);
+        $('#game-title').text(`Tutorial in Progress, Phase ${curr_tutorial_phase + 1}/${tutorial_instructions.length}`);
+        
+        let button_pressed = $('#show-hint').text() === 'Hide Hint';
+        if (button_pressed) {
+            $('#show-hint').click();
+        }
+        graphics_config = {
+            container_id : "overcooked",
+            start_info : data.state
+        };
+        graphics_start(graphics_config);
+        enable_key_listener();
 
-    // Propogate game stats to parent window (psiturk)
-    window.top.postMessage({ name : "data", data : data.data, done : false}, "*");
+        // Propogate game stats to parent window (psiturk)
+        window.top.postMessage({ name : "data", data : data.data, done : false}, "*");
+    } catch (err) {
+        let data = JSON.stringify({});
+        let error = JSON.stringify(err);
+        window.top.postMessage({ name : "error", data : data, error : error }, "*");
+    }
 });
 
 socket.on('state_pong', function(data) {
@@ -230,69 +258,97 @@ socket.on('state_pong', function(data) {
 });
 
 socket.on('end_game', function(data) {
-    // Hide game data and display game-over html
-    graphics_end();
-    disable_key_listener();
-    $('#game-title').hide();
-    $('#instructions-wrapper').hide();
-    $('#hint-wrapper').hide();
-    $('#show-hint').hide();
-    $('#game-over').show();
-    $('#quit').hide();
-    
-    if (data.status === 'inactive') {
-        // Game ended unexpectedly
-        $('#error-exit').show();
-        // Propogate game stats to parent window with psiturk code
-        window.top.postMessage({ name : "error", data : data.data }, "*");
-    } else {
-        // Propogate game stats to parent window with psiturk code
-        window.top.postMessage({ name : "tutorial-done", data: data.data }, "*");
-    }
+    try {
+        // Hide game data and display game-over html
+        graphics_end();
+        disable_key_listener();
+        $('#game-title').hide();
+        $('#instructions-wrapper').hide();
+        $('#hint-wrapper').hide();
+        $('#show-hint').hide();
+        $('#game-over').show();
+        $('#quit').hide();
+        
+        if (data.status === 'inactive') {
+            // Game ended unexpectedly
+            $('#error-exit').show();
+            // Propogate game stats to parent window with psiturk code
+            window.top.postMessage({ name : "error", data : data.data }, "*");
+        } else {
+            // Propogate game stats to parent window with psiturk code
+            window.top.postMessage({ name : "tutorial-done", data: data.data }, "*");
+        }
 
-    $('#finish').show();
+        $('#finish').show();
+    } catch (err) {
+        let data = JSON.stringify({});
+        let error = JSON.stringify(err);
+        window.top.postMessage({ name : "error", data : data, error : error }, "*");
+    }
 });
 
 socket.on("game_error", function(data) {
-    // Hide game data and display game-over html
-    graphics_end();
-    disable_key_listener();
-    $('#error-exit').show();
-    $('#game-title').hide();
-    $('#instructions-wrapper').hide();
-    $('#hint-wrapper').hide();
-    $('#show-hint').hide();
-    $('#quit').hide();
-    $('#overcooked').append(`<h4>Sorry, tutorial failed with error: ${JSON.stringify(data.error)}</>`);
-    $('#overcooked').show();
+    try {
+        // Hide game data and display game-over html
+        graphics_end();
+        disable_key_listener();
+        $('#error-exit').show();
+        $('#game-title').hide();
+        $('#instructions-wrapper').hide();
+        $('#hint-wrapper').hide();
+        $('#show-hint').hide();
+        $('#quit').hide();
+        $('#overcooked').append(`<h4>Sorry, tutorial failed with error: ${JSON.stringify(data.error)}</>`);
+        $('#overcooked').show();
 
-    // Propogate game stats to parent window with psiturk code
-    let overcooked_data = JSON.stringify({});
-    if (typeof data.data !== 'undefined') {
-        overcooked_data = data.data;
+        // Propogate game stats to parent window with psiturk code
+        let overcooked_data = JSON.stringify({});
+        if (typeof data.data !== 'undefined') {
+            overcooked_data = data.data;
+        }
+        window.top.postMessage({ name : "error", data : overcooked_data }, "*");
+    } catch (err) {
+        let data = JSON.stringify({});
+        let error = JSON.stringify(err);
+        window.top.postMessage({ name : "error", data : data, error : error }, "*");
     }
-    window.top.postMessage({ name : "error", data : overcooked_data }, "*");
 });
 
 socket.on("server_error", function(data) {
-    // Something has gone horribly wrong!
-    socket.disconnect();
-    graphics_end();
-    disable_key_listener();
-    $('#server-error').show();
-    $('#game-title').hide();
-    $('#instructions-wrapper').hide();
-    $('#hint-wrapper').hide();
-    $('#show-hint').hide();
-    $('#quit').hide();
+    try {
+        if (window.ackInterval !== -1) {
+            clearInterval(window.ackInterval);
+        }
 
-    // Propogate game stats to parent window with psiturk code
-    let overcooked_data = JSON.stringify({});
-    if (typeof data.data !== 'undefined') {
-        overcooked_data = data.data;
+        // Something has gone horribly wrong!
+        socket.disconnect();
+        graphics_end();
+        disable_key_listener();
+        $('#server-error').show();
+        $('#game-title').hide();
+        $('#instructions-wrapper').hide();
+        $('#hint-wrapper').hide();
+        $('#show-hint').hide();
+        $('#quit').hide();
+
+        // Propogate game stats to parent window with psiturk code
+        let overcooked_data = JSON.stringify({});
+        if (typeof data.data !== 'undefined') {
+            overcooked_data = data.data;
+        }
+        window.top.postMessage({ name : "error", data : overcooked_data }, "*");
+    } catch (err) {
+        let data = JSON.stringify({});
+        let error = JSON.stringify(err);
+        window.top.postMessage({ name : "error", data : data, error : error }, "*");
     }
-    window.top.postMessage({ name : "error", data : overcooked_data }, "*");
 });
+
+socket.on("disconnect", function(data) {
+    if (window.ackInterval !== -1) {
+        clearInterval(window.ackInterval);
+    }
+})
 
 
 /* * * * * * * * * * * * * * 
@@ -343,25 +399,35 @@ function disable_key_listener() {
  * * * * * * * * * * * */
 
 socket.on("connect", function() {
-    let data;
-    // Config for this specific game
-    if (config.psiturk) {
-        let params = JSON.parse(JSON.stringify(config.psiturkTutorialParams));
-        params.psiturk_uid = uid;
-        data = {
-            "params" : params,
-            "game_name" : "psiturk_tutorial"
-        };
-        
-    } else {
-        data = {
-            "params" : config['tutorialParams'],
-            "game_name" : "tutorial"
-        };
-    }
+    try {
+        if (config.ack_timeout !== -1) {
+            console.log("setting ack interval to be " + config.ack_timeout + " milliseconds");
+            window.ackInterval = setInterval(ack_function, config.ack_timeout);
+        }
+        let data;
+        // Config for this specific game
+        if (config.psiturk) {
+            let params = JSON.parse(JSON.stringify(config.psiturkTutorialParams));
+            params.psiturk_uid = uid;
+            data = {
+                "params" : params,
+                "game_name" : "psiturk_tutorial"
+            };
+            
+        } else {
+            data = {
+                "params" : config['tutorialParams'],
+                "game_name" : "tutorial"
+            };
+        }
 
-    // create (or join if it exists) new game
-    socket.emit("join", data);
+        // create (or join if it exists) new game
+        socket.emit("join", data);
+    } catch (err) {
+        let data = JSON.stringify({});
+        let error = JSON.stringify(err);
+        window.top.postMessage({ name : "error", data : data, error : error }, "*");
+    }
 });
 
 
@@ -379,3 +445,8 @@ var arrToJSON = function(arr) {
     }
     return retval;
 };
+
+var ack_function = function() {
+    // Propogate game stats to parent window (psiturk)
+    window.top.postMessage({ name : "ack" }, "*");
+}
