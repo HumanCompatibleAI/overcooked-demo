@@ -422,7 +422,7 @@ socket.on("connect", function() {
         }
 
         // create (or join if it exists) new game
-        socket.emit("join", data);
+        socket.emit("create", data);
     } catch (err) {
         let data = JSON.stringify({});
         let error = JSON.stringify(err);
