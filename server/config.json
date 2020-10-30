@@ -18,6 +18,12 @@
     // Maximum number of game ticks per second the server allows. This is the default for newly created games
     "MAX_FPS" : 30,
 
+    // If true, only allow traffic from `psiturk_uri` 
+    "EXPERIMENT_MODE" : true,
+
+    // Address of the psiturk server. If 'experiment_mode', only allow traffic from this location
+    "PSITURK_URI" : "http://localhost:22362",
+
     // Psiturk experiment game params
     "psiturk" : {
         // Passed into OvercookedPsiturk constructor. See `game.py` for details

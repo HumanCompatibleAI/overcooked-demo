@@ -1,4 +1,5 @@
 from threading import Lock
+from urllib.parse import urlparse
 
 class ThreadSafeSet(set):
 
@@ -79,3 +80,12 @@ class SafeGameMethod(object):
     def __get__(self, instance, owner):
         from functools import partial
         return partial(self.__call__, instance)
+
+def url_parser(url):
+    o = urlparse(url)
+    return o.scheme, o.netloc, o.path
+
+def is_same_domain(url1, url2):
+    _, domain1, _ = url_parser(url1)
+    _, domain2, _ = url_parser(url2)
+    return domain1 == domain2

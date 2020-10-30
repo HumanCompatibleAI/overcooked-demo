@@ -9,8 +9,8 @@ if os.getenv('FLASK_ENV', 'production') == 'production':
 import pickle, queue, atexit, json, logging, jsmin
 from threading import Lock
 from collections import defaultdict
-from utils import ThreadSafeSet, ThreadSafeDict, GameError
-from flask import Flask, render_template, jsonify, request
+from utils import ThreadSafeSet, ThreadSafeDict, GameError, is_same_domain
+from flask import Flask, render_template, jsonify, request, abort
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk, OvercookedTutorialPsiturk, BuggyGame
 import game
@@ -51,6 +51,12 @@ MAX_GAMES = CONFIG['MAX_GAMES']
 
 # Frames per second cap for serving to client
 MAX_FPS = CONFIG['MAX_FPS']
+
+# Whether we should block non-psiturk traffic 
+EXPERIMENT_MODE = CONFIG['EXPERIMENT_MODE']
+
+# Referrer address of psiturk traffic
+PSITURK_URI = CONFIG['PSITURK_URI']
 
 # Default configuration for psiturk experiment
 PSITURK_CONFIG = json.dumps(CONFIG['psiturk'])
@@ -371,11 +377,21 @@ def get_agent_names():
 
 @app.route('/')
 def index():
+    # Block all non-psiturk traffic if in experiment mode
+    referrer = request.referrer
+    if EXPERIMENT_MODE and not is_same_domain(referrer, PSITURK_URI):
+        abort(403)
+    
     agent_names = get_agent_names()
     return render_template('index.html', agent_names=agent_names, layouts=LAYOUTS)
 
 @app.route('/psiturk')
 def psiturk():
+    # Block all non-psiturk traffic if in experiment mode
+    referrer = request.referrer
+    if EXPERIMENT_MODE and not is_same_domain(referrer, PSITURK_URI):
+        abort(403)
+    
     uid = request.args.get("UID")
     psiturk_config = request.args.get('config', PSITURK_CONFIG)
     ack_interval = request.args.get('ack_interval', -1)
@@ -383,11 +399,21 @@ def psiturk():
 
 @app.route('/instructions')
 def instructions():
+    # Block all non-psiturk traffic if in experiment mode
+    referrer = request.referrer
+    if EXPERIMENT_MODE and not is_same_domain(referrer, PSITURK_URI):
+        abort(403)
+
     psiturk = request.args.get('psiturk', False)
     return render_template('instructions.html', layout_conf=LAYOUT_GLOBALS, psiturk=psiturk)
 
 @app.route('/tutorial')
 def tutorial():
+    # Block all non-psiturk traffic if in experiment mode
+    referrer = request.referrer
+    if EXPERIMENT_MODE and not is_same_domain(referrer, PSITURK_URI):
+        abort(403)
+    
     uid = request.args.get("UID", "-1")
     psiturk = request.args.get('psiturk', False)
     ack_interval = request.args.get('ack_interval', -1)
