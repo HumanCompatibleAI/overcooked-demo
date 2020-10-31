@@ -56,7 +56,7 @@ MAX_FPS = CONFIG['MAX_FPS']
 EXPERIMENT_MODE = CONFIG['EXPERIMENT_MODE']
 
 # Referrer address of psiturk traffic
-PSITURK_URI = CONFIG['PSITURK_URI']
+PSITURK_KEY = CONFIG['PSITURK_KEY']
 
 # Default configuration for psiturk experiment
 PSITURK_CONFIG = json.dumps(CONFIG['psiturk'])
@@ -378,8 +378,8 @@ def get_agent_names():
 @app.route('/')
 def index():
     # Block all non-psiturk traffic if in experiment mode
-    referrer = request.referrer
-    if EXPERIMENT_MODE and not is_same_domain(referrer, PSITURK_URI):
+    key = request.args.get('key', '')
+    if EXPERIMENT_MODE and not key == PSITURK_KEY:
         abort(403)
     
     agent_names = get_agent_names()
@@ -388,8 +388,8 @@ def index():
 @app.route('/psiturk')
 def psiturk():
     # Block all non-psiturk traffic if in experiment mode
-    referrer = request.referrer
-    if EXPERIMENT_MODE and not is_same_domain(referrer, PSITURK_URI):
+    key = request.args.get('key', '')
+    if EXPERIMENT_MODE and not key == PSITURK_KEY:
         abort(403)
     
     uid = request.args.get("UID")
@@ -400,8 +400,8 @@ def psiturk():
 @app.route('/instructions')
 def instructions():
     # Block all non-psiturk traffic if in experiment mode
-    referrer = request.referrer
-    if EXPERIMENT_MODE and not is_same_domain(referrer, PSITURK_URI):
+    key = request.args.get('key', '')
+    if EXPERIMENT_MODE and not key == PSITURK_KEY:
         abort(403)
 
     psiturk = request.args.get('psiturk', False)
@@ -410,8 +410,8 @@ def instructions():
 @app.route('/tutorial')
 def tutorial():
     # Block all non-psiturk traffic if in experiment mode
-    referrer = request.referrer
-    if EXPERIMENT_MODE and not is_same_domain(referrer, PSITURK_URI):
+    key = request.args.get('key', '')
+    if EXPERIMENT_MODE and not key == PSITURK_KEY:
         abort(403)
     
     uid = request.args.get("UID", "-1")
@@ -458,6 +458,10 @@ def debug():
     resp['free_ids'] = free_ids
     resp['free_map'] = free_map
     return jsonify(resp)
+
+@app.route('/health')
+def health():
+    return "Healthy!", 200
 
 
 #########################
