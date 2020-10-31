@@ -7,7 +7,7 @@
     "layouts" : ["soup_coordination", "cramped_corridor", "marshmallow_experiment", "marshmallow_experiment_coordination", "inverse_marshmallow_experiment", "you_shall_not_pass", "counter_circuit", "asymmetric_advantages_tomato"],
 
     // Maximum number of parallel games the server can handle
-    "MAX_GAMES" : 10,
+    "MAX_GAMES" : 50,
 
     // Maximum number of seconds allowed in a game
     "MAX_GAME_LENGTH" : 120,
