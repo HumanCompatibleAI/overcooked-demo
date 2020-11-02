@@ -6,10 +6,8 @@ from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.planning.planners import MotionPlanner, NO_COUNTERS_PARAMS
-from human_aware_rl.rllib.rllib import load_agent
 from utils import SafeGameMethod
 import random, os, pickle, json, math
-import ray
 
 # Relative path to where all static pre-trained agents are stored on server
 AGENT_DIR = None
@@ -686,8 +684,10 @@ class OvercookedGame(Game):
 
     def _get_policy(self, npc_id, idx=0):
         if npc_id.lower().startswith("rllib"):
+            import ray
             try:
                 # Loading rllib agents requires additional helpers
+                from human_aware_rl.rllib.rllib import load_agent
                 fpath = os.path.join(AGENT_DIR, npc_id, 'agent', 'agent')
                 agent =  load_agent(fpath, agent_index=idx)
                 return agent
