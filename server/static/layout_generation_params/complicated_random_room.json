@@ -1,7 +1,7 @@
 {
 	"inner_shape": [7, 5],
-	"prop_empty": 0.7,
-	"prop_feats": 0.4,
+	"prop_empty": 0.75,
+	"prop_feats": 0.35,
 	"start_all_orders": [{
 		"ingredients": ["onion", "onion", "onion"]
 	}],
