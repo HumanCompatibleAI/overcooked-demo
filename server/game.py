@@ -6,13 +6,16 @@ from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.planning.planners import MotionPlanner, NO_COUNTERS_PARAMS
+from overcooked_ai_py.utils import load_from_json
+from overcooked_ai_py.mdp.layout_generator import LayoutGenerator
 from human_aware_rl.rllib.rllib import load_agent
+import numpy as np
 import random, os, pickle, json
 import ray
 
 # Relative path to where all static pre-trained agents are stored on server
 AGENT_DIR = None
-
+LAYOUT_GEN_PARAMS_DIR = os.path.join("static", "layout_generation_params")
 # Maximum allowable game time (in seconds)
 MAX_GAME_TIME = None
 
@@ -406,6 +409,7 @@ class OvercookedGame(Game):
         self.curr_tick = 0
         self.human_players = set()
         self.npc_players = set()
+        self.featurize_fn = lambda state: self.mdp.lossless_state_encoding(state, 100000)
 
         if randomized:
             random.shuffle(self.layouts)
@@ -413,13 +417,13 @@ class OvercookedGame(Game):
         if playerZero != 'human':
             player_zero_id = playerZero + '_0'
             self.add_player(player_zero_id, idx=0, buff_size=1, is_human=False)
-            self.npc_policies[player_zero_id] = self.get_policy(playerZero, idx=0)
+            self.npc_policies[player_zero_id] = self.get_policy(playerZero, idx=0, featurize_fn=self.featurize_fn)
             self.npc_state_queues[player_zero_id] = LifoQueue()
 
         if playerOne != 'human':
             player_one_id = playerOne + '_1'
             self.add_player(player_one_id, idx=1, buff_size=1, is_human=False)
-            self.npc_policies[player_one_id] = self.get_policy(playerOne, idx=1)
+            self.npc_policies[player_one_id] = self.get_policy(playerOne, idx=1, featurize_fn=self.featurize_fn)
             self.npc_state_queues[player_one_id] = LifoQueue()
         
 
@@ -533,7 +537,14 @@ class OvercookedGame(Game):
             raise ValueError("Inconsistent State")
 
         self.curr_layout = self.layouts.pop()
-        self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
+
+        try:
+            mdp_gen_params = load_from_json(os.path.join(LAYOUT_GEN_PARAMS_DIR, self.curr_layout))
+            np.random.seed(int(time()*100) % 100000)
+            self.mdp = LayoutGenerator.mdp_gen_fn_from_dict(mdp_gen_params, outer_shape=mdp_gen_params["inner_shape"])()
+        except FileNotFoundError:
+            self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
+
         if self.show_potential:
             self.mp = MotionPlanner.from_pickle_or_compute(self.mdp, counter_goals=NO_COUNTERS_PARAMS)
         self.state = self.mdp.get_standard_start_state()
@@ -578,12 +589,12 @@ class OvercookedGame(Game):
         obj_dict['state'] = self.get_state() if self._is_active else None
         return obj_dict
 
-    def get_policy(self, npc_id, idx=0):
+    def get_policy(self, npc_id, idx=0, featurize_fn=None):
         if npc_id.lower().startswith("rllib"):
             try:
                 # Loading rllib agents requires additional helpers
                 fpath = os.path.join(AGENT_DIR, npc_id, 'agent', 'agent')
-                agent =  load_agent(fpath, agent_index=idx)
+                agent =  load_agent(fpath, agent_index=idx, featurize_fn=featurize_fn)
                 return agent
             except Exception as e:
                 raise IOError("Error loading Rllib Agent\n{}".format(e.__repr__()))
