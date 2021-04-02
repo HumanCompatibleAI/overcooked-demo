@@ -1,13 +1,13 @@
 {
     "logfile" : "app.log",
-    "layouts" : ["cramped_room", "cramped_room_tomato", "asymmetric_advantages", "coordination_ring", "forced_coordination", "counter_circuit", "cramped_corridor", "marshmallow_experiment", "long_cook_time", "forced_coordination_tomato", "asymmetric_advantages_tomato", "marshmallow_experiment_coordination", "pipeline", "you_shall_not_pass", "tutorial_3"],
+    "layouts" : ["random_complicated_room", "7x5_075_04_e0_0", "7x5_075_04_e1_67", "7x5_075_04_e2_89", "7x5_075_04_e3_37", "7x5_075_04_e4_87"],
     "MAX_GAMES" : 10,
     "MAX_GAME_LENGTH" : 120,
     "AGENT_DIR" : "./static/assets/agents",
     "MAX_FPS" : 30,
     "psiturk" : {
         "experimentParams" : {
-            "layouts" : ["counter_circuit", "cramped_room"],
+            "layouts" : ["random_complicated_room", "7x5_075_04_e4_87", "random_complicated_room", "7x5_075_04_e3_37", "random_complicated_room", "7x5_075_04_e2_89", "random_complicated_room", "7x5_075_04_e1_67", "random_complicated_room", "7x5_075_04_e0_0"],
             "gameTime" : 11,
             "playerZero" : "human",
             "playerOne" : "human",

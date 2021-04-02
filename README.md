@@ -12,10 +12,17 @@ A web application where humans can play Overcooked with trained AI agents.
 * [Updating Overcooked_ai](#updating-overcooked_ai)
 * [Configuration](#configuration)
 * [Legacy Code](#legacy-code)
+* [Common Problems](#common-problems)
 
 ## Installation
 
-Building the server image requires [Docker](https://docs.docker.com/get-docker/)
+Building the server image requires [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/). To avoid typing `sudo` for docker-related commands, please follow [Post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/)
+
+Before proceeding to the next step, clone the repo and enter the demo directory
+```bash
+git clone --recursive https://github.com/HumanCompatibleAI/overcooked-demo.git
+cd overcooked-demo
+```
 
 ## Usage
 
@@ -35,6 +42,12 @@ In order to kill the production server, run
 ```bash
 ./down.sh
 ```
+
+To completely remove the previously built image (you should do this when you updated the dependent repos including but not limited to `overcooked_ai` and `human_aware_rl`), run
+```bash
+docker rmi overcooked-demo_app
+```
+
 
 ## Dependencies
 
@@ -71,3 +84,7 @@ Basic game settings can be configured by changing the values in [config.json](se
 ## Legacy Code
 
 For legacy code compatible with the Neurips2019 submission please see [this](https://github.com/HumanCompatibleAI/overcooked-demo/tree/legacy) branch of this repo. 
+
+## Common Problems
+
+For Permission issues when running the server, please add `sudo` to the command or try [Post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/)
