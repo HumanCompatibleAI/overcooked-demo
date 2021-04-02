@@ -3,7 +3,6 @@ from threading import Lock, Thread
 from queue import Queue, LifoQueue, Empty, Full
 from time import time
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
-from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.planning.planners import MotionPlanner, NO_COUNTERS_PARAMS
 from overcooked_ai_py.utils import load_from_json
@@ -691,7 +690,7 @@ class OvercookedTutorial(OvercookedGame):
     """
     
 
-    def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='AI', phaseTwoScore=15, **kwargs):
+    def __init__(self, layouts=["tutorial_0"], mdp_params={}, playerZero='human', playerOne='TutorialAIMulti', phaseTwoScore=20, **kwargs):
         super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, showPotential=False, **kwargs)
         self.phase_two_score = phaseTwoScore
         self.phase_two_finished = False
@@ -714,14 +713,15 @@ class OvercookedTutorial(OvercookedGame):
         return False 
 
     def is_finished(self):
-        return not self.layouts and self.score >= float('inf')
+        return not self.layouts and self.phase_two_finished
 
     def reset(self):
         super(OvercookedTutorial, self).reset()
         self.curr_phase += 1
 
     def get_policy(self, *args, **kwargs):
-        return TutorialAI()
+        # using a different Tutorial AI for multi-layout, where only 3-onion soup is valid
+        return TutorialAIMulti()
 
     def apply_actions(self):
         """
@@ -902,4 +902,170 @@ class TutorialAI():
         self.curr_tick = -1
         self.curr_phase += 1
 
-    
+
+class TutorialAIMulti():
+    """
+    The Tutorial AI for Multi Layout
+    """
+    COOK_SOUP_LOOP = [
+        # Grab first onion
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Action.INTERACT,
+
+        # Place onion in pot
+        Direction.EAST,
+        Direction.NORTH,
+        Action.INTERACT,
+
+        # Grab second onion
+        Direction.WEST,
+        Action.INTERACT,
+
+        # Place onion in pot
+        Direction.EAST,
+        Direction.NORTH,
+        Action.INTERACT,
+
+        # Grab third onion
+        Direction.WEST,
+        Action.INTERACT,
+
+        # Place onion in pot
+        Direction.EAST,
+        Direction.NORTH,
+        Action.INTERACT,
+
+        # Cook soup
+        Action.INTERACT,
+
+        # Grab plate
+        Direction.EAST,
+        Direction.SOUTH,
+        Action.INTERACT,
+        Direction.WEST,
+        Direction.NORTH,
+
+        # Deliver soup
+        Action.INTERACT,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Action.INTERACT,
+        Direction.WEST
+    ]
+
+    MISTAKE_SOUP_COOP_LOOP = [
+        # Mistakenly start cooking the 2-onion-soup
+        Direction.WEST,
+        Direction.WEST,
+        Direction.SOUTH,
+        Action.INTERACT,
+
+        # Wait for a bit
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+
+        # go pick up onion
+        Direction.WEST,
+        Action.STAY,
+        Action.INTERACT,
+        Action.STAY,
+
+        # Place onion in pot
+        Direction.EAST,
+        Direction.SOUTH,
+        Action.INTERACT,
+
+        # Pause to make cooperation more real time
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+
+        # move backwards so this loops
+        Direction.EAST,
+        Direction.EAST,
+
+        # Pause to make cooperation more real time
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+    ]
+
+    ONION_COUNTER_LOOP = [
+        # Grab first onion
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Action.INTERACT,
+
+        # Place onion on counter
+        Direction.SOUTH,
+        Action.INTERACT,
+
+        # Pause to make cooperation more real time
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+        Action.STAY,
+    ]
+
+    def __init__(self):
+        self.curr_phase = -1
+        self.curr_tick = -1
+
+    def action(self, state):
+        self.curr_tick += 1
+        if self.curr_phase == 0:
+            return self.COOK_SOUP_LOOP[self.curr_tick % len(self.COOK_SOUP_LOOP)], None
+        elif self.curr_phase == 1:
+            return self.MISTAKE_SOUP_COOP_LOOP[self.curr_tick % len(self.MISTAKE_SOUP_COOP_LOOP)], None
+        elif self.curr_phase == 2:
+            return self.ONION_COUNTER_LOOP[self.curr_tick % len(self.ONION_COUNTER_LOOP)], None
+        return Action.STAY, None
+
+    def reset(self):
+        self.curr_tick = -1
+        self.curr_phase += 1

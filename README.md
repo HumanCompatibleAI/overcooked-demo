@@ -88,3 +88,9 @@ For legacy code compatible with the Neurips2019 submission please see [this](htt
 ## Common Problems
 
 For Permission issues when running the server, please add `sudo` to the command or try [Post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/)
+
+If there are many <none> docker images between versions of the demo that are taking up a lot of space, feel free to remove them by 
+```bash
+docker rmi overcooked-demo_app
+docker images -a |  grep "<none>" | awk '{print $3}' | xargs docker rmi
+```

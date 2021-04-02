@@ -74,14 +74,16 @@
         You can interact with objects by facing them and pressing
         <b>spacebar</b>. Here are some examples:
         <ul>
-          <li>You can pick up ingredients (onions or tomatoes) by facing
+          <li>You can pick up ingredients (onions) by facing
             the ingredient area and pressing <b>spacebar</b>.</li>
-          <li>If you are holding an ingredient, are facing an empty counter,
-            and press <b>spacebar</b>, you put the ingredient on the counter.</li>
           <li>If you are holding an ingredient, are facing a pot that is not full,
             and press <b>spacebar</b>, you will put the ingredient in the pot.</li>
-          <li>If you are facing a pot that is non-empty, are currently holding nothing, and 
+          <li>If you are facing a pot that is non-empty, are currently holding nothing, and
             and press <b>spacebar</b>, you will begin cooking a soup.</li>
+          <li>If you are holding an item (an ingredient or a plate), are facing an empty counter,
+            and press <b>spacebar</b>, you put the item on the counter.</li>
+          <li>If you are not holding an item, are facing an occupied counter with an item,
+            and press <b>spacebar</b>, you pick up the item from the counter.</li>
         </ul>
       </p>
 
@@ -129,46 +131,44 @@
       <hr>
       <br>
 
-      <h3 class="text-center">Soups</h3>
-      <p>
-        There are 9 possible soup recipes that can be created from combinations of tomatoes
-        and onions, each with its own icon. The recipe icons and the corresponding ingredients are
-        listed below
-      </p>
-      <table>
-        <tr>
-          <th>Ingredients</th>
-          <th>Icon</th>
-          <th>Base Reward</th>
-          <th>Cook Time</th>
-        </tr>
-        {% for num_tomatoes in range(layout_conf.max_num_ingredients + 1) %}
-          {% for num_onions in range(layout_conf.max_num_ingredients + 1) %}
-            {% if num_tomatoes + num_onions > 0 and num_onions + num_tomatoes <= layout_conf.max_num_ingredients %}
-              <tr>
-                <td>{{ num_onions ~ " Onion" if num_onions }} {{ num_tomatoes ~ " Tomato" if num_tomatoes }}</td>
-                <td><img src="{{ "static/assets/new_sprites/soup_done_tomato_" ~ num_tomatoes ~ "_onion_" ~ num_onions ~ ".png" }}" style="width:75px;background-color: #e6b453;"></td>
-                <td>{{ layout_conf.onion_value * num_onions + layout_conf.tomato_value * num_tomatoes }}</td>
-                <td>{{ layout_conf.onion_time * num_onions + layout_conf.tomato_time * num_tomatoes }}</td>
-              </tr>
-            {% endif %}
-          {% endfor %}
-        {% endfor %}
+<!--      <h3 class="text-center">Soups</h3>-->
+<!--      <p>-->
+<!--        There are 9 possible soup recipes that can be created from combinations of tomatoes-->
+<!--        and onions, each with its own icon. The recipe icons and the corresponding ingredients are-->
+<!--        listed below-->
+<!--      </p>-->
+<!--      <table>-->
+<!--        <tr>-->
+<!--          <th>Ingredients</th>-->
+<!--          <th>Icon</th>-->
+<!--          <th>Base Reward</th>-->
+<!--          <th>Cook Time</th>-->
+<!--        </tr>-->
+<!--        {% for num_tomatoes in range(layout_conf.max_num_ingredients + 1) %}-->
+<!--          {% for num_onions in range(layout_conf.max_num_ingredients + 1) %}-->
+<!--            {% if num_tomatoes + num_onions > 0 and num_onions + num_tomatoes <= layout_conf.max_num_ingredients %}-->
+<!--              <tr>-->
+<!--                <td>{{ num_onions ~ " Onion" if num_onions }} {{ num_tomatoes ~ " Tomato" if num_tomatoes }}</td>-->
+<!--                <td><img src="{{ "static/assets/new_sprites/soup_done_tomato_" ~ num_tomatoes ~ "_onion_" ~ num_onions ~ ".png" }}" style="width:75px;background-color: #e6b453;"></td>-->
+<!--                <td>{{ layout_conf.onion_value * num_onions + layout_conf.tomato_value * num_tomatoes }}</td>-->
+<!--                <td>{{ layout_conf.onion_time * num_onions + layout_conf.tomato_time * num_tomatoes }}</td>-->
+<!--              </tr>-->
+<!--            {% endif %}-->
+<!--          {% endfor %}-->
+<!--        {% endfor %}-->
 
-      </table>
+<!--      </table>-->
 
-      <br>
-      <hr>
-      <br>
+<!--      <br>-->
+<!--      <hr>-->
+<!--      <br>-->
 
       <h3 class="text-center">All Orders</h3>
       <p>
-        While you are free to cook any 3-ingredient soup you like, only some are worth points. 
-        The <b>All Orders</b> list shows which recipes will recieve points. This is important, 
-        as any soup served not in this list will not count towards your score. The <b>All Orders</b>
-        list does not change throughout the duration of a level.
+        Only soup in this list are considered valid, and be worth points upon delivery.
+        The only valid soup in this experiment would be a <b>3-onion soup</b>.
+        All other soups (1-onion, 2-onion soups) are invalid, and thus WILL NOT BE WORTH POINTS
       </p>
-      <p>To reiterate: <b>ANY SOUP COOKED THAT IS NOT IN ALL ORDERS WILL NOT BE WORTH POINTS</b></p>
 
       <br>
       <hr>
@@ -176,8 +176,7 @@
 
       <h3 class="text-center">Bonus Orders</h3>
       <p>
-        In addition to the list of available orders, there is also a list of <b>bonus orders</b>. Any 
-        soup from this list served will be worth its base reward times {{ layout_conf.order_bonus }}
+        We will not use this feature in this experiment
       </p>
 
       <br>
@@ -186,11 +185,12 @@
 
       <h3 class="text-center">Score</h3>
       <p>
-        When a soup is served at the serving counter, points could potentially be added to your score.
-        The base reward for any recipe is determined by its ingredients; each onion adds {{ layout_conf.onion_value }} 
-        points and each tomato adds {{ layout_conf.tomato_value }} points. Note that serving a soup in the <b>Bonus Orders</b>
-        multiplies the base soup score by {{ layout_conf.order_bonus }}. Additionally, serving a soup not in the
-        <b>All Orders</b> list results in zero points not matter what!
+        When a 3-onion soup is served at the serving counter, 20 points will be be added to the shared score.
+        Serving any invalid (1-onion, 2-onion) soup will not affect your score.
+<!--        The base reward for any recipe is determined by its ingredients; each onion adds {{ layout_conf.onion_value }} -->
+<!--        points and each tomato adds {{ layout_conf.tomato_value }} points. Note that serving a soup in the <b>Bonus Orders</b>-->
+<!--        multiplies the base soup score by {{ layout_conf.order_bonus }}. Additionally, serving a soup not in the-->
+<!--        <b>All Orders</b> list results in zero points not matter what!-->
       </p>
 
       <br>
@@ -201,7 +201,7 @@
       <img class="center" src="static/images/info-panel.png" style="width:500px">
       <p>
         Your goal in this task is to serve as many of the orders as you can
-        before each level ends.
+        before each level ends, and thus earn as high shared score as possible for the team.
         The current all orders, bonus orders, time, and score are all displayed 
         in an info panel below the layout.
       </p>
