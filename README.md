@@ -81,6 +81,11 @@ The default graphics file is currently `overcooked_graphics_v2.1.js`
 
 Basic game settings can be configured by changing the values in [config.json](server/config.json)
 
+## Customization for Additional Experiments
+
+To customize this repo for additional experiments, please edit files in the following folders
+ `server/static/js`, `server/static/templates`, `server/game.py` and `server/config.json`
+
 ## Legacy Code
 
 For legacy code compatible with the Neurips2019 submission please see [this](https://github.com/HumanCompatibleAI/overcooked-demo/tree/legacy) branch of this repo. 

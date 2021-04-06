@@ -12,7 +12,7 @@ var tutorial_instructions = () => [
     <p>See if you can copy his actions in order to cook and deliver the appropriate soup</p>
     <p><b>Note</b>: only recipes in the <b>All Orders</b> field will earn reward. Thus, you must cook a soup with <b>exactly</b> 3 onions</p>
     <p>You are the  <b>blue cook</b> in this game</p>
-    <p><b>You will advance only when you have delivered the appropriate soup</b></p>
+    <p><b>You will advance only when you have delivered a valid 3-onion soup</b></p>
     <p>Good luck!</p>
     <br></br>
     `,
@@ -34,6 +34,19 @@ var tutorial_instructions = () => [
     <p>Your goal here is to cooperate with your partner and deliver a fully cooked valid soup</p>
     <p>You are the  <b>blue cook</b> in this game</p>
     <p><b>You will advance only when you have delivered a valid 3-onion soup</b></p>
+    <br></br>
+    `,
+    `
+    <p>Mechanic: <b>Movement Collision</b></p>
+    <p>Now you are in another new map where you and your partner need to work together in a very confined space</p>
+    <p>Your partner tries to be helpful (with varying degrees of success), and you would need to work with them</p>
+    <p>You can deduct the intended movement of your partner by <b>observing which way they are facing</b>:
+        For example, if they are facing right, their last intended movement command was "moving right".
+    </p>
+    <p>Your goal here is to work with them to deliver a valid soup</p>
+    <p>You are the  <b>blue cook</b> in this game</p>
+    <p><b>You will advance only when you have delivered a valid 3-onion soup</b></p>
+    <p>Good Luck!</p>
     <br></br>
     `
 ];
@@ -175,7 +188,21 @@ var tutorial_hints = () => [
           </li>
         </ul>
       </p>
+    `,
     `
+    <p>
+        Note that as you and your partner are moving around the kitchen,
+        the two of you <u><b>cannot occupy the same location</b></u>.
+        <ul>
+          <li> Valid movement: attempt to move into empty spaces will succeed
+            <img class="center" src="static/images/move_valid.png" style="width:700px">
+          </li>
+          <li> Invalid movement: attempt to move into your partner will not succeed (and result in no change in location)
+            <img class="center" src="static/images/move_invalid.png" style="width:700px">
+          </li>
+        </ul>
+      </p>
+     `
 ]
 
 var curr_tutorial_phase;

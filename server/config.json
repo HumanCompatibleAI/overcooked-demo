@@ -17,7 +17,7 @@
     },
     "tutorial" : {
         "tutorialParams" : {
-            "layouts" : ["tutorial_2_multi", "tutorial_1_multi", "tutorial_0_multi"],
+            "layouts" : ["7x5_075_04_26", "tutorial_2_multi", "tutorial_1_multi", "tutorial_0_multi"],
             "playerZero" : "human",
             "playerOne" : "TutorialAIMulti"
         },

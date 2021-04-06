@@ -694,6 +694,7 @@ class OvercookedTutorial(OvercookedGame):
         super(OvercookedTutorial, self).__init__(layouts=layouts, mdp_params=mdp_params, playerZero=playerZero, playerOne=playerOne, showPotential=False, **kwargs)
         self.phase_two_score = phaseTwoScore
         self.phase_two_finished = False
+        self.tutorial_finished = False
         self.max_time = 0
         self.max_players = 2
         self.ticks_per_ai_action = 8
@@ -710,10 +711,12 @@ class OvercookedTutorial(OvercookedGame):
             return self.score > 0
         elif self.curr_phase == 2:
             return self.phase_two_finished
-        return False 
+        elif self.curr_phase == 3:
+            return self.score > 0
+        return False
 
     def is_finished(self):
-        return not self.layouts and self.phase_two_finished
+        return not self.layouts and self.tutorial_finished
 
     def reset(self):
         super(OvercookedTutorial, self).reset()
@@ -739,6 +742,9 @@ class OvercookedTutorial(OvercookedGame):
             self.score = 0
             if human_reward == self.phase_two_score:
                 self.phase_two_finished = True
+        if self.curr_phase == 3:
+            if self.score > 0:
+                self.tutorial_finished = True
 
 
 
@@ -1052,6 +1058,73 @@ class TutorialAIMulti():
         Action.STAY,
     ]
 
+    CONFINED_SPACE_LOOP = [
+        # Grab first onion
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.EAST,
+        Direction.SOUTH,
+        Action.INTERACT,
+
+        # drop it off
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Direction.WEST,
+        Action.INTERACT,
+    ]
+
     def __init__(self):
         self.curr_phase = -1
         self.curr_tick = -1
@@ -1064,6 +1137,8 @@ class TutorialAIMulti():
             return self.MISTAKE_SOUP_COOP_LOOP[self.curr_tick % len(self.MISTAKE_SOUP_COOP_LOOP)], None
         elif self.curr_phase == 2:
             return self.ONION_COUNTER_LOOP[self.curr_tick % len(self.ONION_COUNTER_LOOP)], None
+        elif self.curr_phase == 3:
+            return self.CONFINED_SPACE_LOOP[self.curr_tick % len(self.CONFINED_SPACE_LOOP)], None
         return Action.STAY, None
 
     def reset(self):
