@@ -53,11 +53,12 @@
       <p>
         This is what one level of the game looks like:
       </p>
-      <img class="center" src="static/images/training0.png" style="width:500px">
+      <img class="center" src="static/images/sample_game.png" style="width:410px">
+      <br>
       <p>
         There are a number of objects in the game, labeled here:
       </p>
-      <img class="center" src="static/images/training0-annotated.png" style="width:800px">
+      <img class="center" src="static/images/sample_game_annotated.png" style="width:800px">
 
       <br>
       <hr>
@@ -70,29 +71,79 @@
         the <b>arrow keys</b>, and interact with objects
         using the <b>spacebar</b>.
       </p>
-      <p>
-        You can interact with objects by facing them and pressing
-        <b>spacebar</b>. Here are some examples:
-        <ul>
-          <li>You can pick up ingredients (onions) by facing
-            the ingredient area and pressing <b>spacebar</b>.</li>
-          <li>If you are holding an ingredient, are facing a pot that is not full,
-            and press <b>spacebar</b>, you will put the ingredient in the pot.</li>
-          <li>If you are facing a pot that is non-empty, are currently holding nothing, and
-            and press <b>spacebar</b>, you will begin cooking a soup.</li>
-          <li>If you are holding an item (an ingredient or a plate), are facing an empty counter,
-            and press <b>spacebar</b>, you put the item on the counter.</li>
-          <li>If you are not holding an item, are facing an occupied counter with an item,
-            and press <b>spacebar</b>, you pick up the item from the counter.</li>
-        </ul>
-      </p>
 
       <br>
       <br>
       <p>
-        Note that as you and your partner are moving around the kitchen
-        you <u><b>cannot occupy the same location</b></u>.
+        Note that as you and your partner are moving around the kitchen,
+        the two of you <u><b>cannot occupy the same location</b></u>.
+        <ul>
+          <li> Valid movement: attempt to move into empty spaces will succeed
+            <img class="center" src="static/images/move_valid.png" style="width:700px">
+          </li>
+          <li> Invalid movement: attempt to move into your partner will not succeed (and result in no change in location)
+            <img class="center" src="static/images/move_invalid.png" style="width:700px">
+          </li>
+        </ul>
       </p>
+      <br>
+
+      <p>
+        You can interact with objects by facing them and pressing
+        <b>spacebar</b>. Here are some examples:
+        <ul>
+          <li>If you are holding nothing, you can pick up a dispensed item (onion/plate) by facing
+            the dispenser area and pressing <b>spacebar</b>.
+            <img class="center" src="static/images/onion_pickup.png" style="width:700px">
+            <img class="center" src="static/images/dish_pickup.png" style="width:700px">
+          </li>
+          <li>If you are holding an onion and facing a pot that is not full,
+            and press <b>spacebar</b>, you will put the onion in the pot.
+            <img class="center" src="static/images/onion_drop_init.png" style="width:700px">
+            <img class="center" src="static/images/onion_drop_more.png" style="width:700px">
+          </li>
+          <li>If you are holding nothing and facing a pot that is non-empty,
+            and press <b>spacebar</b>, you will begin cooking a soup.
+            <img class="center" src="static/images/start_cooking.png" style="width:700px">
+          </li>
+          <li>If you are holding a plate and facing a pot with a fully cooked soup
+            and press <b>spacebar</b>, you will pick up the fully cooked soup with the plate.
+            <img class="center" src="static/images/soup_pickup.png" style="width:700px">
+          </li>
+          <li>If you are holding a fully cooked soup and facing a serving station
+            and press <b>spacebar</b>, you will serve the fully cooked soup.
+            <img class="center" src="static/images/serving.png" style="width:700px">
+          </li>
+          <li>If you are holding an item (an onion, a plate, or a cooked soup), are facing an empty counter,
+            and press <b>spacebar</b>, you put the item on the counter.
+            <img class="center" src="static/images/counter_drop_onion.png" style="width:700px">
+            <img class="center" src="static/images/counter_drop_dish.png" style="width:700px">
+          </li>
+          <li>If you are not holding anything, are facing an occupied counter with an item (an onion, a plate, or a cooked soup),
+            and press <b>spacebar</b>, you pick up the item from the counter.
+            <img class="center" src="static/images/counter_pickup_soup.png" style="width:700px">
+          </li>
+        </ul>
+      </p>
+      <br>
+      <br>
+      <p>
+        Common mistakes:
+        <ul>
+          <li>If you are holding an item, you cannot pick up anything from the dispensers or the counters
+            <img class="center" src="static/images/invalid_pickup_dispenser.png" style="width:700px">
+            <img class="center" src="static/images/invalid_pickup_counter.png" style="width:700px">
+          </li>
+          <li>You cannot add an an onion to the pot once cooking starts.
+            <img class="center" src="static/images/invalid_onion_drop.png" style="width:700px">
+          </li>
+          <li>You cannot pick up a soup while it is still cooking in the pot.
+            <img class="center" src="static/images/invalid_soup_pickup.png" style="width:700px">
+          </li>
+        </ul>
+      </p>
+      <br>
+
       <br>
       <hr>
       <br>
@@ -101,19 +152,13 @@
       <img class="center" src="static/images/soup.png" style="width:250px">
       <p>
         Once an ingredient is in the pot, you can begin cooking a soup by pressing 
-        <b>spacebar</b> as noted above. You can place up to 3 ingredients in a pot 
+        <b>spacebar</b> as noted above. You can place up to 3 onions in a pot
         before cooking. 
       </p>
       <p>
         When a soup begins cooking, you'll notice a red number appear over the pot to 
-        denote the cook time. This number counts upward until the soup is done. Soup 
-        cook time is determined its ingredients; every onion add {{ layout_conf.onion_time }} and 
-        every tomato adds {{ layout_conf.tomato_time }} to the cook time.
-      </p>
-      <p>
-        Additionally, the base 
-        reward for any recipe is determined by its ingredients; each onion adds {{ layout_conf.onion_value }} 
-        points and each tomato adds {{ layout_conf.tomato_value }} points.
+        denote the cook time. This number counts upward until the soup is done.
+        All soups (1-onion, 2-onion, and 3-onion) will takes 20 timesteps to cook.
       </p>
 
       <br>
@@ -121,53 +166,21 @@
       <br>
 
       <h3 class="text-center">Serving</h3>
-      <img class="center" src="static/images/serving-counter.png" style="width:800px">
+      <img class="center" src="static/images/serving-counter_mult.png" style="width:800px">
       <p>
         Once the soup is in a bowl, you can serve it by bringing it to
         a grey serving counter.
       </p>
-
       <br>
       <hr>
       <br>
 
-<!--      <h3 class="text-center">Soups</h3>-->
-<!--      <p>-->
-<!--        There are 9 possible soup recipes that can be created from combinations of tomatoes-->
-<!--        and onions, each with its own icon. The recipe icons and the corresponding ingredients are-->
-<!--        listed below-->
-<!--      </p>-->
-<!--      <table>-->
-<!--        <tr>-->
-<!--          <th>Ingredients</th>-->
-<!--          <th>Icon</th>-->
-<!--          <th>Base Reward</th>-->
-<!--          <th>Cook Time</th>-->
-<!--        </tr>-->
-<!--        {% for num_tomatoes in range(layout_conf.max_num_ingredients + 1) %}-->
-<!--          {% for num_onions in range(layout_conf.max_num_ingredients + 1) %}-->
-<!--            {% if num_tomatoes + num_onions > 0 and num_onions + num_tomatoes <= layout_conf.max_num_ingredients %}-->
-<!--              <tr>-->
-<!--                <td>{{ num_onions ~ " Onion" if num_onions }} {{ num_tomatoes ~ " Tomato" if num_tomatoes }}</td>-->
-<!--                <td><img src="{{ "static/assets/new_sprites/soup_done_tomato_" ~ num_tomatoes ~ "_onion_" ~ num_onions ~ ".png" }}" style="width:75px;background-color: #e6b453;"></td>-->
-<!--                <td>{{ layout_conf.onion_value * num_onions + layout_conf.tomato_value * num_tomatoes }}</td>-->
-<!--                <td>{{ layout_conf.onion_time * num_onions + layout_conf.tomato_time * num_tomatoes }}</td>-->
-<!--              </tr>-->
-<!--            {% endif %}-->
-<!--          {% endfor %}-->
-<!--        {% endfor %}-->
-
-<!--      </table>-->
-
-<!--      <br>-->
-<!--      <hr>-->
-<!--      <br>-->
 
       <h3 class="text-center">All Orders</h3>
       <p>
-        Only soup in this list are considered valid, and be worth points upon delivery.
-        The only valid soup in this experiment would be a <b>3-onion soup</b>.
-        All other soups (1-onion, 2-onion soups) are invalid, and thus WILL NOT BE WORTH POINTS
+        The list of soups that are considered valid (and thus worth points upon delivery).
+        <b>The only valid soup in this experiment is a 3-onion soup</b>.
+        All other soups (1-onion, 2-onion soups) are invalid, and thus WILL NOT BE WORTH ANY POINTS
       </p>
 
       <br>
@@ -176,7 +189,7 @@
 
       <h3 class="text-center">Bonus Orders</h3>
       <p>
-        We will not use this feature in this experiment
+        We will not use this feature
       </p>
 
       <br>
@@ -186,11 +199,7 @@
       <h3 class="text-center">Score</h3>
       <p>
         When a 3-onion soup is served at the serving counter, 20 points will be be added to the shared score.
-        Serving any invalid (1-onion, 2-onion) soup will not affect your score.
-<!--        The base reward for any recipe is determined by its ingredients; each onion adds {{ layout_conf.onion_value }} -->
-<!--        points and each tomato adds {{ layout_conf.tomato_value }} points. Note that serving a soup in the <b>Bonus Orders</b>-->
-<!--        multiplies the base soup score by {{ layout_conf.order_bonus }}. Additionally, serving a soup not in the-->
-<!--        <b>All Orders</b> list results in zero points not matter what!-->
+        Serving any invalid soup (1-onion, 2-onion) will not affect your score.
       </p>
 
       <br>
@@ -198,7 +207,6 @@
       <br>
 
       <h3 class="text-center">Goal</h3>
-      <img class="center" src="static/images/info-panel.png" style="width:500px">
       <p>
         Your goal in this task is to serve as many of the orders as you can
         before each level ends, and thus earn as high shared score as possible for the team.

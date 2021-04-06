@@ -11,6 +11,7 @@ var tutorial_instructions = () => [
     <p>Your goal here is to cook and deliver soups in order to earn reward. Notice how your partner is busily churning out soups</p>
     <p>See if you can copy his actions in order to cook and deliver the appropriate soup</p>
     <p><b>Note</b>: only recipes in the <b>All Orders</b> field will earn reward. Thus, you must cook a soup with <b>exactly</b> 3 onions</p>
+    <p>You are the  <b>blue cook</b> in this game</p>
     <p><b>You will advance only when you have delivered the appropriate soup</b></p>
     <p>Good luck!</p>
     <br></br>
@@ -21,6 +22,7 @@ var tutorial_instructions = () => [
     <p>This is an issue because 2-onion is not a valid recipe, and delivering it will incur no reward</p>
     <p>However, the only pot you have access to is currently blocked by this invalid soup! And you cannot add onion to a cooking/cooked soup</p>
     <p>See if you can remedy the situation and cook a recipe that is indeed valid</p>
+    <p>You are the  <b>blue cook</b> in this game</p>
     <p><b>You will advance only when you have delivered a valid 3-onion soup</b></p>
     <p>Good Luck!</p>
     <br></br>
@@ -30,6 +32,7 @@ var tutorial_instructions = () => [
     <p>Your partner is again back again busily busting out onion soups, except this time, something is different...</p>
     <p>The map has changed, and the resources are very limited on the new map. You and your partner must work together to finish cooking </p>
     <p>Your goal here is to cooperate with your partner and deliver a fully cooked valid soup</p>
+    <p>You are the  <b>blue cook</b> in this game</p>
     <p><b>You will advance only when you have delivered a valid 3-onion soup</b></p>
     <br></br>
     `
@@ -46,32 +49,130 @@ var tutorial_hints = () => [
         You can interact with objects by facing them and pressing
         <b>spacebar</b>. Here are some examples:
         <ul>
-          <li>You can pick up ingredients (onions) by facing
-            the ingredient area and pressing <b>spacebar</b>.</li>
-          <li>If you are holding an ingredient, are facing a pot that is not full,
-            and press <b>spacebar</b>, you will put the ingredient in the pot.</li>
-          <li>If you are facing a pot that is non-empty, are currently holding nothing, and
-            and press <b>spacebar</b>, you will begin cooking a soup.</li>
-          <li>If you are holding an item (an ingredient or a plate), are facing an empty counter,
-            and press <b>spacebar</b>, you put the item on the counter.</li>
-          <li>If you are not holding an item, are facing an occupied counter with an item,
-            and press <b>spacebar</b>, you pick up the item from the counter.</li>
+          <li>If you are holding nothing, you can pick up a dispensed item (onion/plate) by facing
+            the dispenser area and pressing <b>spacebar</b>.
+            <img class="center" src="static/images/onion_pickup.png" style="width:700px">
+            <img class="center" src="static/images/dish_pickup.png" style="width:700px">
+          </li>
+          <li>If you are holding an onion and facing a pot that is not full,
+            and press <b>spacebar</b>, you will put the onion in the pot.
+            <img class="center" src="static/images/onion_drop_init.png" style="width:700px">
+            <img class="center" src="static/images/onion_drop_more.png" style="width:700px">
+          </li>
+          <li>If you are holding nothing and facing a pot that is non-empty,
+            and press <b>spacebar</b>, you will begin cooking a soup.
+            <img class="center" src="static/images/start_cooking.png" style="width:700px">
+          </li>
+          <li>If you are holding a plate and facing a pot with a fully cooked soup
+            and press <b>spacebar</b>, you will pick up the fully cooked soup with the plate.
+            <img class="center" src="static/images/soup_pickup.png" style="width:700px">
+          </li>
+          <li>If you are holding a fully cooked soup and facing a serving station
+            and press <b>spacebar</b>, you will serve the fully cooked soup.
+            <img class="center" src="static/images/serving.png" style="width:700px">
+          </li>
+          <li>If you are holding an item (an onion, a plate, or a cooked soup), are facing an empty counter,
+            and press <b>spacebar</b>, you put the item on the counter.
+            <img class="center" src="static/images/counter_drop_onion.png" style="width:700px">
+            <img class="center" src="static/images/counter_drop_dish.png" style="width:700px">
+          </li>
+          <li>If you are not holding anything, are facing an occupied counter with an item (an onion, a plate, or a cooked soup),
+            and press <b>spacebar</b>, you pick up the item from the counter.
+            <img class="center" src="static/images/counter_pickup_soup.png" style="width:700px">
+          </li>
+        </ul>
+      </p>
+
+      <p>
+        Common mistakes:
+        <ul>
+          <li>If you are holding an item, you cannot pick up anything from the dispensers or the counters
+            <img class="center" src="static/images/invalid_pickup_dispenser.png" style="width:700px">
+            <img class="center" src="static/images/invalid_pickup_counter.png" style="width:700px">
+          </li>
+          <li>You cannot add an an onion to the pot once cooking starts.
+            <img class="center" src="static/images/invalid_onion_drop.png" style="width:700px">
+          </li>
+          <li>You cannot pick up a soup while it is still cooking in the pot.
+            <img class="center" src="static/images/invalid_soup_pickup.png" style="width:700px">
+          </li>
         </ul>
       </p>
     `,
     `
     <p>Once a soup starts cooking in a pot, you cannot add/remove ingredients, even if the soup is invalid</p>
     <p>You can, however, dish the invalid soup to empty the pot, and then cook any soup you like</p>
+    <br>
+    <br>
+    <p>
+        You can interact with objects by facing them and pressing
+        <b>spacebar</b>. Here are some examples:
+        <ul>
+          <li>If you are holding nothing, you can pick up a dispensed item (onion/plate) by facing
+            the dispenser area and pressing <b>spacebar</b>.
+            <img class="center" src="static/images/onion_pickup.png" style="width:700px">
+            <img class="center" src="static/images/dish_pickup.png" style="width:700px">
+          </li>
+          <li>If you are holding an onion and facing a pot that is not full,
+            and press <b>spacebar</b>, you will put the onion in the pot.
+            <img class="center" src="static/images/onion_drop_init.png" style="width:700px">
+            <img class="center" src="static/images/onion_drop_more.png" style="width:700px">
+          </li>
+          <li>If you are holding nothing and facing a pot that is non-empty,
+            and press <b>spacebar</b>, you will begin cooking a soup.
+            <img class="center" src="static/images/start_cooking.png" style="width:700px">
+          </li>
+          <li>If you are holding a plate and facing a pot with a fully cooked soup
+            and press <b>spacebar</b>, you will pick up the fully cooked soup with the plate.
+            <img class="center" src="static/images/soup_pickup.png" style="width:700px">
+          </li>
+          <li>If you are holding a fully cooked soup and facing a serving station
+            and press <b>spacebar</b>, you will serve the fully cooked soup.
+            <img class="center" src="static/images/serving.png" style="width:700px">
+          </li>
+          <li>If you are holding an item (an onion, a plate, or a cooked soup), are facing an empty counter,
+            and press <b>spacebar</b>, you put the item on the counter.
+            <img class="center" src="static/images/counter_drop_onion.png" style="width:700px">
+            <img class="center" src="static/images/counter_drop_dish.png" style="width:700px">
+          </li>
+          <li>If you are not holding anything, are facing an occupied counter with an item (an onion, a plate, or a cooked soup),
+            and press <b>spacebar</b>, you pick up the item from the counter.
+            <img class="center" src="static/images/counter_pickup_soup.png" style="width:700px">
+          </li>
+        </ul>
+      </p>
+
+      <p>
+        Common mistakes:
+        <ul>
+          <li>If you are holding an item, you cannot pick up anything from the dispensers or the counters
+            <img class="center" src="static/images/invalid_pickup_dispenser.png" style="width:700px">
+            <img class="center" src="static/images/invalid_pickup_counter.png" style="width:700px">
+          </li>
+          <li>You cannot add an an onion to the pot once cooking starts.
+            <img class="center" src="static/images/invalid_onion_drop.png" style="width:700px">
+          </li>
+          <li>You cannot pick up a soup while it is still cooking in the pot.
+            <img class="center" src="static/images/invalid_soup_pickup.png" style="width:700px">
+          </li>
+        </ul>
+      </p>
+
     `,
     `
     <p>
         You can interact with a counter by facing them and pressing
         <b>spacebar</b>. Here are some examples:
         <ul>
-          <li>If you are holding an item (an ingredient or a plate), are facing an empty counter,
-            and press <b>spacebar</b>, you put the item on the counter.</li>
-          <li>If you are not holding an item, are facing an occupied counter with an item,
-            and press <b>spacebar</b>, you pick up the item from the counter.</li>
+          <li>If you are holding an item (an onion, a plate, or a cooked soup), are facing an empty counter,
+            and press <b>spacebar</b>, you put the item on the counter.
+            <img class="center" src="static/images/counter_drop_onion.png" style="width:700px">
+            <img class="center" src="static/images/counter_drop_dish.png" style="width:700px">
+          </li>
+          <li>If you are not holding anything, are facing an occupied counter with an item (an onion, a plate, or a cooked soup),
+            and press <b>spacebar</b>, you pick up the item from the counter.
+            <img class="center" src="static/images/counter_pickup_soup.png" style="width:700px">
+          </li>
         </ul>
       </p>
     `
