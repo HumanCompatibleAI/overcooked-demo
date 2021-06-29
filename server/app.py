@@ -6,7 +6,7 @@ if os.getenv('FLASK_ENV', 'production') == 'production':
     eventlet.monkey_patch()
 
 # All other imports must come after patch to ensure eventlet compatibility
-import pickle, queue, atexit, json, logging, jsmin
+import queue, atexit, json, logging, jsmin, copy
 from threading import Lock
 from collections import defaultdict
 from utils import ThreadSafeSet, ThreadSafeDict, GameError, is_same_domain
@@ -117,7 +117,8 @@ game._configure(MAX_GAME_LENGTH, AGENT_DIR, MAX_FPS)
 
 # Create and configure flask app
 app = Flask(__name__, template_folder=os.path.join('static', 'templates'))
-app.config['DEBUG'] = os.getenv('FLASK_ENV', 'production') == 'development'
+# app.config['DEBUG'] = os.getenv('FLASK_ENV', 'production') == 'development'
+app.config['DEBUG'] = False
 socketio = SocketIO(app, cors_allowed_origins="*", logger=app.config['DEBUG'])
 
 
@@ -364,8 +365,13 @@ def _ensure_consistent_state():
             assert not set(waiting_games[key_i]).union(waiting_games[key_j]), "WAITING id queues not disjoint"
 
 
-def get_agent_names():
-    return [d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d))]
+def get_layout_to_agents():
+    def _get_agents_names(layout):
+        return [d for d in os.listdir(os.path.join(AGENT_DIR, layout)) if os.path.isdir(os.path.join(AGENT_DIR, layout, d))]
+    layout_to_agent_names = {}
+    for layout in LAYOUTS:
+        layout_to_agent_names[layout] = _get_agents_names(layout) + _get_agents_names('all')
+    return layout_to_agent_names
 
 
 ######################
@@ -382,8 +388,12 @@ def index():
     if EXPERIMENT_MODE and not key == PSITURK_KEY:
         abort(403)
     
-    agent_names = get_agent_names()
-    return render_template('index.html', agent_names=agent_names, layouts=LAYOUTS)
+    layout_to_agents = get_layout_to_agents()
+    config = {
+        "layouts" : LAYOUTS,
+        "layout_to_agents" : layout_to_agents
+    }
+    return render_template('index.html', layouts=LAYOUTS, config=config)
 
 @app.route('/psiturk')
 def psiturk():
@@ -393,9 +403,11 @@ def psiturk():
         abort(403)
     
     uid = request.args.get("UID")
-    psiturk_config = request.args.get('config', PSITURK_CONFIG)
     ack_interval = request.args.get('ack_interval', -1)
-    return render_template('psiturk.html', uid=uid, config=psiturk_config, ack_interval=ack_interval)
+    psiturk_config = request.args.get('config', copy.deepcopy(PSITURK_CONFIG))
+    psiturk_config['uid'] = uid
+    psiturk_config['ack_timeout'] = ack_interval
+    return render_template('psiturk.html', config=psiturk_config)
 
 @app.route('/instructions')
 def instructions():
@@ -417,7 +429,11 @@ def tutorial():
     uid = request.args.get("UID", "-1")
     psiturk = request.args.get('psiturk', False)
     ack_interval = request.args.get('ack_interval', -1)
-    return render_template('tutorial.html', config=TUTORIAL_CONFIG, psiturk=psiturk, uid=uid, ack_interval=ack_interval)
+    tutorial_config = request.args.get('config', copy.deepcopy(TUTORIAL_CONFIG))
+    tutorial_config['uid'] = uid
+    tutorial_config['psiturk'] = psiturk
+    tutorial_config['ack_interval'] = ack_interval
+    return render_template('tutorial.html', config=tutorial_config, psiturk=psiturk)
 
 @app.route('/debug')
 def debug():

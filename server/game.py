@@ -2,12 +2,14 @@ from abc import ABC, abstractmethod
 from threading import Lock, Thread
 from queue import Queue, LifoQueue, Empty, Full
 from time import time
+from overcooked_ai_py.agents.agent import Agent
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.planning.planners import MotionPlanner, NO_COUNTERS_PARAMS
+from ray.rllib import policy
 from utils import SafeGameMethod
-import random, os, pickle, json, math
+import random, os, pickle, json, math, traceback
 
 # Relative path to where all static pre-trained agents are stored on server
 AGENT_DIR = None
@@ -485,7 +487,7 @@ class OvercookedGame(Game):
         - _curr_game_over: Determines whether the game on the current mdp has ended
     """
 
-    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', showPotential=False, randomized=False, ticks_per_ai_action=4, **kwargs):
+    def __init__(self, layouts=["cramped_room"], mdp_params={}, num_players=2, gameTime=30, playerZero='human', playerOne='human', showPotential=False, randomized=False, ticks_per_ai_action=1, block_for_ai=True, **kwargs):
         super(OvercookedGame, self).__init__(**kwargs)
         self.show_potential = showPotential
         self.mdp_params = mdp_params
@@ -507,6 +509,7 @@ class OvercookedGame(Game):
             "SPACE" : Action.INTERACT
         }
         self.ticks_per_ai_action = ticks_per_ai_action
+        self.block_for_ai = block_for_ai
         self.curr_tick = 0
         self.human_players = set()
         self.npc_players = set()
@@ -517,15 +520,10 @@ class OvercookedGame(Game):
         if playerZero != 'human':
             player_zero_id = playerZero + '_0'
             self._add_player(player_zero_id, idx=0, buff_size=1, is_human=False)
-            self.npc_policies[player_zero_id] = self._get_policy(playerZero, idx=0)
-            self.npc_state_queues[player_zero_id] = LifoQueue()
 
         if playerOne != 'human':
-            player_one_id = playerOne + '_1'
-            self._add_player(player_one_id, idx=1, buff_size=1, is_human=False)
-            self.npc_policies[player_one_id] = self._get_policy(playerOne, idx=1)
-            self.npc_state_queues[player_one_id] = LifoQueue()
-
+            player_zero_id = playerOne + '_1'
+            self._add_player(player_zero_id, idx=1, buff_size=1, is_human=False)
         
 
     def _curr_game_over(self):
@@ -591,7 +589,8 @@ class OvercookedGame(Game):
         # Synchronize individual player actions into a joint-action as required by overcooked logic
         for i in range(len(self.players)):
             try:
-                joint_action[i] = self.pending_actions[i].get(block=False)
+                block = self.is_npc(player_idx=i) and self.block_for_ai
+                joint_action[i] = self.pending_actions[i].get(block=block)
             except Empty:
                 pass
         
@@ -639,20 +638,30 @@ class OvercookedGame(Game):
         self.curr_layout = self.layouts.pop()
         self.mdp = OvercookedGridworld.from_layout_name(self.curr_layout, **self.mdp_params)
         if self.show_potential:
-            self.mp = MotionPlanner.from_pickle_or_compute(self.mdp, counter_goals=self.mdp.get_useful_counter_locations())
+            self.mp = MotionPlanner.from_pickle_or_compute(self.mdp, counter_goals=[])
         self.state = self.mdp.get_standard_start_state()
         if self.show_potential:
             self.phi = self.mdp.potential_function(self.state, self.mp, gamma=0.99)
+
+        # Load any NPC policies, if necessary
+        for npc_id in self.npc_players:
+            npc_idx = self.players.index(npc_id)
+            policy_id = '_'.join(npc_id.split('_')[:-1])
+            self.npc_policies[npc_id] = self._get_policy(policy_id, idx=npc_idx)
+            self.npc_state_queues[npc_id] = LifoQueue()
+
         self.start_time = time()
         self.curr_tick = 0
         self.score = 0
         self.threads = []
         for npc_policy in self.npc_policies:
-            self.npc_policies[npc_policy].reset()
-            self.npc_state_queues[npc_policy].put(self.state)
             t = Thread(target=self._npc_policy_consumer, args=(npc_policy,))
             self.threads.append(t)
             t.start()
+            self.npc_policies[npc_policy].reset()
+            self.npc_state_queues[npc_policy].put(self.state)
+            
+            
 
     def _deactivate(self):
         super(OvercookedGame, self)._deactivate()
@@ -670,6 +679,7 @@ class OvercookedGame(Game):
 
     def _get_state(self):
         state_dict = {}
+        state_dict['ood'] = self.mdp.is_off_distribution(self.state) if self.show_potential else None
         state_dict['potential'] = self.phi if self.show_potential else None
         state_dict['state'] = self.state.to_dict()
         state_dict['score'] = self.score
@@ -683,28 +693,54 @@ class OvercookedGame(Game):
         return obj_dict
 
     def _get_policy(self, npc_id, idx=0):
-        if npc_id.lower().startswith("rllib"):
+        if npc_id.lower().startswith("ppo"):
             import ray
             try:
                 # Loading rllib agents requires additional helpers
-                from human_aware_rl.rllib.rllib import load_agent
-                fpath = os.path.join(AGENT_DIR, npc_id, 'agent', 'agent')
-                agent =  load_agent(fpath, agent_index=idx)
+                from human_aware_rl.rllib.rllib import PPOAgent
+                fpath = os.path.join(AGENT_DIR, self.curr_layout, npc_id)
+                agent = PPOAgent.load(fpath)
+                agent.set_agent_index(idx)
+                agent.stochastic = True
                 return agent
             except Exception as e:
+                print(traceback.format_exc(), flush=True)
                 raise IOError("Error loading Rllib Agent\n{}".format(e.__repr__()))
             finally:
                 # Always kill ray after loading agent, otherwise, ray will crash once process exits
                 if ray.is_initialized():
                     ray.shutdown()
+        elif npc_id.lower().startswith('bc'):
+            try:
+                # Loading BC agents requires additional helpers
+                from human_aware_rl.imitation.behavior_cloning_tf2 import BehaviorCloningAgent
+                agent_dir = os.path.join(AGENT_DIR, self.curr_layout, npc_id)
+                agent = BehaviorCloningAgent.load(agent_dir)
+                agent.set_agent_index(idx)
+                return agent
+            except Exception as e:
+                print(traceback.format_exc(), flush=True)
+                raise IOError("Error loading BC agent\n{}".format(e.__repr__()))
+
         else:
             try:
-                fpath = os.path.join(AGENT_DIR, npc_id, 'agent.pickle')
-                with open(fpath, 'rb') as f:
-                    return pickle.load(f)
+                # Loading vanilla OvercookedAgent
+                agent_dir = os.path.join(AGENT_DIR, self.curr_layout, npc_id)
+                agent = Agent.load(agent_dir)
+                agent.set_agent_index(idx)
+                return agent
             except Exception as e:
+                print(traceback.format_exc(), flush=True)
                 raise IOError("Error loading agent\n{}".format(e.__repr__()))
 
+    def is_npc(self, player_id=None, player_idx=None):
+        if player_id is None and player_idx is None:
+            raise ValueError("Must provide either player id or index")
+        if (player_id is not None) and (player_idx is not None):
+            raise ValueError("Must provide iether player id or index, not both")
+        if player_idx is not None:
+            player_id = self.players[player_idx]
+        return player_id in self.npc_players
 
 class OvercookedPsiturk(OvercookedGame):
     """

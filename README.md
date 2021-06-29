@@ -52,6 +52,8 @@ Overcooked-Demo can dynamically load pre-trained agents provided by the user. In
 
 If a more complex or custom loading routing is necessary, one can subclass the `OvercookedGame` class and override the `get_policy` method, as done in [DummyOvercookedGame](server/game.py#L420). Make sure the subclass is properly imported [here](server/app.py#L5)
 
+**Note**: Due to a bug in tensorlfow 2.0.*, loading pre-trained agents breaks when running the flask server in `DEBUG` mode. This can be fixed by either setting replacing [this](link) line with `app.config['DEBUG'] = False` or by running the server in production mode. The latter fix requires rebuilding the entire docker image, so the former is recommended for better local debugging workflow. 
+
 ## Updating Overcooked_ai
 This repo was designed to be as flexible to changes in overcooked_ai as possible. To change the branch used, use the `OVERCOOKED_BRANCH` environment variable shown above.
 

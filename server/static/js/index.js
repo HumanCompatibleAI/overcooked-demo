@@ -296,3 +296,13 @@ var arrToJSON = function(arr) {
     }
     return retval;
 };
+
+function updateAgents(layout) {
+    let layout_to_agents = config.layout_to_agents
+    agentOptions = "<option value=\"human\">Human Keyboard Input</option>"
+    for (agentName of layout_to_agents[layout]) {
+        agentOptions += "<option value=\"" + agentName + "\"> " + agentName  + "</option>";
+    }
+    document.getElementById("playerZero").innerHTML = agentOptions;
+    document.getElementById("playerOne").innerHTML = agentOptions;
+}

@@ -1,7 +1,6 @@
 // Persistent network connection that will be used to transmit real-time data
 var socket = io();
 
-var config;
 var lobbyWaitTime = 300000;
 
 /* * * * * * * * * * * * * 
@@ -309,9 +308,6 @@ function disable_key_listener() {
 
 socket.on("connect", function() {
     try {
-        // set configuration variables
-        set_config();
-
         // Start ack function in background
         if (config.ack_timeout !== -1) {
             window.ackInterval = setInterval(ack_function, config.ack_timeout);
@@ -339,22 +335,6 @@ socket.on("connect", function() {
 /* * * * * * * * * * *
  * Utility Functions *
  * * * * * * * * * * */
-
-var arrToJSON = function(arr) {
-    let retval = {}
-    for (let i = 0; i < arr.length; i++) {
-        elem = arr[i];
-        key = elem['name'];
-        value = elem['value'];
-        retval[key] = value;
-    }
-    return retval;
-};
-
-var set_config = function() {
-    config = JSON.parse($("#config").text());
-    config.ack_timeout = JSON.parse($("#ack-interval").text());
-}
 
 var ack_function = function() {
     // Propogate game stats to parent window (psiturk)

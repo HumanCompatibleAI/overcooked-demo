@@ -4,7 +4,6 @@ var socket = io();
 
 
 var config;
-var uid;
 
 var get_tutorial_instructions = function(config) {
     let layout_to_instructions = 
@@ -117,11 +116,6 @@ window.ackInterval = -1;
 // Read in game config provided by server
 $(function() {
     try {
-        config = JSON.parse($('#config').text());
-        uid = $('#uid').text();
-        ack_timeout = JSON.parse($('#ack-interval').text());
-        config.psiturk = JSON.parse($('#psiturk').text().toLowerCase());
-        config.ack_timeout = ack_timeout;
         tutorial_instructions = get_tutorial_instructions(config);
         tutorial_hints = get_tutorial_hints(config);
         $('#quit').show();
@@ -400,15 +394,15 @@ function disable_key_listener() {
 
 socket.on("connect", function() {
     try {
-        if (config.ack_timeout !== -1) {
-            console.log("setting ack interval to be " + config.ack_timeout + " milliseconds");
-            window.ackInterval = setInterval(ack_function, config.ack_timeout);
+        if (config.ack_interval !== -1) {
+            console.log("setting ack interval to be " + config.ack_interval + " milliseconds");
+            window.ackInterval = setInterval(ack_function, config.ack_interval);
         }
         let data;
         // Config for this specific game
         if (config.psiturk) {
             let params = JSON.parse(JSON.stringify(config.psiturkTutorialParams));
-            params.psiturk_uid = uid;
+            params.psiturk_uid = config.uid;
             data = {
                 "params" : params,
                 "game_name" : "psiturk_tutorial"

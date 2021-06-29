@@ -93,6 +93,7 @@ class OvercookedScene extends Phaser.Scene {
         this.assets_loc = config.assets_loc;
         this.hud_size = config.hud_size
         this.hud_data = {
+            ood : config.start_state.ood,
             potential : config.start_state.potential,
             score : config.start_state.score,
             time : config.start_state.time_left,
@@ -102,6 +103,7 @@ class OvercookedScene extends Phaser.Scene {
     }
 
     set_state(state) {
+        this.hud_data.ood = state.ood
         this.hud_data.potential = state.potential;
         this.hud_data.score = state.score;
         this.hud_data.time = Math.round(state.time_left);
@@ -356,8 +358,10 @@ class OvercookedScene extends Phaser.Scene {
             this._drawScore(hud_data.score, sprites, board_height);
         }
         if (typeof(hud_data.potential) !== 'undefined' && hud_data.potential !== null) {
-            console.log(hud_data.potential)
             this._drawPotential(hud_data.potential, sprites, board_height);
+        }
+        if (typeof(hud_data.ood) !== 'undefined' && hud_data.ood !== null) {
+            this._drawOOD(hud_data.ood, sprites, board_height);
         }
     }
 
@@ -465,7 +469,24 @@ class OvercookedScene extends Phaser.Scene {
         }
         else {
             sprites['potential'] = this.add.text(
-                100, board_height + 90, potential,
+                120, board_height + 90, potential,
+                {
+                    font: "20px Arial",
+                    fill: "red",
+                    align: "left"
+                }
+            )
+        }
+    }
+
+    _drawOOD(ood, sprites, board_height) {
+        ood = "Off Distribution?: "+ood;
+        if (typeof(sprites['ood']) !== 'undefined') {
+            sprites['ood'].setText(ood);
+        }
+        else {
+            sprites['ood'] = this.add.text(
+                120, board_height + 115, ood,
                 {
                     font: "20px Arial",
                     fill: "red",
