@@ -6,9 +6,9 @@ services:
             context: ./server
             args:
                 BUILD_ENV: "${BUILD_ENV:-production}"
-                OVERCOOKED_BRANCH: "${OVERCOOKED_BRANCH:-nathan_dev}"
-                HARL_BRANCH: "${HARL_BRANCH:-nathan_dev}"
-                GRAPHICS: "${GRAPHICS:-overcooked_graphics_v2.2.js}"
+                # OVERCOOKED_BRANCH: "${OVERCOOKED_BRANCH:-nathan_dev}"
+                # HARL_BRANCH: "${HARL_BRANCH:-nathan_dev}"
+                GRAPHICS: "${GRAPHICS:-dummy_graphics.js}"
         environment: 
             FLASK_ENV: "${BUILD_ENV:-production}"
         ports:

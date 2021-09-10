@@ -40,6 +40,12 @@
         "lobbyWaitTime" : 300000
     },
 
+    // Connect-4 psiturk experiment params
+    "c4_psiturk" : {
+        // TODO
+        "foo" : "bar"
+    },
+
     // Tutorial Game params
     "tutorial" : {
         // Passed into OvercookedTutorial. See `game.py` for details

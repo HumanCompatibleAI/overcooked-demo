@@ -9,11 +9,13 @@ if os.getenv('FLASK_ENV', 'production') == 'production':
 import queue, atexit, json, logging, jsmin, copy
 from threading import Lock
 from collections import defaultdict
-from utils import ThreadSafeSet, ThreadSafeDict, GameError, is_same_domain
+from concurrent_utils import ThreadSafeSet, ThreadSafeDict
 from flask import Flask, render_template, jsonify, request, abort
 from flask_socketio import SocketIO, join_room, leave_room, emit
-from game import OvercookedGame, OvercookedTutorial, Game, OvercookedPsiturk, OvercookedTutorialPsiturk, BuggyGame
-import game
+from game.utils import GameError
+from game.base import Game
+from game import ConnectFourGame
+import game as game_module
 
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
@@ -61,6 +63,9 @@ PSITURK_KEY = CONFIG['PSITURK_KEY']
 # Default configuration for psiturk experiment
 PSITURK_CONFIG = json.dumps(CONFIG['psiturk'])
 
+# Default configuration for c4 psiturk experiment
+C4_PSITURK_CONFIG = json.dumps(CONFIG['c4_psiturk'])
+
 # Default configuration for tutorial
 TUTORIAL_CONFIG = json.dumps(CONFIG['tutorial'])
 
@@ -78,10 +83,11 @@ for i in range(MAX_GAMES):
 
 # Mapping of string game names to corresponding classes
 GAME_NAME_TO_CLS = {
-    "overcooked" : OvercookedGame,
-    "tutorial" : OvercookedTutorial,
-    "psiturk" : OvercookedPsiturk,
-    "psiturk_tutorial" : OvercookedTutorialPsiturk
+    "c4" : ConnectFourGame,
+    # "overcooked" : OvercookedGame,
+    # "tutorial" : OvercookedTutorial,
+    # "psiturk" : OvercookedPsiturk,
+    # "psiturk_tutorial" : OvercookedTutorialPsiturk
 }
 
 GAME_TYPES = ThreadSafeSet(GAME_NAME_TO_CLS)
@@ -105,7 +111,7 @@ USERS = ThreadSafeDict()
 USER_ROOMS = ThreadSafeDict()
 
 # Sets global variables used by game.py
-game._configure(MAX_GAME_LENGTH, AGENT_DIR, MAX_FPS)
+game_module._configure(MAX_GAME_LENGTH, AGENT_DIR, MAX_FPS)
 
 
 
@@ -147,7 +153,7 @@ def try_create_game(game_name ,**kwargs):
     try:
         curr_id = FREE_IDS.get(block=False)
         assert FREE_MAP[curr_id], "Current id is already in use"
-        game_cls = GAME_NAME_TO_CLS.get(game_name, OvercookedGame)
+        game_cls = GAME_NAME_TO_CLS.get(game_name, ConnectFourGame)
         game = game_cls(id=curr_id, **kwargs)
     except queue.Empty:
         err = RuntimeError("Server at max capacity")
@@ -418,6 +424,33 @@ def instructions():
 
     psiturk = request.args.get('psiturk', False)
     return render_template('instructions.html', layout_conf=LAYOUT_GLOBALS, psiturk=psiturk)
+
+@app.route('/c4')
+def c4():
+    # Block all non-psiturk traffic if in experiment mode
+    key = request.args.get('key', '')
+    if EXPERIMENT_MODE and not key == PSITURK_KEY:
+        abort(403)
+    
+    layout_to_agents = get_layout_to_agents()
+    config = {
+        "foo" : "bar"
+    }
+    return render_template('c4.html', config=config)
+
+@app.route('/c4psiturk')
+def c4psiturk():
+    # Block all non-psiturk traffic if in experiment mode
+    key = request.args.get('key', '')
+    if EXPERIMENT_MODE and not key == PSITURK_KEY:
+        abort(403)
+
+    uid = request.args.get("UID")
+    ack_interval = request.args.get('ack_interval', -1)
+    psiturk_config = request.args.get('config', copy.deepcopy(C4_PSITURK_CONFIG))
+    psiturk_config['uid'] = uid
+    psiturk_config['ack_timeout'] = ack_interval
+    return render_template('c4_psiturk.html', config=psiturk_config)
 
 @app.route('/tutorial')
 def tutorial():

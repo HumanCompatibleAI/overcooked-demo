@@ -1,6 +1,9 @@
 // Persistent network connection that will be used to transmit real-time data
 var socket = io();
 
+// Determines which type of game we're playing
+var game_name = config.game_name;
+
 /* * * * * * * * * * * * * * * * 
  * Button click event handlers *
  * * * * * * * * * * * * * * * */
@@ -11,7 +14,7 @@ $(function() {
         params.layouts = [params.layout]
         data = {
             "params" : params,
-            "game_name" : "overcooked",
+            "game_name" : game_name,
             "create_if_not_found" : false
         };
         socket.emit("create", data);
@@ -27,7 +30,7 @@ $(function() {
 
 $(function() {
     $('#join').click(function() {
-        socket.emit("join", {"game_name" : "overcooked"});
+        socket.emit("join", {"game_name" : game_name});
         $('#join').attr("disabled", true);
         $('#create').attr("disabled", true);
     });
@@ -58,7 +61,7 @@ socket.on('waiting', function(data) {
     $('#game-over').hide();
     $('#instructions').hide();
     $('#tutorial').hide();
-    $("#overcooked").empty();
+    $("#game").empty();
     $('#lobby').show();
     $('#join').hide();
     $('#join').attr("disabled", true)
@@ -70,7 +73,7 @@ socket.on('waiting', function(data) {
         // Begin pinging to join if not currently in a game
         if (window.intervalID === -1) {
             window.intervalID = setInterval(function() {
-                socket.emit('join', {"game_name" : "overcooked"});
+                socket.emit('join', {"game_name" : game_name});
             }, 1000);
         }
     }
@@ -79,7 +82,7 @@ socket.on('waiting', function(data) {
 socket.on('creation_failed', function(data) {
     // Tell user what went wrong
     let err = data['error']
-    $("#overcooked").empty();
+    $("#game").empty();
     $('#lobby').hide();
     $("#instructions").show();
     $('#tutorial').show();
@@ -88,7 +91,7 @@ socket.on('creation_failed', function(data) {
     $('#join').attr("disabled", false);
     $('#create').show();
     $('#create').attr("disabled", false);
-    $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
+    $('#game').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
 });
 
 socket.on('start_game', function(data) {
@@ -98,12 +101,12 @@ socket.on('start_game', function(data) {
         window.intervalID = -1;
     }
     graphics_config = {
-        container_id : "overcooked",
+        container_id : "game",
         start_info : data.start_info
     };
     window.spectating = data.spectating;
     $('#error-exit').hide();
-    $("#overcooked").empty();
+    $("#game").empty();
     $('#game-over').hide();
     $('#lobby').hide();
     $('#waiting').hide();
@@ -130,12 +133,12 @@ socket.on('reset_game', function(data) {
         disable_key_listener();
     }
     
-    $("#overcooked").empty();
+    $("#game").empty();
     $("#reset-game").show();
     setTimeout(function() {
         $("reset-game").hide();
         graphics_config = {
-            container_id : "overcooked",
+            container_id : "game",
             start_info : data.state
         };
         if (!window.spectating) {

@@ -16,7 +16,7 @@ socket.on('waiting', function(data) {
     try {
         // Show game lobby
         $('#game-over').hide();
-        $("#overcooked").empty();
+        $("#c4").empty();
         $('#lobby').show();
         if (!data.in_game) {
             if (window.intervalID === -1) {
@@ -49,8 +49,8 @@ socket.on('creation_failed', function(data) {
     try {
         // Tell user what went wrong
         let err = data['error']
-        $("#overcooked").empty();
-        $('#overcooked').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
+        $("#c4").empty();
+        $('#c4').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
         $("error-exit").show();
 
         // Let parent window (psiturk) know error occurred
@@ -76,10 +76,10 @@ socket.on('start_game', function(data) {
             window.ellipses = -1;
         }
         graphics_config = {
-            container_id : "overcooked",
+            container_id : "c4",
             start_info : data.start_info
         };
-        $("#overcooked").empty();
+        $("#c4").empty();
         $('#game-over').hide();
         $('#lobby').hide();
         $('#reset-game').hide();
@@ -98,12 +98,12 @@ socket.on('reset_game', function(data) {
     try {
         graphics_end();
         disable_key_listener();
-        $("#overcooked").empty();
+        $("#c4").empty();
         $("#reset-game").show();
         setTimeout(function() {
             $("#reset-game").hide();
             graphics_config = {
-                container_id : "overcooked",
+                container_id : "c4",
                 start_info : data.state
             };
             graphics_start(graphics_config);
@@ -131,7 +131,7 @@ socket.on('end_game', function(data) {
         disable_key_listener();
         $('#game-title').hide();
         $('#game-over').show();
-        $("#overcooked").empty();
+        $("#c4").empty();
 
         // Game ended unexpectedly
         if (data.status === 'inactive') {
@@ -189,17 +189,17 @@ socket.on("game_error", function(data) {
         disable_key_listener();
         $('#game-title').hide();
         $('#game-over').show();
-        $("#overcooked").empty();
+        $("#c4").empty();
         $('#lobby').hide();
         $("#error").show();
         $("#error-exit").show();
 
         // Propogate game stats to parent window with psiturk code
-        let overcooked_data = JSON.stringify({});
+        let game_data = JSON.stringify({});
         if (typeof data.data !== 'undefined') {
-            overcooked_data = data.data;
+            game_data = data.data;
         }
-        window.top.postMessage({ name : "error", data : overcooked_data }, "*");
+        window.top.postMessage({ name : "error", data : game_data }, "*");
     } catch (err) {
         let data = JSON.stringify({});
         let error = JSON.stringify(err);
@@ -232,17 +232,17 @@ socket.on("server_error", function(data) {
         disable_key_listener();
         $('#game-title').hide();
         $('#game-over').show();
-        $("#overcooked").empty();
+        $("#c4").empty();
         $('#lobby').hide();
         $("#error").show();
         $("#error-exit").show();
 
         // Propogate game stats to parent window with psiturk code
-        let overcooked_data = JSON.stringify({});
+        let game_data = JSON.stringify({});
         if (typeof data.data !== 'undefined') {
-            overcooked_data = data.data;
+            game_data = data.data;
         }
-        window.top.postMessage({ name : "error", data : overcooked_data }, "*");
+        window.top.postMessage({ name : "error", data : game_data }, "*");
     } catch (err) {
         let data = JSON.stringify({});
         let error = JSON.stringify(err);
