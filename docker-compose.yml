@@ -8,7 +8,7 @@ services:
                 BUILD_ENV: "${BUILD_ENV:-production}"
                 # OVERCOOKED_BRANCH: "${OVERCOOKED_BRANCH:-nathan_dev}"
                 # HARL_BRANCH: "${HARL_BRANCH:-nathan_dev}"
-                GRAPHICS: "${GRAPHICS:-dummy_graphics.js}"
+                GRAPHICS: "${GRAPHICS:-c4_graphics_v1.js}"
         environment: 
             FLASK_ENV: "${BUILD_ENV:-production}"
         ports:

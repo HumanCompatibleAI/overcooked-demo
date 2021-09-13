@@ -16,7 +16,7 @@
     "AGENT_DIR" : "./static/assets/agents",
 
     // Maximum number of game ticks per second the server allows. This is the default for newly created games
-    "MAX_FPS" : 6.667,
+    "MAX_FPS" : 1,
 
     // If true, only allow traffic from `psiturk_uri` 
     "EXPERIMENT_MODE" : false,
