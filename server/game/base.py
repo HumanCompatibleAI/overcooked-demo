@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from queue import Queue, LifoQueue, Empty, Full
 from threading import Lock, Thread, Event, Semaphore
-from game.utils import SafeGameMethod
+from game.utils import SafeGameMethod, GameError
 import game
 
 class Game(ABC):
@@ -44,6 +44,7 @@ class Game(ABC):
         is_active(bool): Whether the game is currently being played or not
         fps (int): Number of times `tick` will be called per second
         debug (bool): Whether to print verbose warnings for debugging
+        ignore_invalid_actions (bool): Whether to silently fail if client tries to enqueue invalid action. Rasie GameError if false
         """
         self.players = []
         self.spectators = set()
@@ -53,6 +54,7 @@ class Game(ABC):
         self._is_active_ = False
         self.fps = min(kwargs.get('fps', game.static.MAX_FPS), game.static.MAX_FPS)
         self.debug = kwargs.get('debug', False)
+        self.ignore_invalid_actions = kwargs.get('ignore_invalid_actions', True)
 
     @abstractmethod
     def _is_full(self):
@@ -210,18 +212,29 @@ class Game(ABC):
         Add (player_id, action) pair to the pending action queue, without modifying underlying game state
 
         Note: This function IS thread safe
+
+        Returns whether the action was successfully enqueued
         """
         if not self._is_active():
             # Could run into issues with is_active not being thread safe
-            return
+            return False
         if player_id not in self.players:
             # Only players actively in game are allowed to enqueue actions
-            return
+            return False
+
+        # Whether current action is valid
+        valid = self.is_valid_action(player_id, action)
+        if not valid:
+            if self.ignore_invalid_actions:
+                return False
+            else:
+                raise GameError("Action {} for player ID {} is invalid for current game state!".format(action, player_id))
         try:
             player_idx = self.players.index(player_id)
             self.pending_actions[player_idx].put(action)
+            return True
         except Full:
-            pass
+            return False
     
     @SafeGameMethod
     def enqueue_action(self, player_id, action):
@@ -356,6 +369,17 @@ class Game(ABC):
     @SafeGameMethod
     def get_data(self):
         return self._get_data()
+
+    @abstractmethod
+    def _is_valid_action(self, player_id, action):
+        """
+        Returns whether the `action` is valid for `player_id` in the current game state
+        """
+        pass
+
+    @SafeGameMethod
+    def is_valid_action(self, player_id, action):
+        return self._is_valid_action(player_id, action)
 
 class NPCGame(Game):
     """Abstract Class for coordinating computer controlled players (NPCs) with human controlled players
@@ -525,8 +549,12 @@ class TurnBasedGame(NPCGame):
         token_acquired = self.turn_tokens[player_id].acquire(blocking=False)
         if token_acquired:
             # If we got here, it's our turn
-            super(TurnBasedGame, self)._enqueue_action(player_id, action)
-            return True
+            successfully_enqueued = super(TurnBasedGame, self)._enqueue_action(player_id, action)
+
+            # Still our turn if we didn't successfully enqueue
+            if not successfully_enqueued:
+                self.turn_tokens[player_id].release()
+            return successfully_enqueued
         else:
             # This means the semaphore was low (turn token not found) so it's not our turn
             # Log warning and do nothing

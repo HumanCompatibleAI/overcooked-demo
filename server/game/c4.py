@@ -1,6 +1,7 @@
 from game.base import TurnBasedGame
 from kaggle_environments import make
 from enum import Enum
+import numpy as np
 
 class ConnectFourGame(TurnBasedGame):
 
@@ -25,6 +26,14 @@ class ConnectFourGame(TurnBasedGame):
         if playerOne != 'human':
             player_zero_id = playerOne + '_1'
             self._add_player(player_zero_id, idx=1, buff_size=1, is_human=False)
+
+    @property
+    def config(self):
+        return self.base_env.configuration
+
+    @property
+    def board_shape(self):
+        return (self.config['rows'], self.config['columns'])
 
     @property
     def active_player_idx(self):
@@ -52,6 +61,14 @@ class ConnectFourGame(TurnBasedGame):
         if 'board' in p1_obs:
             return p1_obs['board']
         raise ValueError("`board` not found in either player observation!")
+    
+    @property
+    def board_as_grid(self):
+        return np.array(self.board, np.int).reshape(*self.board_shape)
+
+    @property
+    def open_columns(self):
+        return np.argwhere(self.board_as_grid[0] == 0).flatten()
 
     @property
     def player_statuses(self):
@@ -81,8 +98,7 @@ class ConnectFourGame(TurnBasedGame):
         return self.player_statuses[player_idx]
 
     def get_default_action(self, player_id):
-        # TODO
-        return 0
+        return np.random.sample(self.open_columns)
 
     def advance_turn(self):
         super(ConnectFourGame, self).advance_turn()
@@ -98,11 +114,41 @@ class ConnectFourGame(TurnBasedGame):
     def _is_full(self):
         return self.num_players == self.max_players
 
+    def _is_valid_action(self, player_id, action):
+        int_action = self.tryParseAction(action)
+        return int_action in self.open_columns
+
+    def tryParseAction(self, action):
+        """
+        Convert `action` (could be string or int) to integer actoin base_env can handle
+        Returns -1 if action is invalid
+        """
+        int_action = -1
+        if type(action) == str:
+            try:
+                int_action = int(action)
+            except Exception:
+                pass
+        elif type(action) == int:
+            int_action = action
+        return int_action
+
+
     def _apply_action(self, player_idx, action):
+        # State sanity check
         if not self.get_player_status(player_idx=player_idx) == self.PlayerStatus.ACTIVE:
             raise ValueError("Apply action called for player_idx={} but that player is not active!".format(player_idx))
+        
+        # Type conversion + check
+        int_action = self.tryParseAction(action)
+        if action == -1:
+            raise ValueError("Action {} provided was invalid!".format(action))
+
+        # Convert to joint action required by base env
         joint_action = [0] * self.num_players
-        joint_action[player_idx] = action
+        joint_action[player_idx] = int_action
+
+        # Do the thing
         self.base_env.step(joint_action)
 
     def _activate(self):
@@ -114,12 +160,14 @@ class ConnectFourGame(TurnBasedGame):
 
     def _to_json(self):
         obj_dict = {}
+        obj_dict['base_env_config'] = self.config
         obj_dict['state'] = self._get_state()
         return obj_dict
 
     def _get_state(self):
         state_dict = {}
         state_dict['board'] = self.board
+        state_dict['open_columns'] = self.open_columns
         return state_dict
 
     def _get_policy(self, npc_id, idx):

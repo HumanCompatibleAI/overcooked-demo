@@ -220,6 +220,38 @@ class TestConnectFourGame(unittest.TestCase):
         self.assertEqual(self.sync_npc_game.board, expected_board)
         self.sync_npc_game.deactivate()
 
+    def test_invalid_actions(self):
+        players = ["player_one", "player_two"]
+        for player in players:
+            self.sync_game.add_player(player)
+        self.sync_game.activate()
+
+        valid_actions = [0, "0", self.sync_game.config['columns']-1, str(self.sync_game.config['columns']-1)]
+        invalid_actions = [-1, self.sync_game.config['columns'], "-2", str(self.sync_game.config['columns'])]
+
+        successfully_enqueued = True
+        unsuccessfully_enqueued = False
+        for i in range(len(valid_actions)):
+            # Alternate who is the active player each turn
+            active_player_idx = i % len(players)
+            active_player_id = players[active_player_idx]
+            valid_action = valid_actions[i]
+            invalid_action = invalid_actions[i]
+
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(active_player_id, invalid_action) or unsuccessfully_enqueued
+            successfully_enqueued = self.sync_game.enqueue_action(active_player_id, valid_action) and successfully_enqueued
+            self.sync_game.tick()
+
+        self.assertTrue(successfully_enqueued)
+        self.assertFalse(unsuccessfully_enqueued)
+
+        for _ in range(self.sync_game.config['rows'] - 2):
+            self.sync_game.enqueue_action(self.sync_game.active_player_id, 0)
+            self.sync_game.tick()
+
+        self.assertFalse(self.sync_game.enqueue_action(self.sync_game.active_player_id, 0))
+        self.assertTrue(self.sync_game.enqueue_action(self.sync_game.active_player_id, 1))
+
     def _game_loop(self, game):
         while not self.exit_event.is_set() and not game.is_active():
             time.sleep(0.5)
