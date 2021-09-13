@@ -44,6 +44,8 @@ class ConnectFourGame(TurnBasedGame):
 
     @property
     def board(self):
+        if not self.base_env:
+            return None
         p0_obs, p1_obs = [obs['observation'] for obs in self.state]
         if 'board' in p0_obs:
             return p0_obs['board']

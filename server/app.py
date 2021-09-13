@@ -434,7 +434,7 @@ def c4():
     
     layout_to_agents = get_layout_to_agents()
     config = {
-        "foo" : "bar"
+        "game_name" : "c4"
     }
     return render_template('c4.html', config=config)
 
