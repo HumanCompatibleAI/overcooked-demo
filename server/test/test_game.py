@@ -1,5 +1,5 @@
 from math import exp
-import unittest, sys, os, time, random
+import unittest, sys, os, time, random, json
 from threading import Thread, Event, Lock
 
 _file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -251,6 +251,24 @@ class TestConnectFourGame(unittest.TestCase):
 
         self.assertFalse(self.sync_game.enqueue_action(self.sync_game.active_player_id, 0))
         self.assertTrue(self.sync_game.enqueue_action(self.sync_game.active_player_id, 1))
+    
+    def test_json_serializability(self):
+        players = ["player_one", "player_two"]
+        for player in players:
+            self.sync_game.add_player(player)
+        self.sync_game.activate()
+
+        obj = self.sync_game.to_json()
+        serializable = False
+
+        try:
+            json_str = json.dumps(obj)
+            serializable = True
+        except Exception as e:
+            raise e
+            serializable = False
+
+        self.assertTrue(serializable)
 
     def _game_loop(self, game):
         while not self.exit_event.is_set() and not game.is_active():

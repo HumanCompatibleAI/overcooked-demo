@@ -4,6 +4,10 @@ var socket = io();
 // Determines which type of game we're playing
 var game_name = config.game_name;
 
+// TODO: These values should come from server
+var numColumns = 7;
+var validActions = [0, 1, 2, 3, 4, 5, 6];
+
 /* * * * * * * * * * * * * * * * 
  * Button click event handlers *
  * * * * * * * * * * * * * * * */
@@ -221,6 +225,7 @@ socket.on("server_error", function(data) {
 
     // Game ended unexpectedly
     $('#server-error').show();
+    console.log(data.error);
 });
 
 socket.on('end_lobby', function() {
@@ -250,31 +255,19 @@ function enable_key_listener() {
         if (e.originalEvent.repeat) { // Holding down key only counts as one keypress
             return;
         }
-        let action = 'STAY'
-        switch (e.which) {
-            case 37: // left
-                action = 'LEFT';
-                break;
 
-            case 38: // up
-                action = 'UP';
-                break;
+        // Get number pressed, 1-9
+        let keyNum = e.which - 48;
 
-            case 39: // right
-                action = 'RIGHT';
-                break;
-
-            case 40: // down
-                action = 'DOWN';
-                break;
-
-            case 32: //space
-                action = 'SPACE';
-                break;
-
-            default: // exit this handler for other keys
-                return; 
+        // Convert to C4 action
+        let action = keyNum - 1;
+        if (!validActions.includes(action)) {
+            // Not a valid action on this board
+            return;
         }
+
+        // Send action to game server
+        action = action.toString();
         e.preventDefault();
         socket.emit('action', { 'action' : action });
     });

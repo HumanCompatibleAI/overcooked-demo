@@ -64,11 +64,11 @@ class ConnectFourGame(TurnBasedGame):
     
     @property
     def board_as_grid(self):
-        return np.array(self.board, np.int).reshape(*self.board_shape)
+        return np.array(self.board, np.int).reshape(*self.board_shape).tolist()
 
     @property
     def open_columns(self):
-        return np.argwhere(self.board_as_grid[0] == 0).flatten()
+        return np.argwhere(np.array(self.board_as_grid[0]) == 0).flatten().tolist()
 
     @property
     def player_statuses(self):
