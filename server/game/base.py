@@ -589,6 +589,7 @@ class TurnBasedGame(NPCGame):
             if self.curr_player == prev_player and self.curr_turn_number == prev_turn_number:
                 # We went through a sleep cycle and no turn advance happened, timeout!
                 default_action = self.get_default_action(self.curr_player)
+                print("keys inside timeout", self.turn_tokens.keys())
                 self._enqueue_action(self.curr_player, default_action)
             else:
                 # Update local turn state

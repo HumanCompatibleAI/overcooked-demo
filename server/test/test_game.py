@@ -1,6 +1,6 @@
 from math import exp
 import unittest, sys, os, time, random
-from threading import Thread, Event
+from threading import Thread, Event, Lock
 
 _file_dir = os.path.dirname(os.path.abspath(__file__))
 _server_dir = os.path.abspath(os.path.join(_file_dir, '..'))
@@ -21,22 +21,32 @@ class TestConnectFourGame(unittest.TestCase):
 
     def setUp(self):
         game_module._configure(100, '.', 60)
-        self.async_game = ConnectFourGame(debug=False)
-        self.sync_game = ConnectFourGame(debug=False)
+        self.async_game = ConnectFourGameTestWrapper(debug=False, fps=30)
+        self.sync_game = ConnectFourGameTestWrapper(debug=False)
         self.sync_npc_game = ConnectFourGameTestWrapper(debug=False, playerZero="my_npc")
+        self.async_npc_game = ConnectFourGameTestWrapper(debug=False, playerZero="my_npc")
+        self.games = [self.async_game, self.sync_game, self.sync_npc_game, self.async_npc_game]
         self.exit_event = Event()
-        self.t = Thread(target=self._game_loop, args=())
-        self.t.start()
+
+        self.threads = []
+        self.threads.append(Thread(target=self._game_loop, args=(self.async_game,)))
+        self.threads.append(Thread(target=self._game_loop, args=(self.async_npc_game,)))
+
+        for t in self.threads:
+            t.start()
 
     def tearDown(self):
-        if self.async_game.is_active():
-            self.async_game.deactivate()
-        if self.sync_game.is_active():
-            self.sync_game.deactivate()
-        if self.sync_npc_game.is_active():
-            self.sync_npc_game.deactivate()
+        # Deactivate all active games
+        for game in self.games:
+            if game.is_active():
+                game.deactivate()
+
+        # Signal all game loop threads to exit
         self.exit_event.set()
-        self.t.join()
+        
+        # Join all game loop threads
+        for t in self.threads:
+            t.join()
 
     def test_initialization(self):
         self.assertFalse(self.sync_game.is_ready())
@@ -115,26 +125,74 @@ class TestConnectFourGame(unittest.TestCase):
 
         expected_board = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,1,2,0,0,0]
 
-        time_between_actions_in_seconds = 5e-1
+        time_between_actions_in_seconds = (1/self.async_game.fps) * 20
         successfully_enqueued = True
+        unsuccessfully_enqueued = False
         num_turns = 4
-        for i in range(num_turns):
-            active_player_idx = i % len(players)
+        for curr_turn in range(num_turns):
+            # Alternate who is the active player each turn
+            active_player_idx = curr_turn % len(players)
             active_player_id = players[active_player_idx]
             inactive_player_idx = 1 - active_player_idx
             inactive_player_id = players[inactive_player_idx]
-            player_action = i
+            player_action = curr_turn
             
+            # Turn state validation
             self.assertEqual(active_player_id, self.async_game.active_player_id)
             self.assertEqual(inactive_player_id, self.async_game.inactive_player_id)
             self.assertEqual(active_player_idx, self.async_game.active_player_idx)
             self.assertEqual(inactive_player_idx, self.async_game.inactive_player_idx)
-            successfully_enqueued = self.async_game.enqueue_action(active_player_id, player_action) and successfully_enqueued
-            time.sleep(time_between_actions_in_seconds)
+
+            # Grab game lock to ensure tick can't happen between these calls
+            with self.async_game.lock:
+                # Ensure player whose turn it is can successfully enqueue action
+                successfully_enqueued = self.async_game.enqueue_action(active_player_id, player_action) and successfully_enqueued
+
+                # Ensure inactive player can't enqueue actions
+                unsuccessfully_enqueued = self.async_game.enqueue_action(inactive_player_id, player_action) or unsuccessfully_enqueued
+
+                # Ensure active player can't enqueue multiple actions
+                unsuccessfully_enqueued = self.async_game.enqueue_action(active_player_id, player_action) or unsuccessfully_enqueued
+
+            # Busy-wait for turn to be propogated
+            while self.async_game.curr_turn_number <= curr_turn:
+                time.sleep(1/self.async_game.fps)
 
         self.assertEqual(self.async_game.board, expected_board)
         self.async_game.deactivate()
         self.assertTrue(successfully_enqueued)
+        self.assertFalse(unsuccessfully_enqueued)
+
+    def test_several_turns_ai_async(self):
+        player_id = "player_one"
+        self.async_npc_game.add_player(player_id)
+        self.async_npc_game.activate()
+
+        expected_board = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,2,0,0,0,0,0,0,1,2,0,0,0,0,0]
+
+        num_turns = 4
+        successfully_enqueued = True
+        unsuccessfully_enqueued = False
+        for curr_turn in range(num_turns):
+            with self.async_npc_game.lock:
+                player_action = curr_turn // 2
+                we_are_active = self.async_npc_game.active_player_id == player_id
+                if we_are_active:
+                    successfully_enqueued = self.async_npc_game.enqueue_action(player_id, player_action) and successfully_enqueued
+                
+                unsuccessfully_enqueued = self.async_npc_game.enqueue_action(player_id, player_action) or unsuccessfully_enqueued
+
+            # Busy-wait for turn to be propogated
+            while self.async_npc_game.curr_turn_number <= curr_turn:
+                time.sleep(1/self.async_npc_game.fps)
+
+        self.assertTrue(successfully_enqueued)
+        self.assertFalse(unsuccessfully_enqueued)
+        num_nonzeros_expected = sum([int(el != 0) for el in expected_board])
+        num_nonzeros_actual = sum([int(el != 0) for el in self.async_npc_game.board])
+        self.assertEqual(num_nonzeros_expected, num_nonzeros_actual)
+        self.assertEqual(self.async_npc_game.board, expected_board)
+        self.async_npc_game.deactivate()
 
     def test_several_turns_ai_sync(self):
         player_id = "player_one"
@@ -159,25 +217,22 @@ class TestConnectFourGame(unittest.TestCase):
 
         self.assertTrue(successfully_enqueued)
         self.assertFalse(unsuccessfully_enqueued)
-        num_nonzeros_expected = sum([int(el != 0) for el in expected_board])
-        num_nonzeros_actual = sum([int(el != 0) for el in self.sync_npc_game.board])
-        self.assertEqual(num_nonzeros_expected, num_nonzeros_actual)
         self.assertEqual(self.sync_npc_game.board, expected_board)
         self.sync_npc_game.deactivate()
 
-    def _game_loop(self):
-        while not self.exit_event.is_set() and not self.async_game.is_active():
+    def _game_loop(self, game):
+        while not self.exit_event.is_set() and not game.is_active():
             time.sleep(0.5)
         
-        fps = min(self.async_game.fps, game_module.static.MAX_FPS)
+        fps = min(game.fps, game_module.static.MAX_FPS)
         status = Game.Status.ACTIVE
         while not self.exit_event.is_set() and status != Game.Status.DONE and status != Game.Status.INACTIVE:
-            with self.async_game.lock:
-                status = self.async_game.tick()
+            with game.lock:
+                status = game.tick()
             if status == Game.Status.RESET:
-                with self.async_game.lock:
-                    _ = self.async_game.get_data()
-                time.sleep(self.async_game.reset_timeou1000)
+                with game.lock:
+                    _ = game.get_data()
+                time.sleep(game.reset_timeou1000)
             time.sleep(1/fps)
 
 
