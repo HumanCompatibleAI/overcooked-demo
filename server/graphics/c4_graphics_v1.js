@@ -574,29 +574,14 @@ function renderer({
         }
       }
     }
-  
-    // Upgrade the legend.
-    if (agents.length && (!agents[0].color || !agents[0].image)) {
-      const getPieceImage = mark => {
-        const pieceCanvas = document.createElement("canvas");
-        parent.appendChild(pieceCanvas);
-        pieceCanvas.style.marginLeft = "10000px";
-        pieceCanvas.width = 100;
-        pieceCanvas.height = 100;
-        c = pieceCanvas.getContext("2d");
-        c.translate(10, 10);
-        c.scale(0.8, 0.8);
-        drawPiece(mark);
-        const dataUrl = pieceCanvas.toDataURL();
-        parent.removeChild(pieceCanvas);
-        return dataUrl;
-      };
-  
-      agents.forEach(agent => {
-        agent.color = getColor(agent.index + 1);
-        agent.image = getPieceImage(agent.index + 1);
-      });
-      update({ agents });
+
+    // Label the columns with the numbers needed for user input
+    for (let col = 0; col < columns; col++) {
+        let x = xOffset + cellSize * col + cellSize / 2 - (cellSize * (1-cellInset)) / 2;
+        let y = yOffset;
+        c.font = "40px Serif";
+        c.strokeStyle = "white";
+        c.strokeText(col+1, x, y);
     }
   };
 const h = htm.bind(preact.h);
@@ -623,46 +608,6 @@ const Loading = styled.div`
         transform: rotate(360deg);
     }
     }
-`;
-
-const Logo = styled(
-    (props) => h`
-    <a href="https://kaggle.com" target="_blank" className=${props.className}>
-    <svg width="62px" height="20px" viewBox="0 0 62 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
-        <g fill="#1EBEFF" fill-rule="nonzero">
-        <path d="M10.2,17.8c0,0.1-0.1,0.1-0.2,0.1H7.7c-0.1,0-0.3-0.1-0.4-0.2l-3.8-4.9l-1.1,1v3.8 c0,0.2-0.1,0.3-0.3,0.3H0.3c-0.2,0-0.3-0.1-0.3-0.3V0.3C0.1,0.1,0.2,0,0.3,0h1.8c0.2,0,0.3,0.1,0.3,0.3V11L7,6.3 c0.1-0.1,0.2-0.2,0.4-0.2h2.4c0.1,0,0.2,0,0.2,0.1c0,0.1,0,0.2,0,0.2l-4.9,4.7l5.1,6.3C10.2,17.6,10.2,17.7,10.2,17.8z"/>
-        <path d="M19.6,17.9h-1.8c-0.2,0-0.3-0.1-0.3-0.3v-0.4c-0.8,0.6-1.8,0.9-3,0.9c-1.1,0-2-0.3-2.8-1 c-0.8-0.7-1.2-1.6-1.2-2.7c0-1.7,1.1-2.9,3.2-3.5c0.8-0.2,2.1-0.5,3.8-0.6c0.1-0.6-0.1-1.2-0.5-1.7c-0.4-0.5-1-0.7-1.7-0.7 c-1,0-2,0.4-3,1C12.2,9.1,12.1,9.1,12,9l-0.9-1.3C11,7.5,11,7.4,11.1,7.3c1.3-0.9,2.7-1.4,4.2-1.4c1.1,0,2.1,0.3,2.8,0.8 c1.1,0.8,1.7,2,1.7,3.7v7.3C19.9,17.8,19.8,17.9,19.6,17.9z M17.5,12.4c-1.7,0.2-2.9,0.4-3.5,0.7c-0.9,0.4-1.2,0.9-1.1,1.6 c0.1,0.4,0.2,0.7,0.6,0.9c0.3,0.2,0.7,0.4,1.1,0.4c1.2,0.1,2.2-0.2,2.9-1V12.4z"/>
-        <path d="M30.6,22.5c-0.9,1-2.3,1.5-4,1.5c-1,0-2-0.3-2.9-0.8c-0.2-0.1-0.4-0.3-0.7-0.5 c-0.3-0.2-0.6-0.5-0.9-0.7c-0.1-0.1-0.1-0.2,0-0.4l1.2-1.2c0.1-0.1,0.1-0.1,0.2-0.1c0.1,0,0.1,0,0.2,0.1c1,1,1.9,1.5,2.8,1.5 c2.1,0,3.2-1.1,3.2-3.3v-1.4c-0.8,0.7-1.9,1-3.3,1c-1.7,0-3-0.6-4-1.9c-0.8-1.1-1.3-2.5-1.3-4.2c0-1.6,0.4-3,1.2-4.1 c0.9-1.3,2.3-2,4-2c1.3,0,2.4,0.3,3.3,1V6.4c0-0.2,0.1-0.3,0.3-0.3h1.8c0.2,0,0.3,0.1,0.3,0.3v11.7C32,20,31.5,21.5,30.6,22.5z M29.7,9.9c-0.4-1.1-1.4-1.7-3-1.7c-2,0-3.1,1.3-3.1,3.8c0,1.4,0.3,2.4,1,3.1c0.5,0.5,1.2,0.8,2,0.8c1.6,0,2.7-0.6,3.1-1.7V9.9z"/>
-        <path d="M42.9,22.5c-0.9,1-2.3,1.5-4,1.5c-1,0-2-0.3-2.9-0.8c-0.2-0.1-0.4-0.3-0.7-0.5 c-0.3-0.2-0.6-0.5-0.9-0.7c-0.1-0.1-0.1-0.2,0-0.4l1.2-1.2c0.1-0.1,0.1-0.1,0.2-0.1c0.1,0,0.1,0,0.2,0.1c1,1,1.9,1.5,2.8,1.5 c2.1,0,3.2-1.1,3.2-3.3v-1.4c-0.8,0.7-1.9,1-3.3,1c-1.7,0-3-0.6-4-1.9c-0.8-1.1-1.3-2.5-1.3-4.2c0-1.6,0.4-3,1.2-4.1 c0.9-1.3,2.3-2,4-2c1.3,0,2.4,0.3,3.3,1V6.4c0-0.2,0.1-0.3,0.3-0.3H44c0.2,0,0.3,0.1,0.3,0.3v11.7C44.3,20,43.8,21.5,42.9,22.5z M42,9.9c-0.4-1.1-1.4-1.7-3-1.7c-2,0-3.1,1.3-3.1,3.8c0,1.4,0.3,2.4,1,3.1c0.5,0.5,1.2,0.8,2,0.8c1.6,0,2.7-0.6,3.1-1.7L42,9.9 L42,9.9z"/>
-        <path d="M48.3,17.9h-1.8c-0.2,0-0.3-0.1-0.3-0.3V0.3c0-0.2,0.1-0.3,0.3-0.3h1.8c0.2,0,0.3,0.1,0.3,0.3 v17.3C48.5,17.8,48.5,17.9,48.3,17.9z"/>
-        <path d="M61.4,12.6c0,0.2-0.1,0.3-0.3,0.3h-8.5c0.1,0.9,0.5,1.6,1.1,2.2c0.7,0.6,1.6,0.9,2.7,0.9 c1,0,1.8-0.3,2.6-0.8c0.2-0.1,0.3-0.1,0.4,0l1.2,1.3c0.1,0.1,0.1,0.3,0,0.4c-1.3,0.9-2.7,1.4-4.4,1.4c-1.8,0-3.3-0.6-4.4-1.8 c-1.1-1.2-1.7-2.7-1.7-4.5c0-1.7,0.6-3.2,1.7-4.4c1-1.1,2.4-1.6,4.1-1.6c1.6,0,2.9,0.6,4,1.7c1.1,1.2,1.6,2.6,1.5,4.4L61.4,12.6 z M58,8.7c-0.6-0.5-1.3-0.8-2.1-0.8c-0.8,0-1.5,0.3-2.1,0.8c-0.6,0.5-1,1.2-1.1,2H59C59,9.9,58.6,9.3,58,8.7z"/>
-        </g>
-    </svg>
-    </a>
-`
-)`
-    display: inline-flex;
-`;
-
-const Header = styled((props) => {
-    const { environment } = useContext(Context);
-
-    return h`<div className=${props.className} >
-    <${Logo} />
-    <span><b>Left / Right Arrow:</b> Increase / Decrease Step</span><span><b>0-9 Row Keys:</b> Playback Speed</span><span><b>Space:</b> Pause / Play</span>
-    ${environment.title}
-    </div>`;
-})`
-    align-items: center;
-    border-bottom: 4px solid #212121;
-    box-sizing: border-box;
-    color: #fff;
-    display: flex;
-    flex: 0 0 36px;
-    font-size: 14px;
-    justify-content: space-between;
-    padding: 0 8px;
-    width: 100%;
 `;
 
 const Renderer = styled((props) => {
@@ -754,224 +699,9 @@ const Viewer = styled((props) => {
     width: 100%;
 `;
 
-// Partitions the elements of arr into subarrays of max length num.
-const groupIntoSets = (arr, num) => {
-    const sets = [];
-    arr.forEach(a => {
-    if (sets.length === 0 || sets[sets.length - 1].length === num) {
-        sets.push([]);
-    }
-    sets[sets.length - 1].push(a);
-    });
-    return sets;
-}
-
-// Expects `width` input prop to set proper max-width for agent name span.
-const Legend = styled((props) => {
-    const { agents, legend } = useContext(Context);
-
-    const agentPairs = groupIntoSets(agents.sort((a, b) => a.index - b.index), 2);
-
-    return h`<div className=${props.className}>
-    ${agentPairs.map(agentList =>
-        h`<ul>
-            ${agentList.map(a =>
-            h`<li key=${a.id} title="id: ${a.id}" style="color:${a.color || "#FFF"}">
-                ${a.image && h`<img src=${a.image} />`}
-                <span>${a.name}</span>
-                </li>`
-            )}
-        </ul>`)}
-    </div>`;
-})`
-    background-color: #000b2a;
-    font-family: sans-serif;
-    font-size: 14px;
-    height: 48px;
-    width: 100%;
-
-    ul {
-    align-items: center;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    }
-
-    li {
-    align-items: center;
-    display: inline-flex;
-    transition: color 1s;
-    }
-
-    span {
-    max-width: ${p => (p.width || 400) * 0.5 - 36}px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    }
-
-    img {
-    height: 24px;
-    margin-left: 4px;
-    margin-right: 4px;
-    width: 24px;
-    }
-`;
-
-const StepInput = styled.input.attrs({
-    type: "range",
-})`
-    appearance: none;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 2px;
-    display: block;
-    flex: 1;
-    height: 4px;
-    opacity: 0.8;
-    outline: none;
-    transition: opacity 0.2s;
-    width: 100%;
-
-    &:hover {
-    opacity: 1;
-    }
-
-    &::-webkit-slider-thumb {
-    appearance: none;
-    background: #1ebeff;
-    border-radius: 100%;
-    cursor: pointer;
-    height: 12px;
-    margin: 0;
-    position: relative;
-    width: 12px;
-
-    &::after {
-        content: "";
-        position: absolute;
-        top: 0px;
-        left: 0px;
-        width: 200px;
-        height: 8px;
-        background: green;
-    }
-    }
-`;
-
-const PlayButton = styled.button`
-    align-items: center;
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    flex: 0 0 56px;
-    font-size: 20px;
-    height: 40px;
-    justify-content: center;
-    opacity: 0.8;
-    outline: none;
-    transition: opacity 0.2s;
-
-    &:hover {
-    opacity: 1;
-    }
-`;
-  
-const StepCount = styled.span`
-    align-items: center;
-    color: white;
-    display: flex;
-    font-size: 14px;
-    justify-content: center;
-    opacity: 0.8;
-    padding: 0 16px;
-    pointer-events: none;
-`;
-
-const Controls = styled((props) => {
-    const { environment, pause, play, playing, setStep, step } = useContext(
-    Context
-    );
-    const value = step + 1;
-    const onClick = () => (playing ? pause() : play());
-    const onInput = (e) => {
-    pause();
-    setStep(parseInt(e.target.value) - 1);
-    };
-
-    return h`
-    <div className=${props.className}>
-        <${PlayButton} onClick=${onClick}><svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24" fill="#FFFFFF">${
-    playing
-        ? h`<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/><path d="M0 0h24v24H0z" fill="none"/>`
-        : h`<path d="M8 5v14l11-7z"/><path d="M0 0h24v24H0z" fill="none"/>`
-    }</svg><//>
-        <${StepInput} min="1" max=${
-    environment.steps.length
-    } value="${value}" onInput=${onInput} />
-        <${StepCount}>${value} / ${environment.steps.length}<//>
-    </div>
-    `;
-})`
-    align-items: center;
-    border-top: 4px solid #212121;
-    display: flex;
-    flex: 0 0 44px;
-    width: 100%;
-`;
-  
-const Info = styled((props) => {
-    const {
-    environment,
-    playing,
-    step,
-    speed,
-    animate,
-    header,
-    controls,
-    settings,
-    } = useContext(Context);
-
-    return h`
-    <div className=${props.className}>
-        info:
-        step(${step}),
-        playing(${playing ? "T" : "F"}),
-        speed(${speed}),
-        animate(${animate ? "T" : "F"})
-    </div>`;
-})`
-    color: #888;
-    font-family: monospace;
-    font-size: 12px;
-`;
-  
-const Settings = styled((props) => {
-    const { environment, pause, play, playing, setStep, step } = useContext(
-    Context
-    );
-
-    return h`
-    <div className=${props.className}>
-        <${Info} />
-    </div>
-    `;
-})`
-    background: #fff;
-    border-top: 4px solid #212121;
-    box-sizing: border-box;
-    padding: 20px;
-    width: 100%;
-
-    h1 {
-    font-size: 20px;
-    }
-`;
-  
 const Player = styled((props) => {
     const context = useContext(Context);
-    const { agents, controls, header, legend, loading, settings, width } = context;
+    const { loading, width } = context;
     return h`
     <div className=${props.className}>
         ${loading && h`<${Loading} />`}
@@ -1126,70 +856,63 @@ const App = () => {
     window.update = updateContext;
 
     // Ability to communicate with ipython.
-    const execute = (contextRef.current.execute = (source) =>
-    new Promise((resolve, reject) => {
-        try {
-        window.parent.IPython.notebook.kernel.execute(source, {
-            iopub: {
-            output: (resp) => {
-                const type = resp.msg_type;
-                if (type === "stream") return resolve(resp.content.text);
-                if (type === "error") return reject(new Error(resp.evalue));
-                return reject(new Error("Unknown message type: " + type));
-            },
-            },
-        });
-        } catch (e) {
-        reject(new Error("IPython Unavailable: " + e));
-        }
-    }));
+    // const execute = (contextRef.current.execute = (source) =>
+    // new Promise((resolve, reject) => {
+    //     try {
+    //     window.parent.IPython.notebook.kernel.execute(source, {
+    //         iopub: {
+    //         output: (resp) => {
+    //             const type = resp.msg_type;
+    //             if (type === "stream") return resolve(resp.content.text);
+    //             if (type === "error") return reject(new Error(resp.evalue));
+    //             return reject(new Error("Unknown message type: " + type));
+    //         },
+    //         },
+    //     });
+    //     } catch (e) {
+    //     reject(new Error("IPython Unavailable: " + e));
+    //     }
+    // }));
 
-    const dummy_execute = (contextRef.current.execute = (source) =>
-    new Promise((resolve, reject) => {
-        let new_steps = JSON.parse(JSON.stringify(window.kaggle.environment.steps));
-        let new_step = JSON.parse(JSON.stringify(new_steps[0]));
-        let new_board = JSON.parse(JSON.stringify(new_step[0].observation.board))
-        new_board[1] = 1;
-        new_step[0].observation.board = new_board;
-        new_step[1].observation.board = new_board;
-        new_steps.push(new_step);
-        console.log(new_steps);
-        return resolve(new_steps);
-    }));
+    // const dummy_execute = (contextRef.current.execute = (source) =>
+    // new Promise((resolve, reject) => {
+    //     let new_steps = JSON.parse(JSON.stringify(window.kaggle.environment.steps));
+    //     let new_step = JSON.parse(JSON.stringify(new_steps[0]));
+    //     let new_board = JSON.parse(JSON.stringify(new_step[0].observation.board))
+    //     new_board[1] = 1;
+    //     new_step[0].observation.board = new_board;
+    //     new_step[1].observation.board = new_board;
+    //     new_steps.push(new_step);
+    //     console.log(new_steps);
+    //     return resolve(new_steps);
+    // }));
 
     // Ability to return an action from an interactive session.
-    contextRef.current.act = (action) => {
-    const id = contextRef.current.environment.id;
-    updateContext({ processing: true });
-    dummy_execute()
-        .then((resp) => {
-        console.log("resolved!")
-        try {
-            updateContext({
-            processing: false,
-            environment: { steps: resp },
-            });
-            console.log("Updated!")
-            play();
-        } catch (e) {
-            updateContext({ processing: resp.split("\n")[0] });
-            console.error(resp, e);
-        }
-        })
-        .catch((e) => console.error(e));
-    };
-    window.act = contextRef.current.act;
+    // contextRef.current.act = (action) => {
+    // const id = contextRef.current.environment.id;
+    // updateContext({ processing: true });
+    // dummy_execute()
+    //     .then((resp) => {
+    //     console.log("resolved!")
+    //     try {
+    //         updateContext({
+    //         processing: false,
+    //         environment: { steps: resp },
+    //         });
+    //         console.log("Updated!")
+    //         play();
+    //     } catch (e) {
+    //         updateContext({ processing: resp.split("\n")[0] });
+    //         console.error(resp, e);
+    //     }
+    //     })
+    //     .catch((e) => console.error(e));
+    // };
+    // window.act = contextRef.current.act;
 
     // Check if currently interactive.
     contextRef.current.isInteractive = () => {
-    const context = contextRef.current;
-    const steps = context.environment.steps;
-    return (
-        context.interactive &&
-        !context.processing &&
-        context.step === steps.length - 1 &&
-        steps[context.step].some((s) => s.status === "ACTIVE")
-    );
+        return false;
     };
 
     return h`
