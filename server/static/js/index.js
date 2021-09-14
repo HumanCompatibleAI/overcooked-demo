@@ -200,6 +200,7 @@ socket.on("game_error", function(data) {
     $('#leave').attr("disabled", true)
 
     // Game ended unexpectedly
+    console.log(data.error);
     $('#error-exit').show();
 });
 

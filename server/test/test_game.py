@@ -22,7 +22,7 @@ class TestConnectFourGame(unittest.TestCase):
     def setUp(self):
         game_module._configure(100, '.', 60)
         self.async_game = ConnectFourGameTestWrapper(debug=False, fps=30)
-        self.sync_game = ConnectFourGameTestWrapper(debug=False)
+        self.sync_game = ConnectFourGameTestWrapper(debug=False, num_games=2)
         self.sync_npc_game = ConnectFourGameTestWrapper(debug=False, playerZero="my_npc")
         self.async_npc_game = ConnectFourGameTestWrapper(debug=False, playerZero="my_npc")
         self.games = [self.async_game, self.sync_game, self.sync_npc_game, self.async_npc_game]
@@ -125,7 +125,6 @@ class TestConnectFourGame(unittest.TestCase):
 
         expected_board = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,1,2,0,0,0]
 
-        time_between_actions_in_seconds = (1/self.async_game.fps) * 20
         successfully_enqueued = True
         unsuccessfully_enqueued = False
         num_turns = 4
@@ -269,6 +268,39 @@ class TestConnectFourGame(unittest.TestCase):
             serializable = False
 
         self.assertTrue(serializable)
+
+    def test_full_game_sync(self):
+        players = ["player_one", "player_two"]
+        for player in players:
+            self.sync_game.add_player(player)
+        self.sync_game.activate()
+
+        # Play one game to completion
+        num_turns = 7
+        successfully_enqueued = True
+        for curr_turn in range(num_turns):
+            player_action = curr_turn % 2
+            successfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) and successfully_enqueued
+            self.assertEqual(self.sync_game.tick(), self.sync_game.Status.ACTIVE)
+
+        # Verify reset correctly detected
+        status = self.sync_game.tick()
+        self.assertTrue(successfully_enqueued)
+        self.assertEqual(status, self.sync_game.Status.RESET)
+
+        # Play second game to completion
+        for curr_turn in range(num_turns):
+            last_turn = curr_turn == num_turns - 1
+            player_action = curr_turn % 2
+            successfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) and successfully_enqueued
+            status = self.sync_game.tick()
+            
+            if not last_turn:
+                self.assertEqual(self.sync_game.tick(), self.sync_game.Status.ACTIVE)
+
+        # Verify end game correctly detected
+        self.assertTrue(successfully_enqueued)
+        self.assertEqual(status, self.sync_game.Status.DONE)
 
     def _game_loop(self, game):
         while not self.exit_event.is_set() and not game.is_active():

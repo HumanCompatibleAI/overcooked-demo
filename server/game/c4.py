@@ -37,19 +37,25 @@ class ConnectFourGame(TurnBasedGame):
 
     @property
     def active_player_idx(self):
-        return self.player_statuses.index(self.PlayerStatus.ACTIVE)
+        try:
+            return self.player_statuses.index(self.PlayerStatus.ACTIVE)
+        except Exception:
+            return -1
 
     @property
     def active_player_id(self):
-        return self.players[self.active_player_idx]
+        return None if self.active_player_idx == -1 else self.players[self.active_player_idx]
 
     @property
     def inactive_player_idx(self):
-        return self.player_statuses.index(self.PlayerStatus.INACTIVE)
+        try:
+            return self.player_statuses.index(self.PlayerStatus.INACTIVE)
+        except Exception:
+            return -1
 
     @property
     def inactive_player_id(self):
-        return self.players[self.inactive_player_idx]
+        return None if self.inactive_player_idx == -1 else self.players[self.inactive_player_idx]
 
     @property
     def board(self):
@@ -102,7 +108,7 @@ class ConnectFourGame(TurnBasedGame):
 
     def advance_turn(self):
         super(ConnectFourGame, self).advance_turn()
-        if self.curr_player != self.active_player_id:
+        if self.active_player_id and self.curr_player != self.active_player_id:
             raise RuntimeError("Inconsistent state! Active player={} but current player={}".format(self.active_player_id, self.curr_player))
 
     def _curr_game_over(self):

@@ -75,7 +75,7 @@ class Game(ABC):
         """
         Returns whether the game has concluded or not
         """
-        return self._curr_game_over and self._is_last_game()
+        return self._curr_game_over() and self._is_last_game()
 
     def _is_ready(self):
         """
