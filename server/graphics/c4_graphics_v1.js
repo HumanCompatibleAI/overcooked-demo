@@ -332,15 +332,6 @@ function renderer({
     if (!canvas) {
       canvas = document.createElement("canvas");
       parent.appendChild(canvas);
-  
-      if (interactive) {
-        canvas.addEventListener("click", evt => {
-          if (!isInteractive()) return;
-          const rect = evt.target.getBoundingClientRect();
-          const col = Math.floor((evt.clientX - rect.left - xOffset) / cellSize);
-          if (col >= 0 && col < columns) act(col);
-        });
-      }
     }
     canvas.style.cursor = isInteractive() ? "pointer" : "default";
   
@@ -855,61 +846,6 @@ const App = () => {
     contextRef.current.update = updateContext;
     window.update = updateContext;
 
-    // Ability to communicate with ipython.
-    // const execute = (contextRef.current.execute = (source) =>
-    // new Promise((resolve, reject) => {
-    //     try {
-    //     window.parent.IPython.notebook.kernel.execute(source, {
-    //         iopub: {
-    //         output: (resp) => {
-    //             const type = resp.msg_type;
-    //             if (type === "stream") return resolve(resp.content.text);
-    //             if (type === "error") return reject(new Error(resp.evalue));
-    //             return reject(new Error("Unknown message type: " + type));
-    //         },
-    //         },
-    //     });
-    //     } catch (e) {
-    //     reject(new Error("IPython Unavailable: " + e));
-    //     }
-    // }));
-
-    // const dummy_execute = (contextRef.current.execute = (source) =>
-    // new Promise((resolve, reject) => {
-    //     let new_steps = JSON.parse(JSON.stringify(window.kaggle.environment.steps));
-    //     let new_step = JSON.parse(JSON.stringify(new_steps[0]));
-    //     let new_board = JSON.parse(JSON.stringify(new_step[0].observation.board))
-    //     new_board[1] = 1;
-    //     new_step[0].observation.board = new_board;
-    //     new_step[1].observation.board = new_board;
-    //     new_steps.push(new_step);
-    //     console.log(new_steps);
-    //     return resolve(new_steps);
-    // }));
-
-    // Ability to return an action from an interactive session.
-    // contextRef.current.act = (action) => {
-    // const id = contextRef.current.environment.id;
-    // updateContext({ processing: true });
-    // dummy_execute()
-    //     .then((resp) => {
-    //     console.log("resolved!")
-    //     try {
-    //         updateContext({
-    //         processing: false,
-    //         environment: { steps: resp },
-    //         });
-    //         console.log("Updated!")
-    //         play();
-    //     } catch (e) {
-    //         updateContext({ processing: resp.split("\n")[0] });
-    //         console.error(resp, e);
-    //     }
-    //     })
-    //     .catch((e) => console.error(e));
-    // };
-    // window.act = contextRef.current.act;
-
     // Check if currently interactive.
     contextRef.current.isInteractive = () => {
         return false;
@@ -933,7 +869,12 @@ function drawState(state) {
 
 function graphics_start(config) {
     container_id = config.container_id;
-    preact.render(h`<${App} />`, document.body, $(`#${container_id}`));
+
+    // TODO: if I had any font end dev skills at all these could be flexed from the static html file
+    $("#game-container").css("height", "80%");
+    $(`#${container_id}`).css("width", "100%");
+    $(`#${container_id}`).css("height", "95%");
+    preact.render(h`<${App} />`, document.getElementById('game'));
 };
 
 function graphics_end() {

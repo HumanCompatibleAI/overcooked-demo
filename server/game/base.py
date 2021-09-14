@@ -2,7 +2,12 @@ from abc import ABC, abstractmethod
 from queue import Queue, LifoQueue, Empty, Full
 from threading import Lock, Thread, Event, Semaphore
 from game.utils import SafeGameMethod, GameError
+from time import time
 import game
+
+# TODO: Make abstract PsiturkGame that directly inherits from game
+# NOTE: Would probably require multiple inheritance
+
 
 class Game(ABC):
 
@@ -236,6 +241,13 @@ class Game(ABC):
         except Full:
             return False
     
+    def try_enqueue_action(self, player_id, action):
+        try:
+            return self.enqueue_action(player_id, action)
+        except GameError as e:
+            print("Warning: GameError {} occurred when enqueueing action for player {}".format(e, player_id))
+            return False
+    
     @SafeGameMethod
     def enqueue_action(self, player_id, action):
         return self._enqueue_action(player_id, action)
@@ -437,7 +449,7 @@ class NPCGame(Game):
             # TODO: figure out a pythonic way to set a thread timeout
             # policy_worker = Thread(target=self.policy.action, args=(state,))
             npc_action, _ = policy.action(state)
-            self._enqueue_action(policy_id, npc_action)
+            self.try_enqueue_action(policy_id, npc_action)
 
     def is_npc(self, player_id=None, player_idx=None):
         if player_id is None and player_idx is None:
@@ -526,13 +538,24 @@ class TurnBasedGame(NPCGame):
         self.curr_game_number = -1
         self.timeout_thread = None
         self.timeout_exit_event = None
+        self._last_turn_start = None
+        self._was_turn_timeout = False
+
+    @property
+    def curr_turn_time(self):
+        if not self._last_turn_start:
+            return ValueError("Game must be active for curr_turn_time to be defined!")
+        return time() - self._last_turn_start
 
     def _add_player(self, player_id, idx=None, buff_size=-1, is_human=True):
-        self.turn_tokens[player_id] = Semaphore(value=0)
+        self.turn_tokens[player_id] = None
         return super(TurnBasedGame, self)._add_player(player_id, idx=idx, buff_size=buff_size, is_human=is_human)
     
     def _activate(self):
         super(TurnBasedGame, self)._activate()
+
+        for player_id in self.turn_tokens:
+            self.turn_tokens[player_id] = Semaphore(value=0)
         self.curr_game_number += 1
         self.advance_turn()
         self.timeout_exit_event = Event()
@@ -541,11 +564,15 @@ class TurnBasedGame(NPCGame):
 
     def _deactivate(self):
         super(TurnBasedGame, self)._deactivate()
+
+        for player_id in self.turn_tokens:
+            self.turn_tokens[player_id] = None
         self.timeout_exit_event.set()
         self.timeout_thread.join()
 
-
     def _enqueue_action(self, player_id, action):
+        if not self._is_active():
+            return False
         token_acquired = self.turn_tokens[player_id].acquire(blocking=False)
         if token_acquired:
             # If we got here, it's our turn
@@ -566,29 +593,44 @@ class TurnBasedGame(NPCGame):
             return False
 
     def _apply_actions(self):
-        played_this_turn = []
+        played_this_turn = [False] * self.num_players
+        joint_action = [None] * self.num_players
+        prev_state = self.state
+        info = {}
+        info['curr_turn_time'] = self.curr_turn_time
+        info['curr_turn_number'] = self.curr_turn_number
+
         for i in range(len(self.players)):
             try:
                 action = self.pending_actions[i].get(block=False)
-                played_this_turn.append(self.players[i])
+                played_this_turn[i] = True
                 self._apply_action(i, action)
+                joint_action[i] = action
             except Empty:
                 pass
         
+        # If current action was enqueued by timeout thread and not by user
+        info['was_turn_timeout'] = self._was_turn_timeout
+
         # A turn occurred this tick
-        if played_this_turn:
+        if any(played_this_turn):
             # Basic sanity checking
-            if len(played_this_turn) != 1:
+            if sum(played_this_turn) != 1:
                 raise RuntimeError("More than one player played this turn!")
-            if played_this_turn[0] != self.curr_player:
+            if self.players[played_this_turn.index(True)] != self.curr_player:
                 raise RuntimeError("Inconsistent state! Player who played this turn was not current player!")
         
             # Update all state pertaining to turn
-            self.advance_turn()    
+            self.advance_turn()
+
+        info['played_this_turn'] = played_this_turn
+        return prev_state, joint_action, info    
 
     def advance_turn(self):
         self.curr_turn_number += 1
         self.curr_player = self.get_next_player()
+        self._last_turn_start = time()
+        self._was_turn_timeout = False
         self.turn_tokens[self.curr_player].release()
 
         for npc_id in self.npc_players:
@@ -617,8 +659,7 @@ class TurnBasedGame(NPCGame):
             if self.curr_player == prev_player and self.curr_turn_number == prev_turn_number:
                 # We went through a sleep cycle and no turn advance happened, timeout!
                 default_action = self.get_default_action(self.curr_player)
-                print("keys inside timeout", self.turn_tokens.keys())
-                self._enqueue_action(self.curr_player, default_action)
+                self._was_turn_timeout = self.try_enqueue_action(self.curr_player, default_action) or self._was_turn_timeout
             else:
                 # Update local turn state
                 prev_player = self.curr_player

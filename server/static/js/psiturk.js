@@ -16,7 +16,7 @@ socket.on('waiting', function(data) {
     try {
         // Show game lobby
         $('#game-over').hide();
-        $("#c4").empty();
+        $("#game").empty();
         $('#lobby').show();
         if (!data.in_game) {
             if (window.intervalID === -1) {
@@ -49,8 +49,8 @@ socket.on('creation_failed', function(data) {
     try {
         // Tell user what went wrong
         let err = data['error']
-        $("#c4").empty();
-        $('#c4').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
+        $("#game").empty();
+        $('#game').append(`<h4>Sorry, game creation code failed with error: ${JSON.stringify(err)}</>`);
         $("error-exit").show();
 
         // Let parent window (psiturk) know error occurred
@@ -79,7 +79,7 @@ socket.on('start_game', function(data) {
             container_id : "c4",
             start_info : data.start_info
         };
-        $("#c4").empty();
+        $("#game").empty();
         $('#game-over').hide();
         $('#lobby').hide();
         $('#reset-game').hide();
@@ -98,14 +98,14 @@ socket.on('reset_game', function(data) {
     try {
         graphics_end();
         disable_key_listener();
-        $("#c4").empty();
         $("#reset-game").show();
         setTimeout(function() {
             $("#reset-game").hide();
             graphics_config = {
-                container_id : "c4",
+                container_id : "game",
                 start_info : data.state
             };
+            $("#game").empty();
             graphics_start(graphics_config);
             enable_key_listener();
 
@@ -131,7 +131,7 @@ socket.on('end_game', function(data) {
         disable_key_listener();
         $('#game-title').hide();
         $('#game-over').show();
-        $("#c4").empty();
+        $("#game").empty();
 
         // Game ended unexpectedly
         if (data.status === 'inactive') {
@@ -189,7 +189,7 @@ socket.on("game_error", function(data) {
         disable_key_listener();
         $('#game-title').hide();
         $('#game-over').show();
-        $("#c4").empty();
+        $("#game").empty();
         $('#lobby').hide();
         $("#error").show();
         $("#error-exit").show();
@@ -232,7 +232,7 @@ socket.on("server_error", function(data) {
         disable_key_listener();
         $('#game-title').hide();
         $('#game-over').show();
-        $("#c4").empty();
+        $("#game").empty();
         $('#lobby').hide();
         $("#error").show();
         $("#error-exit").show();
@@ -262,36 +262,59 @@ socket.on("disconnect", function(data) {
  * Game Key Event Listener *
  * * * * * * * * * * * * * */
 
+// function enable_key_listener() {
+//     $(document).on('keydown', function(e) {
+//         if (e.originalEvent.repeat) { // Holding down key only counts as one keypress
+//             return;
+//         }
+//         let action = 'STAY'
+//         switch (e.which) {
+//             case 37: // left
+//                 action = 'LEFT';
+//                 break;
+
+//             case 38: // up
+//                 action = 'UP';
+//                 break;
+
+//             case 39: // right
+//                 action = 'RIGHT';
+//                 break;
+
+//             case 40: // down
+//                 action = 'DOWN';
+//                 break;
+
+//             case 32: //space
+//                 action = 'SPACE';
+//                 break;
+
+//             default: // exit this handler for other keys
+//                 return; 
+//         }
+//         e.preventDefault();
+//         socket.emit('action', { 'action' : action });
+//     });
+// };
+
 function enable_key_listener() {
     $(document).on('keydown', function(e) {
         if (e.originalEvent.repeat) { // Holding down key only counts as one keypress
             return;
         }
-        let action = 'STAY'
-        switch (e.which) {
-            case 37: // left
-                action = 'LEFT';
-                break;
 
-            case 38: // up
-                action = 'UP';
-                break;
+        // Get number pressed, 1-9
+        let keyNum = e.which - 48;
 
-            case 39: // right
-                action = 'RIGHT';
-                break;
-
-            case 40: // down
-                action = 'DOWN';
-                break;
-
-            case 32: //space
-                action = 'SPACE';
-                break;
-
-            default: // exit this handler for other keys
-                return; 
+        // Convert to C4 action
+        let action = keyNum - 1;
+        if (!validActions.includes(action)) {
+            // Not a valid action on this board
+            return;
         }
+
+        // Send action to game server
+        action = action.toString();
         e.preventDefault();
         socket.emit('action', { 'action' : action });
     });

@@ -1,6 +1,8 @@
+import json
 from game.base import TurnBasedGame
 from kaggle_environments import make
 from enum import Enum
+from time import time
 import numpy as np
 
 class ConnectFourGame(TurnBasedGame):
@@ -14,8 +16,8 @@ class ConnectFourGame(TurnBasedGame):
     def __init__(self, base_params={}, playerZero='human', playerOne='human', num_games=2, npc_wait_time=2, **kwargs):
         super(ConnectFourGame, self).__init__(**kwargs)
         self.base_env_params = base_params
-        self.npc_wait_time = npc_wait_time
-        self.num_games = num_games
+        self.npc_wait_time = int(npc_wait_time)
+        self.num_games = int(num_games)
         self.max_players = 2
         self.base_env = None
 
@@ -180,3 +182,55 @@ class ConnectFourGame(TurnBasedGame):
         # TODO
         return None
 
+class ConnectFourPsiturk(ConnectFourGame):
+
+    def __init__(self, *args, psiturk_uid='-1', **kwargs):
+        super(ConnectFourPsiturk, self).__init__(*args, **kwargs)
+        self.psiturk_uid = str(psiturk_uid)
+        self.trajectory = []
+
+    def _activate(self):
+        """
+        Resets trial ID at start of new "game"
+        """
+        super(ConnectFourPsiturk, self)._activate()
+        self.start_time = time.now()
+        self.trial_id = self.psiturk_uid + str(self.start_time)
+
+    def _apply_actions(self):
+        """
+        Applies pending actions then logs transition data
+        """
+        # Apply MDP logic
+        prev_state, joint_action, info = super(ConnectFourPsiturk, self)._apply_actions()
+
+        # Log data to send to psiturk client
+        if any(info['played_this_turn']):
+            transition = self._get_transition(prev_state, joint_action, info)
+            self.trajectory.append(transition)
+
+    def _get_transition(self, state, joint_action, info):
+        transition = {
+            "state" : json.dumps(state),
+            "joint_action" : json.dumps(joint_action),
+            "time_elapsed" : time() - self.start_time,
+            "curr_turn_time" : info["curr_turn_time"],
+            "curr_turn_number" : info['curr_turn_number'],
+            "was_turn_timeout" : info["was_turn_timeout"],
+            "trial_id" : self.trial_id,
+            "player_0_id" : self.players[0],
+            "player_1_id" : self.players[1],
+            "player_0_is_human" : self.players[0] in self.human_players,
+            "player_1_is_human" : self.players[1] in self.human_players,
+            "player_0_played_this_turn" : info['played_this_turn'][0],
+            "player_1_played_this_turn" : info['played_this_turn'][1]
+        }
+        return transition
+
+    def _get_data(self):
+        """
+        Returns and then clears the accumulated trajectory
+        """
+        data = { "uid" : self.psiturk_uid  + "_" + str(time()), "trajectory" : self.trajectory }
+        self.trajectory = []
+        return data

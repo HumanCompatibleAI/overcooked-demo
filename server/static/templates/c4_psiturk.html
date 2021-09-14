@@ -15,18 +15,48 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
     <script src="//cdn.jsdelivr.net/npm/phaser@3.23.0/dist/phaser.min.js"></script>
 
+    <script src="https://unpkg.com/preact@10.0.1/dist/preact.umd.js"></script>
+    <script src="https://unpkg.com/preact@10.0.1/hooks/dist/hooks.umd.js"></script>
+    <script src="https://unpkg.com/htm@2.2.1/dist/htm.umd.js"></script>
+    <script>
+      // Polyfill for Styled Components
+      window.React = {
+        ...preact,
+        createElement: preact.h,
+        PropTypes: { func: {} },
+      };
+    </script>
+    <script src="https://unpkg.com/styled-components@3.5.0-0/dist/styled-components.min.js"></script>
+  
+
     <script>var config={{config|tojson}}</script>
     <script src="static/js/graphics.js", type="text/javascript"></script>
     <script src="static/js/psiturk.js" type="text/javascript"></script>
 
     <link rel="stylesheet" href="static/css/bootstrap.min.css" type="text/css" />
     <link rel="stylesheet" href="static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.css" crossorigin="anonymous" />
+
+    <style type="text/css">
+      html,
+      body {
+        height: 100%;
+        font-family: sans-serif;
+        margin: 0px;
+      }
+      canvas {
+        /* image-rendering: -moz-crisp-edges;
+        image-rendering: -webkit-crisp-edges;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges; */
+      }
+    </style>
   </head>
   <body>
-    <div id="c4-container" class="text-center">
+    <div id="container" class="text-center">
         <h4 id="game-title" style="display:none">Game in Progress</h4>
         <h4 id="game-over" style="display:none">Game Over</h4>
-        <div id="c4"></div>
+        <div id="game"></div>
         <div id="error" style="display:none">Game ended unexpectedly (probably due to other user disconnecting)</div>
         <div id="reset-game", class="text-center" style="display:none">
             Waiting for next round to start...

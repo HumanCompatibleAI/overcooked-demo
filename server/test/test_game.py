@@ -17,6 +17,10 @@ class ConnectFourGameTestWrapper(ConnectFourGame):
     def _get_policy(self, npc_id, idx):
         return DummyC4NPC()
 
+    def get_default_action(self, player_id):
+        return 3
+
+
 class TestConnectFourGame(unittest.TestCase):
 
     def setUp(self):
@@ -144,10 +148,13 @@ class TestConnectFourGame(unittest.TestCase):
 
             # Grab game lock to ensure tick can't happen between these calls
             with self.async_game.lock:
+                # Ensure inactive player can't enqueue actions
+                unsuccessfully_enqueued = self.async_game.enqueue_action(inactive_player_id, player_action) or unsuccessfully_enqueued
+
                 # Ensure player whose turn it is can successfully enqueue action
                 successfully_enqueued = self.async_game.enqueue_action(active_player_id, player_action) and successfully_enqueued
 
-                # Ensure inactive player can't enqueue actions
+                # Ensure inactive player still can't enqueue actions
                 unsuccessfully_enqueued = self.async_game.enqueue_action(inactive_player_id, player_action) or unsuccessfully_enqueued
 
                 # Ensure active player can't enqueue multiple actions
@@ -278,9 +285,13 @@ class TestConnectFourGame(unittest.TestCase):
         # Play one game to completion
         num_turns = 7
         successfully_enqueued = True
+        unsuccessfully_enqueued = False
         for curr_turn in range(num_turns):
             player_action = curr_turn % 2
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.inactive_player_id, player_action) or unsuccessfully_enqueued
             successfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) and successfully_enqueued
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.inactive_player_id, player_action) or unsuccessfully_enqueued
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) or unsuccessfully_enqueued
             self.assertEqual(self.sync_game.tick(), self.sync_game.Status.ACTIVE)
 
         # Verify reset correctly detected
@@ -292,7 +303,10 @@ class TestConnectFourGame(unittest.TestCase):
         for curr_turn in range(num_turns):
             last_turn = curr_turn == num_turns - 1
             player_action = curr_turn % 2
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.inactive_player_id, player_action) or unsuccessfully_enqueued
             successfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) and successfully_enqueued
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.inactive_player_id, player_action) or unsuccessfully_enqueued
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) or unsuccessfully_enqueued
             status = self.sync_game.tick()
             
             if not last_turn:
@@ -301,6 +315,87 @@ class TestConnectFourGame(unittest.TestCase):
         # Verify end game correctly detected
         self.assertTrue(successfully_enqueued)
         self.assertEqual(status, self.sync_game.Status.DONE)
+
+    def test_turn_timeout_sync(self):
+        self.sync_game.turn_timeout = 0.2
+        players = ["mario", "luigi"]
+        for player in players:
+            self.sync_game.add_player(player)
+        self.sync_game.activate()
+
+        # Play a couple turns
+        num_turns = 2
+        successfully_enqueued = True
+        unsuccessfully_enqueued = False
+        for curr_turn in range(num_turns):
+            player_action = curr_turn % 2
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.inactive_player_id, player_action) or unsuccessfully_enqueued
+            successfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) and successfully_enqueued
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.inactive_player_id, player_action) or unsuccessfully_enqueued
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) or unsuccessfully_enqueued
+            self.assertEqual(self.sync_game.tick(), self.sync_game.Status.ACTIVE)
+
+        # Ensure active player has switched
+        active_player = self.sync_game.active_player_id
+        time.sleep(self.sync_game.turn_timeout * 5)
+        self.sync_game.tick()
+        self.assertNotEqual(active_player, self.sync_game.active_player_id)
+
+        # Play a few more turns to make sure everything works
+        for curr_turn in range(num_turns):
+            player_action = curr_turn % 2
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.inactive_player_id, player_action) or unsuccessfully_enqueued
+            successfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) and successfully_enqueued
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.inactive_player_id, player_action) or unsuccessfully_enqueued
+            unsuccessfully_enqueued = self.sync_game.enqueue_action(self.sync_game.active_player_id, player_action) or unsuccessfully_enqueued
+            self.assertEqual(self.sync_game.tick(), self.sync_game.Status.ACTIVE)
+
+        expected_board = [0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    2,
+    0,
+    1,
+    0,
+    0,
+    0]
+        self.assertEqual(self.sync_game.board, expected_board)
+        self.sync_game.deactivate()
+        self.assertTrue(successfully_enqueued)
+        self.assertFalse(unsuccessfully_enqueued)
 
     def _game_loop(self, game):
         while not self.exit_event.is_set() and not game.is_active():

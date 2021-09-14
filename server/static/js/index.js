@@ -136,11 +136,10 @@ socket.on('reset_game', function(data) {
     if (!window.spectating) {
         disable_key_listener();
     }
-    
-    $("#game").empty();
+
     $("#reset-game").show();
     setTimeout(function() {
-        $("reset-game").hide();
+        $("#reset-game").hide();
         graphics_config = {
             container_id : "game",
             start_info : data.state
@@ -148,6 +147,7 @@ socket.on('reset_game', function(data) {
         if (!window.spectating) {
             enable_key_listener();
         }
+        $("#game").empty();
         graphics_start(graphics_config);
     }, data.timeout);
 });

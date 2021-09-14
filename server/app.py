@@ -1,4 +1,5 @@
 import os, traceback
+from server.game.c4 import ConnectFourPsiturk
 
 # Import and patch the production eventlet server if necessary
 if os.getenv('FLASK_ENV', 'production') == 'production':
@@ -14,7 +15,7 @@ from flask import Flask, render_template, jsonify, request, abort
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from game.utils import GameError
 from game.base import Game
-from game import ConnectFourGame
+from game import ConnectFourGame, ConnectFourPsiturk
 import game as game_module
 
 
@@ -86,7 +87,7 @@ GAME_NAME_TO_CLS = {
     "c4" : ConnectFourGame,
     # "overcooked" : OvercookedGame,
     # "tutorial" : OvercookedTutorial,
-    # "psiturk" : OvercookedPsiturk,
+    "psiturk" : ConnectFourPsiturk,
     # "psiturk_tutorial" : OvercookedTutorialPsiturk
 }
 
@@ -423,7 +424,7 @@ def instructions():
         abort(403)
 
     psiturk = request.args.get('psiturk', False)
-    return render_template('instructions.html', layout_conf=LAYOUT_GLOBALS, psiturk=psiturk)
+    return render_template('c4_instructions.html', layout_conf=LAYOUT_GLOBALS, psiturk=psiturk)
 
 @app.route('/c4')
 def c4():
@@ -617,7 +618,7 @@ def on_action(data):
     if not game:
         return
     
-    game.enqueue_action(user_id, action)
+    game.try_enqueue_action(user_id, action)
 
 
 @socketio.on('connect')

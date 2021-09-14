@@ -142,7 +142,7 @@ class OvercookedGame(NPCGame):
         if self.show_potential:
             self.phi = self.mdp.potential_function(self.state, self.mp, gamma=0.99)
 
-            self.start_time = time()
+        self.start_time = time()
         self.curr_tick = 0
         self.score = 0
 
