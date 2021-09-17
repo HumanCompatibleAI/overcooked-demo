@@ -1,21 +1,15 @@
-// Persistent network connection that will be used to transmit real-time data
-var socket = io();
-var user_id;
+/* * * * * * 
+ * Globals *
+ * * * * * */
 
 var lobbyWaitTime = 300000;
-
-// Global state pertaiing to whose turn it is
-var turn_change;
-var is_our_turn;
+window.ellipses = -1;
+window.lobbyTimeout = -1;
+window.ackInterval = -1;
 
 /* * * * * * * * * * * * * 
  * Socket event handlers *
  * * * * * * * * * * * * */
-
-window.intervalID = -1;
-window.ellipses = -1;
-window.lobbyTimeout = -1;
-window.ackInterval = -1;
 
 socket.on('waiting', function(data) {
     try {
@@ -124,18 +118,6 @@ socket.on('reset_game', function(data) {
         let error = JSON.stringify(err);
         window.top.postMessage({ name : "error", data : data, error : error }, "*");
     }
-});
-
-socket.on('state_pong', function(data) {
-    // Update turn state if whose turn it is just changed
-    let local_is_our_turn = data['state']['active_player_id'] == user_id;
-    turn_change = local_is_our_turn != is_our_turn;
-    is_our_turn = local_is_our_turn;
-    if (turn_change) {
-        updateTurn();
-    }
-    // Draw state update
-    drawState(data['state']);
 });
 
 socket.on('end_game', function(data) {
@@ -278,86 +260,19 @@ socket.on("disconnect", function(data) {
 })
 
 
-/* * * * * * * * * * * * * * 
- * Game Key Event Listener *
- * * * * * * * * * * * * * */
-
-// function enable_key_listener() {
-//     $(document).on('keydown', function(e) {
-//         if (e.originalEvent.repeat) { // Holding down key only counts as one keypress
-//             return;
-//         }
-//         let action = 'STAY'
-//         switch (e.which) {
-//             case 37: // left
-//                 action = 'LEFT';
-//                 break;
-
-//             case 38: // up
-//                 action = 'UP';
-//                 break;
-
-//             case 39: // right
-//                 action = 'RIGHT';
-//                 break;
-
-//             case 40: // down
-//                 action = 'DOWN';
-//                 break;
-
-//             case 32: //space
-//                 action = 'SPACE';
-//                 break;
-
-//             default: // exit this handler for other keys
-//                 return; 
-//         }
-//         e.preventDefault();
-//         socket.emit('action', { 'action' : action });
-//     });
-// };
-
-function enable_key_listener() {
-    $(document).on('keydown', function(e) {
-        if (e.originalEvent.repeat) { // Holding down key only counts as one keypress
-            return;
-        }
-
-        // Get number pressed, 1-9
-        let keyNum = e.which - 48;
-
-        // Convert to C4 action
-        let action = keyNum - 1;
-        if (!validActions.includes(action)) {
-            // Not a valid action on this board
-            return;
-        }
-
-        // Send action to game server
-        action = action.toString();
-        e.preventDefault();
-        socket.emit('action', { 'action' : action });
-    });
-};
-
-function disable_key_listener() {
-    $(document).off('keydown');
-};
-
-
 /* * * * * * * * * * * * 
  * Game Initialization *
  * * * * * * * * * * * */
 
 socket.on("connect", function() {
     try {
+        // Set global user is (same as ID stored in game-state server-side), used for determining whose turn it is
+        user_id = socket.id;
+        
         // Start ack function in background
         if (config.ack_timeout !== -1) {
             window.ackInterval = setInterval(ack_function, config.ack_timeout);
         }
-
-        // Set global user is (same as ID stored in game-state server-side), used for determining whose turn it is
-        user_id = socket.id;
 
         // Config for this specific game
         let uid = $('#uid').text();
@@ -376,25 +291,3 @@ socket.on("connect", function() {
         window.top.postMessage({ name : "error", data : data, error : error }, "*");
     }
 });
-
-
-/* * * * * * * * * * *
- * Utility Functions *
- * * * * * * * * * * */
-
-var ack_function = function() {
-    // Propogate game stats to parent window (psiturk)
-    window.top.postMessage({ name : "ack" }, "*");
-}
-
-function updateTurn() {
-    disable_key_listener();
-    if (is_our_turn) {
-        enable_key_listener();
-        $("#their-turn").hide();
-        $("#our-turn").show();
-    } else {
-        $("#their-turn").show();
-        $("#our-turn").hide();
-    }
-}
