@@ -1,7 +1,12 @@
 // Persistent network connection that will be used to transmit real-time data
 var socket = io();
+var user_id;
 
 var lobbyWaitTime = 300000;
+
+// Global state pertaiing to whose turn it is
+var turn_change;
+var is_our_turn;
 
 /* * * * * * * * * * * * * 
  * Socket event handlers *
@@ -98,6 +103,8 @@ socket.on('reset_game', function(data) {
     try {
         graphics_end();
         disable_key_listener();
+        $("#their-turn").hide();
+        $("#our-turn").hide();
         $("#reset-game").show();
         setTimeout(function() {
             $("#reset-game").hide();
@@ -120,6 +127,13 @@ socket.on('reset_game', function(data) {
 });
 
 socket.on('state_pong', function(data) {
+    // Update turn state if whose turn it is just changed
+    let local_is_our_turn = data['state']['active_player_id'] == user_id;
+    turn_change = local_is_our_turn != is_our_turn;
+    is_our_turn = local_is_our_turn;
+    if (turn_change) {
+        updateTurn();
+    }
     // Draw state update
     drawState(data['state']);
 });
@@ -129,6 +143,8 @@ socket.on('end_game', function(data) {
         // Hide game data and display game-over html
         graphics_end();
         disable_key_listener();
+        $("#their-turn").hide();
+        $("#our-turn").hide();
         $('#game-title').hide();
         $('#game-over').show();
         $("#game").empty();
@@ -187,6 +203,8 @@ socket.on("game_error", function(data) {
         // Game crashed
         graphics_end();
         disable_key_listener();
+        $("#their-turn").hide();
+        $("#our-turn").hide();
         $('#game-title').hide();
         $('#game-over').show();
         $("#game").empty();
@@ -230,6 +248,8 @@ socket.on("server_error", function(data) {
         socket.disconnect();
         graphics_end();
         disable_key_listener();
+        $("#their-turn").hide();
+        $("#our-turn").hide();
         $('#game-title').hide();
         $('#game-over').show();
         $("#game").empty();
@@ -336,6 +356,9 @@ socket.on("connect", function() {
             window.ackInterval = setInterval(ack_function, config.ack_timeout);
         }
 
+        // Set global user is (same as ID stored in game-state server-side), used for determining whose turn it is
+        user_id = socket.id;
+
         // Config for this specific game
         let uid = $('#uid').text();
         let params = JSON.parse(JSON.stringify(config.experimentParams));
@@ -362,4 +385,16 @@ socket.on("connect", function() {
 var ack_function = function() {
     // Propogate game stats to parent window (psiturk)
     window.top.postMessage({ name : "ack" }, "*");
+}
+
+function updateTurn() {
+    disable_key_listener();
+    if (is_our_turn) {
+        enable_key_listener();
+        $("#their-turn").hide();
+        $("#our-turn").show();
+    } else {
+        $("#their-turn").show();
+        $("#our-turn").hide();
+    }
 }

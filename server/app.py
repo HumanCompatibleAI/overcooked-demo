@@ -1,5 +1,4 @@
 import os, traceback
-from server.game.c4 import ConnectFourPsiturk
 
 # Import and patch the production eventlet server if necessary
 if os.getenv('FLASK_ENV', 'production') == 'production':

@@ -176,6 +176,7 @@ class ConnectFourGame(TurnBasedGame):
         state_dict = {}
         state_dict['board'] = self.board
         state_dict['open_columns'] = self.open_columns
+        state_dict['active_player_id'] = self.active_player_id
         return state_dict
 
     def _get_policy(self, npc_id, idx):

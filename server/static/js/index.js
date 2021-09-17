@@ -1,5 +1,10 @@
 // Persistent network connection that will be used to transmit real-time data
 var socket = io();
+var user_id;
+
+// Global state pertaiing to whose turn it is
+var turn_change;
+var is_our_turn;
 
 // Determines which type of game we're playing
 var game_name = config.game_name;
@@ -21,6 +26,7 @@ $(function() {
             "game_name" : game_name,
             "create_if_not_found" : false
         };
+        console.log("USER ID", user_id);
         socket.emit("create", data);
         $('#waiting').show();
         $('#join').hide();
@@ -57,6 +63,10 @@ $(function() {
 
 window.intervalID = -1;
 window.spectating = true;
+
+socket.on('connect', function(data) {
+    user_id = socket.id;
+});
 
 socket.on('waiting', function(data) {
     // Show game lobby
@@ -137,6 +147,8 @@ socket.on('reset_game', function(data) {
         disable_key_listener();
     }
 
+    $("#their-turn").hide();
+    $("#our-turn").hide();
     $("#reset-game").show();
     setTimeout(function() {
         $("#reset-game").hide();
@@ -153,6 +165,13 @@ socket.on('reset_game', function(data) {
 });
 
 socket.on('state_pong', function(data) {
+    // Update turn state if whose turn it is just changed
+    let local_is_our_turn = data['state']['active_player_id'] == user_id;
+    turn_change = local_is_our_turn != is_our_turn;
+    is_our_turn = local_is_our_turn;
+    if (turn_change) {
+        updateTurn();
+    }
     // Draw state update
     drawState(data['state']);
 });
@@ -163,6 +182,8 @@ socket.on('end_game', function(data) {
     if (!window.spectating) {
         disable_key_listener();
     }
+    $("#their-turn").hide();
+    $("#our-turn").hide();
     $('#game-title').hide();
     $('#game-over').show();
     $("#join").show();
@@ -186,6 +207,8 @@ socket.on("game_error", function(data) {
     if (!window.spectating) {
         disable_key_listener();
     }
+    $("#their-turn").hide();
+    $("#our-turn").hide();
     $('#lobby').hide();
     $('#waiting').hide();
     $('#game-title').hide();
@@ -211,6 +234,8 @@ socket.on("server_error", function(data) {
     if (!window.spectating) {
         disable_key_listener();
     }
+    $("#their-turn").hide();
+    $("#our-turn").hide();
     $('#lobby').hide();
     $('#waiting').hide();
     $('#game-title').hide();
@@ -302,4 +327,16 @@ function updateAgents(layout) {
     }
     document.getElementById("playerZero").innerHTML = agentOptions;
     document.getElementById("playerOne").innerHTML = agentOptions;
+}
+
+function updateTurn() {
+    disable_key_listener();
+    if (is_our_turn) {
+        enable_key_listener();
+        $("#their-turn").hide();
+        $("#our-turn").show();
+    } else {
+        $("#their-turn").show();
+        $("#our-turn").hide();
+    }
 }
