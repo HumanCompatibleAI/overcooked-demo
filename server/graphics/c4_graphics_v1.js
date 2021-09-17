@@ -297,7 +297,7 @@ window.kaggle = {
   };
   
   
-  window.kaggle.renderer =
+window.kaggle.renderer =
 function renderer({
     act,
     agents,
@@ -574,7 +574,17 @@ function renderer({
         c.strokeStyle = "white";
         c.strokeText(col+1, x, y);
     }
-  };
+};
+
+window.updateHUD = function(state) {
+    let time_remaining = -1;
+    try {
+      time_remaining = parseFloat(state['turn_time_remaining']).toFixed(0);
+    } catch {
+    }
+    $("#HUD-container").text(`Time left in turn: ${time_remaining}`);
+}
+
 const h = htm.bind(preact.h);
 const { useContext, useEffect, useRef, useState } = preactHooks;
 const styled = window.styled.default;
@@ -863,12 +873,15 @@ const noop = () => {};
 
 function drawState(state) {
     if (initialized) {
+        window.updateHUD(state);
         window.updateState(state);
     }
 };
 
 function graphics_start(config) {
     container_id = config.container_id;
+
+    $("#HUD-container").show();
 
     // TODO: if I had any font end dev skills at all these could be flexed from the static html file
     $("#game-container").css("height", "80%");
@@ -878,7 +891,7 @@ function graphics_start(config) {
 };
 
 function graphics_end() {
-    noop();
+  $("#HUD-container").hide();
 }
 
 // Testing purposes only

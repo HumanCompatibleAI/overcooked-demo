@@ -106,7 +106,8 @@ class ConnectFourGame(TurnBasedGame):
         return self.player_statuses[player_idx]
 
     def get_default_action(self, player_id):
-        return np.random.sample(self.open_columns)
+        ret = np.random.choice(self.open_columns)
+        return ret
 
     def advance_turn(self):
         super(ConnectFourGame, self).advance_turn()
@@ -128,18 +129,15 @@ class ConnectFourGame(TurnBasedGame):
 
     def tryParseAction(self, action):
         """
-        Convert `action` (could be string or int) to integer actoin base_env can handle
-        Returns -1 if action is invalid
+        Convert `action` (could be string or int-like) to int action base_env can handle
+        Returns -1 if action is invalid type
         """
-        int_action = -1
-        if type(action) == str:
-            try:
-                int_action = int(action)
-            except Exception:
-                pass
-        elif type(action) == int:
-            int_action = action
-        return int_action
+        try:
+            int_action = int(action)
+        except Exception:
+            int_action = -1
+        finally:
+            return int_action
 
 
     def _apply_action(self, player_idx, action):
@@ -177,6 +175,7 @@ class ConnectFourGame(TurnBasedGame):
         state_dict['board'] = self.board
         state_dict['open_columns'] = self.open_columns
         state_dict['active_player_id'] = self.active_player_id
+        state_dict['turn_time_remaining'] = self.turn_timeout - self.curr_turn_time
         return state_dict
 
     def _get_policy(self, npc_id, idx):

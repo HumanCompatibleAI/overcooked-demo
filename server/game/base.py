@@ -231,6 +231,8 @@ class Game(ABC):
         valid = self.is_valid_action(player_id, action)
         if not valid:
             if self.ignore_invalid_actions:
+                if self.debug:
+                    print("WARNING: player {} tried to enqueue invalid action {}".format(player_id, action), flush=True)
                 return False
             else:
                 raise GameError("Action {} for player ID {} is invalid for current game state!".format(action, player_id))
@@ -245,7 +247,8 @@ class Game(ABC):
         try:
             return self.enqueue_action(player_id, action)
         except GameError as e:
-            print("Warning: GameError {} occurred when enqueueing action for player {}".format(e, player_id))
+            if self.debug:
+                print("Warning: GameError {} occurred when enqueueing action for player {}".format(e, player_id), flush=True)
             return False
     
     @SafeGameMethod
@@ -529,7 +532,7 @@ class TurnBasedGame(NPCGame):
         - _apply_action: Apply a single players action for a single turn, update state
         - get_default_action: Takes player ID and returns default action for that player
     """
-    def __init__(self, turn_timeout=10, **kwargs):
+    def __init__(self, turn_timeout=3, **kwargs):
         super(TurnBasedGame, self).__init__(**kwargs)
         self.turn_timeout = turn_timeout
         self.curr_player = None
@@ -587,9 +590,11 @@ class TurnBasedGame(NPCGame):
             # Log warning and do nothing
             if self.debug:
                 if player_id != self.curr_player:
-                    print("Warning: Player {} tried to enqueued action when it was {}'s turn!".format(player_id, self.curr_player))
+                    if self.debug:
+                        print("Warning: Player {} tried to enqueued action when it was {}'s turn!".format(player_id, self.curr_player), flush=True)
                 else:
-                    print("Warning: Plyaer {} tried to enqueue multiple actions in their turn!".format(player_id))
+                    if self.debug:
+                        print("Warning: Plyaer {} tried to enqueue multiple actions in their turn!".format(player_id), flush=True)
             return False
 
     def _apply_actions(self):

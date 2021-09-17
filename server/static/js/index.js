@@ -26,7 +26,6 @@ $(function() {
             "game_name" : game_name,
             "create_if_not_found" : false
         };
-        console.log("USER ID", user_id);
         socket.emit("create", data);
         $('#waiting').show();
         $('#join').hide();
