@@ -14,11 +14,13 @@ window.ackInterval = -1;
 socket.on('waiting', function(data) {
     try {
         // Show game lobby
+        console.log("Waiting!");
         $('#game-over').hide();
         $("#game").empty();
         $('#lobby').show();
         if (!data.in_game) {
             if (window.intervalID === -1) {
+                console.log("Creating join piong");
                 // Occassionally ping server to try and join
                 window.intervalID = setInterval(function() {
                     socket.emit('join', {"game_name" : "psiturk"});
@@ -75,7 +77,7 @@ socket.on('start_game', function(data) {
             window.ellipses = -1;
         }
         graphics_config = {
-            container_id : "c4",
+            container_id : "game",
             start_info : data.start_info
         };
         $("#game").empty();
@@ -170,6 +172,8 @@ socket.on('end_lobby', function() {
 
 socket.on("game_error", function(data) {
     try {
+        console.log("Game Error!");
+        console.log(JSON.stringify(data));
         // Hide game-over and lobby, show game title header
         if (window.intervalID !== -1) {
             clearInterval(window.intervalID);

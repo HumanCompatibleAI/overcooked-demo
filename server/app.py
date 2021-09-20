@@ -64,7 +64,7 @@ PSITURK_KEY = CONFIG['PSITURK_KEY']
 PSITURK_CONFIG = json.dumps(CONFIG['psiturk'])
 
 # Default configuration for c4 psiturk experiment
-C4_PSITURK_CONFIG = json.dumps(CONFIG['c4_psiturk'])
+C4_PSITURK_CONFIG = CONFIG['c4_psiturk']
 
 # Default configuration for tutorial
 TUTORIAL_CONFIG = json.dumps(CONFIG['tutorial'])
@@ -387,11 +387,14 @@ def get_layout_to_agents():
 # Hitting each of these endpoints creates a brand new socket that is closed 
 # at after the server response is received. Standard HTTP protocol
 
-@app.route('/')
+### Overcooked ###
+
+@app.route('/', strict_slashes=False)
+@app.route('/overcooked', strict_slashes=False)
 def index():
-    # Block all non-psiturk traffic if in experiment mode
+    # Block all traffic if in experiment mode
     key = request.args.get('key', '')
-    if EXPERIMENT_MODE and not key == PSITURK_KEY:
+    if EXPERIMENT_MODE:
         abort(403)
     
     layout_to_agents = get_layout_to_agents()
@@ -401,7 +404,8 @@ def index():
     }
     return render_template('index.html', layouts=LAYOUTS, config=config)
 
-@app.route('/psiturk')
+@app.route('/psiturk', strict_slashes=False)
+@app.route('/overcooked/psiturk', strict_slashes=False)
 def psiturk():
     # Block all non-psiturk traffic if in experiment mode
     key = request.args.get('key', '')
@@ -415,7 +419,8 @@ def psiturk():
     psiturk_config['ack_timeout'] = ack_interval
     return render_template('psiturk.html', config=psiturk_config)
 
-@app.route('/instructions')
+@app.route('/instructions', strict_slashes=False)
+@app.route('/overcooked/instructions', strict_slashes=False)
 def instructions():
     # Block all non-psiturk traffic if in experiment mode
     key = request.args.get('key', '')
@@ -423,36 +428,10 @@ def instructions():
         abort(403)
 
     psiturk = request.args.get('psiturk', False)
-    return render_template('c4_instructions.html', layout_conf=LAYOUT_GLOBALS, psiturk=psiturk)
+    return render_template('instructions.html', layout_conf=LAYOUT_GLOBALS, psiturk=psiturk)
 
-@app.route('/c4')
-def c4():
-    # Block all non-psiturk traffic if in experiment mode
-    key = request.args.get('key', '')
-    if EXPERIMENT_MODE and not key == PSITURK_KEY:
-        abort(403)
-    
-    layout_to_agents = get_layout_to_agents()
-    config = {
-        "game_name" : "c4"
-    }
-    return render_template('c4.html', config=config)
-
-@app.route('/c4psiturk')
-def c4psiturk():
-    # Block all non-psiturk traffic if in experiment mode
-    key = request.args.get('key', '')
-    if EXPERIMENT_MODE and not key == PSITURK_KEY:
-        abort(403)
-
-    uid = request.args.get("UID")
-    ack_interval = request.args.get('ack_interval', -1)
-    psiturk_config = request.args.get('config', copy.deepcopy(C4_PSITURK_CONFIG))
-    psiturk_config['uid'] = uid
-    psiturk_config['ack_timeout'] = ack_interval
-    return render_template('c4_psiturk.html', config=psiturk_config)
-
-@app.route('/tutorial')
+@app.route('/tutorial', strict_slashes=False)
+@app.route('/overcooked/tutorial', strict_slashes=False)
 def tutorial():
     # Block all non-psiturk traffic if in experiment mode
     key = request.args.get('key', '')
@@ -467,6 +446,47 @@ def tutorial():
     tutorial_config['psiturk'] = psiturk
     tutorial_config['ack_interval'] = ack_interval
     return render_template('tutorial.html', config=tutorial_config, psiturk=psiturk)
+
+### Connect-Four ###
+
+@app.route('/c4', strict_slashes=False)
+def c4():
+    # Block all traffic if in experiment mode
+    key = request.args.get('key', '')
+    if EXPERIMENT_MODE:
+        abort(403)
+    
+    layout_to_agents = get_layout_to_agents()
+    config = {
+        "game_name" : "c4"
+    }
+    return render_template('c4.html', config=config)
+
+@app.route('/c4/instructions', strict_slashes=False)
+def c4_instructions():
+    # Block all non-psiturk traffic if in experiment mode
+    key = request.args.get('key', '')
+    if EXPERIMENT_MODE and not key == PSITURK_KEY:
+        abort(403)
+
+    psiturk = request.args.get('psiturk', False)
+    return render_template('c4_instructions.html', layout_conf=LAYOUT_GLOBALS, psiturk=psiturk)
+
+@app.route('/c4/psiturk', strict_slashes=False)
+def c4_psiturk():
+    # Block all non-psiturk traffic if in experiment mode
+    key = request.args.get('key', '')
+    if EXPERIMENT_MODE and not key == PSITURK_KEY:
+        abort(403)
+
+    uid = request.args.get("UID")
+    ack_interval = request.args.get('ack_interval', -1)
+    psiturk_config = copy.deepcopy(C4_PSITURK_CONFIG)
+    psiturk_config['uid'] = uid
+    psiturk_config['ack_timeout'] = ack_interval
+    return render_template('c4_psiturk.html', config=psiturk_config)
+
+### Debugging ###
 
 @app.route('/debug')
 def debug():

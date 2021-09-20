@@ -147,18 +147,6 @@ socket.on('reset_game', function(data) {
     }, data.timeout);
 });
 
-socket.on('state_pong', function(data) {
-    // Update turn state if whose turn it is just changed
-    let local_is_our_turn = data['state']['active_player_id'] == user_id;
-    turn_change = local_is_our_turn != is_our_turn;
-    is_our_turn = local_is_our_turn;
-    if (turn_change) {
-        updateTurn();
-    }
-    // Draw state update
-    drawState(data['state']);
-});
-
 socket.on('end_game', function(data) {
     // Hide game data and display game-over html
     graphics_end();
