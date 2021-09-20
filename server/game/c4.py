@@ -194,7 +194,7 @@ class ConnectFourPsiturk(ConnectFourGame):
         Resets trial ID at start of new "game"
         """
         super(ConnectFourPsiturk, self)._activate()
-        self.start_time = time.now()
+        self.start_time = time()
         self.trial_id = self.psiturk_uid + str(self.start_time)
 
     def _apply_actions(self):
@@ -223,7 +223,9 @@ class ConnectFourPsiturk(ConnectFourGame):
             "player_0_is_human" : self.players[0] in self.human_players,
             "player_1_is_human" : self.players[1] in self.human_players,
             "player_0_played_this_turn" : info['played_this_turn'][0],
-            "player_1_played_this_turn" : info['played_this_turn'][1]
+            "player_1_played_this_turn" : info['played_this_turn'][1],
+            "player_0_reward" : self.state[0]['reward'],
+            "player_1_reward" : self.state[1]['reward']
         }
         return transition
 
