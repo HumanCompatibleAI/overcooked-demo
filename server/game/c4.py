@@ -107,7 +107,10 @@ class ConnectFourGame(TurnBasedGame):
 
     def get_default_action(self, player_id):
         ret = np.random.choice(self.open_columns)
-        return ret
+        return int(ret)
+
+    def get_start_player(self):
+        return self.players[0]
 
     def advance_turn(self):
         super(ConnectFourGame, self).advance_turn()

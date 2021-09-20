@@ -570,6 +570,8 @@ class TurnBasedGame(NPCGame):
 
         for player_id in self.turn_tokens:
             self.turn_tokens[player_id] = None
+        self.curr_turn_number = -1
+        self.curr_player = None
         self.timeout_exit_event.set()
         self.timeout_thread.join()
 

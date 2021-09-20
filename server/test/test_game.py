@@ -349,6 +349,31 @@ class TestConnectFourGame(unittest.TestCase):
 
         return boards
 
+    def test_full_game_even_length_sync(self):
+        players = ["player_one", "player_two"]
+        for player in players:
+            self.sync_game.add_player(player)
+        self.sync_game.activate()
+
+        def turn_func(turn_num):
+            if turn_num == 6:
+                return 3
+            else:
+                return turn_num % 2
+
+        # Play one game to completion
+        self._play_game_sync(turn_func=turn_func, num_turns=8)
+
+        # Verify reset correctly detected
+        status = self.sync_game.tick()
+        self.assertEqual(status, self.sync_game.Status.RESET)
+
+        # Play second game to completion
+        _, statuses = self._play_game_sync(7)
+
+        # Verify end game correctly detected
+        self.assertEqual(statuses[-1], self.sync_game.Status.DONE)
+
     def assert_JSON_serializable(self, obj):
         serialized = False
         try:
@@ -358,7 +383,7 @@ class TestConnectFourGame(unittest.TestCase):
             pass
         self.assertTrue(serialized)
 
-    def _play_game_sync(self, turn_func=None, num_turns=7):
+    def _play_game_sync(self, num_turns=7, turn_func=None):
         if not turn_func:
             turn_func = lambda i : i % 2
         boards = []
