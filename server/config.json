@@ -16,7 +16,7 @@
     "AGENT_DIR" : "./static/assets/agents",
 
     // Maximum number of game ticks per second the server allows. This is the default for newly created games
-    "MAX_FPS" : 60,
+    "MAX_FPS" : 6,
 
     // If true, only allow traffic from `psiturk_uri` 
     "EXPERIMENT_MODE" : false,
@@ -51,7 +51,7 @@
             "num_games" : 2,
             "playerZero" : "human",
             "playerOne" : "human",
-            "fps" : 1
+            "fps" : 4
         },
 
         // Maximum number of milliseconds we wait to find human-human pairing before giving up
@@ -91,5 +91,11 @@
         "tomato_time" : 7,
         "order_bonus" : 2,
         "max_num_ingredients" : 3
+    },
+
+    // Global config for all C4 games
+    "c4_globals" : {
+        "turn_timeout" : 5, 
+        "num_games" : 2
     }
 }

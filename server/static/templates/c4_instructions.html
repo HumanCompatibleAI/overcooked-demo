@@ -7,6 +7,9 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <style>
+      /* .imgContainer{
+        float:left;
+      } */
       img.center {
         display: block;
         margin: 0 auto;
@@ -40,44 +43,84 @@
         <h4 class="text-center"><a href="./">Back to game</a></h4>
       {% endif %}
       <p>
-        Hello! This is still a work in progress
+        Hello! Thanks for agreeing to participate in our study. For this experiment, you will be competing against other Turkers in a classic 
+        turn-based game, Connect-Four
       </p>
 
       <br>
       <hr>
       <br>
 
-      <h3 class="text-center">Section 1</h3>
+      <h3 class="text-center">Overview</h3>
       <p>
-        TODO
+        The object of the game is to drop pieces such that you connect four adjacent pieces of your color -- diagonally, vertically, or horizontally -- before
+        your oponent can do the same. We've added the additional caveat of short turn time limits to spice things up. After <b>{{ layout_conf.turn_timeout }} seconds</b>, a random
+        action will be played on your turn. Move quickly!
+
+
+        <b>Bonus Pay</b> will be awarded based on the number of games you win, so it's best to play deliberately and precisely
       </p>
 
       <br>
       <hr>
       <br>
 
-      <h3 class="text-center">Section 2</h3>
+      <h3 class="text-center">Graphics</h3>
       <p>
-        TODO
+        Below is a labeled screenshot of the game graphics:
+        <img class="center" src="/static/images/c4/hud_annotated.png" style="width:500px">
+        Of note:
+        <ulist>
+          <li><b>Turn Timer:</b> Indicates how many seconds are remaining in your (or your opponent's) turn</li>
+          <li><b>Turn Indicator:</b> Text indicating whether it is your or your opponent's turn</li>
+          <li><b>Game Board:</b> Current state of the playing board, filled with your and your opponent's pieces</li>
+          <li><b>Column Labels:</b> Columns are numbered 1-7. Pressing the corresponding number key on your keyboard drops a piece
+          in the corresponding column</li>
+        </ulist>
       </p>
 
       <br>
       <hr>
       <br>
 
-      <h3 class="text-center">Section 3</h3>
+      <h3 class="text-center">Controls</h3>
       <p>
-        TODO
+        Columns are labeled 1-9. On your turn, you drop a piece in a column by pressing the corresponding number on your keyboard. <b>The number
+        keypad works as well</b>
+        <img class="center" src="/static/images/c4/labeled_keyboard.png" style="width:500px">
+        Let's see a quick example. Suppose you start with the board below. You can tell from the graphics that it's your turn to play. 
+        
+        <img class="center" src="/static/images/c4/pre_turn.png" style="width:500px">
+
+        You press the "4" key. Your token (blue) is dropped in column four and falls to the lowest available slot. The board now looks as shown below:
+
+        <img class="center" src="/static/images/c4/post_turn.png" style="width:500px">
+
+        <b>Note</b>: If you try to play in a column that is full, nothing will happen. <b>You can only play in open columns!</b>
       </p>
 
       <br>
       <hr>
       <br>
 
-      <h3 class="text-center">Section 4</h3>
+      <h3 class="text-center">Winning</h3>
       <p>
-        TODO
+        There are three ways to win, four in a row vertically, horizontally, or diagonally. An example of each case is pictured below:
+        <div class="imgContainer text-center">
+          <img src="/static/images/c4/vertical_win.png" height="200" width="200"/>
+          <img class="middle-img" src="/static/images/c4/horizontal_win.png" height="200" width="200"/>
+          <img src="/static/images/c4/diagonal_win.png" height="200" width="200"/>
+        </div>
+
+        If no empty slots remain and neither player has acheived four in a row, the game results in a draw.
+        
+        <p>Remember, there is a <b>bonus pay</b> determined by the number of games you win, so it's best to have a strategy and play competetively. Good luck!</p>
+        
       </p>
+
+      </div>
+
+      
 
       <br>
       <hr>

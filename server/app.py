@@ -42,6 +42,9 @@ LAYOUTS = CONFIG['layouts']
 # Values that are standard across layouts
 LAYOUT_GLOBALS = CONFIG['layout_globals']
 
+# Global values for C4 games
+C4_GLOBALS = CONFIG['c4_globals']
+
 # Maximum allowable game length (in seconds)
 MAX_GAME_LENGTH = CONFIG['MAX_GAME_LENGTH']
 
@@ -470,7 +473,7 @@ def c4_instructions():
         abort(403)
 
     psiturk = request.args.get('psiturk', False)
-    return render_template('c4_instructions.html', layout_conf=LAYOUT_GLOBALS, psiturk=psiturk)
+    return render_template('c4_instructions.html', layout_conf=C4_GLOBALS, psiturk=psiturk)
 
 @app.route('/c4/psiturk', strict_slashes=False)
 def c4_psiturk():
