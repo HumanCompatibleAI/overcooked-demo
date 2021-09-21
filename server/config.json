@@ -19,7 +19,7 @@
     "MAX_FPS" : 6,
 
     // If true, only allow traffic from `psiturk_uri` 
-    "EXPERIMENT_MODE" : false,
+    "EXPERIMENT_MODE" : true,
 
     // Secret key to authorize psiturk requests. Only used if 'experiment_mode' is true
     "PSITURK_KEY" : "shhhhh this is a secret!",
@@ -48,7 +48,7 @@
                 //TODO
             },
             "turn_timeout" : 5,
-            "num_games" : 2,
+            "num_games" : 3,
             "playerZero" : "human",
             "playerOne" : "human",
             "fps" : 4
@@ -96,6 +96,6 @@
     // Global config for all C4 games
     "c4_globals" : {
         "turn_timeout" : 5, 
-        "num_games" : 2
+        "num_games" : 3
     }
 }
