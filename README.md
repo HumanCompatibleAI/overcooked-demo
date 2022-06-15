@@ -54,8 +54,11 @@ If a more complex or custom loading routing is necessary, one can subclass the `
 
 ## Use the human vs. human game mode.
 
-With the Overcooked demo you can test the interaction between two human players. To do this, select the human keyboard input for both players and click on "Create Game", it will display "Waiting for game to start". Open another tab and navigate to http://localhost/psyturk to start the game.
-The first user can be controlled from the same page, the other user from another tab (http://localhost/psiturk).
+With the Overcooked demo, you can test the interaction between two human players. To do this, you need to deploy this code on the server (https://docs.docker.com/language/python/deploy/). 
+After successful deployment, the first user should open http://[server_ip_address]/, select the human keyboard input for both players and click on "Create game". If everything has been successful, he will receive a message: "Waiting for game to start".
+Another user should open a page at http://[server_ip_address]/psiturk to start the game.  
+
+If you want to run a test on a local computer, you should use "localhost" instead of "server_ip_address" and open the corresponding links in different tabs.
 
 ## Updating Overcooked_ai
 This repo was designed to be as flexible to changes in overcooked_ai as possible. To change the branch used, use the `OVERCOOKED_BRANCH` environment variable shown above.
