@@ -52,6 +52,14 @@ Overcooked-Demo can dynamically load pre-trained agents provided by the user. In
 
 If a more complex or custom loading routing is necessary, one can subclass the `OvercookedGame` class and override the `get_policy` method, as done in [DummyOvercookedGame](server/game.py#L420). Make sure the subclass is properly imported [here](server/app.py#L5)
 
+## Use the human vs. human game mode.
+
+With the Overcooked demo, you can test the interaction between two human players. To do this, you need to deploy this code on the server (https://docs.docker.com/language/python/deploy/). 
+After successful deployment, the first user should open http://[server_ip_address]/, select the human keyboard input for both players and click on "Create game". If everything has been successful, he will receive a message: "Waiting for game to start".
+Another user should open a page at http://[server_ip_address]/psiturk to start the game.  
+
+If you want to run a test on a local computer, you should use "localhost" instead of "server_ip_address" and open the corresponding links in different tabs.
+
 ## Updating Overcooked_ai
 This repo was designed to be as flexible to changes in overcooked_ai as possible. To change the branch used, use the `OVERCOOKED_BRANCH` environment variable shown above.
 
