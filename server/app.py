@@ -1,5 +1,4 @@
 import os
-
 # Import and patch the production eventlet server if necessary
 if os.getenv('FLASK_ENV', 'production') == 'production':
     import eventlet
@@ -407,7 +406,6 @@ def debug():
 @socketio.on('create')
 def on_create(data):
     user_id = request.sid
-
     with USERS[user_id]:
         # Retrieve current game if one exists
         curr_game = get_curr_game(user_id)
@@ -416,6 +414,9 @@ def on_create(data):
             return
         
         params = data.get('params', {})
+        #hardcoded since there is no input for toggling this flag
+        #defnitely want to change this in the future
+        params["mdp_params"] = {"old_dynamics":True}
         game_name = data.get('game_name', 'overcooked')
         _create_game(user_id, game_name, params)
     

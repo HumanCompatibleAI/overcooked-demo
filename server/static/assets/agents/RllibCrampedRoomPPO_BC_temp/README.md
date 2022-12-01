@@ -3,9 +3,9 @@
 ## Structure
 
 * `agent`  
-  * `agent`
-  * `agent.tune_metadata`
-  * `config.pkl`
+  * `.is_checkpoint`
+  * `.tune_metadata`
+  * `checkpoint-#`
 
 Note that the file names must match EXACTLY the names and relative structure as above. The agent name is only determined and reflected in the parent directory name.
 
@@ -13,24 +13,9 @@ In the future, the naming convenction will probably be more flexible, but for no
 
 ## Training the Agent
 
-A directory with the structure above can be trained with the [human_aware_rl](https://github.com/HumanCompatibleAI/human_aware_rl) repo. 
+:warning: This agent is a temporary placeholder and is not fine-tuned to have the best performance. Instructions to reproduce is thus not included. It is meant to show how the agent directory should be strutured. 
 
-Please follow the [conda environment setup guide](https://github.com/HumanCompatibleAI/human_aware_rl#conda-environment-setup) to setup `harl_rllib` conda env. 
-
-After `harl_rllib` is successfully installed and activated, please run something along the line of
-
-```
-(harl_rllib) $ python human_aware_rl/ppo/ppo_rllib_client.py with experiment_name="MyAgent"
-```
-
-This might create a directory such as  `~/ray_results/MyAgent_0_2020-09-24_01-24-43m6jg7brh/checkpoint_<i>`. Note the timestamp and id will vary.
-
-For reproducibility, the command used to generate this sepcific `RllibSelfPlay_CrampedRoom` agent is
-```
-(harl_rllib) $ python human_aware_rl/ppo/ppo_rllib_client.py with num_workers=16 train_batch_size=12800 sgd_minibatch_size=8000 num_training_iters=300 evaluation_interval=20 use_phi=False entropy_coeff_start=0.2 entropy_coeff_end=0.0005 num_sgd_iter=8 lr=1e-3 seeds=[0]
-```
-And we are using `checkpoint_300`
-
+In general, a directory with the structure above can be trained with the human_aware_rl module in the [overcooked_ai](https://github.com/HumanCompatibleAI/overcooked_ai) repo. Specific installation instruction is available. 
 
 ## Moving the Agent into Demo
 
@@ -39,20 +24,27 @@ You can move this agent into Overcooked-Demo by running
 cd  <Overcooked-Demo-Root>/server/static/assets/agents/
 mkdir RllibMyAgent
 ```
-Note that all rllib agnet directory names must match the regex pattern `/rllib.*/i`
+Note that all rllib agent directory names must match the regex pattern `/rllib.*/i`
 
 Now copy over the appropriate files
 
 ```
 cp -r ~/ray_results/MyAgent_0_2020-09-24_01-24-43m6jg7brh/checkpoint_<i> ./RllibMyAgent/agent
+cp -r ~/ray_results/MyAgent_0_2020-09-24_01-24-43m6jg7brh/config.pkl ./RllibMyAgent/config.pkl
 ```
 
-And then rename the necessary files
+If the PPO agent is trained with a BC agent, you also need to supply the trained BC_model
 
 ```
-cd ./RllibMyAgent/agent
-mv checkpoint_<i> agent
-mv checkoint_<i>.tune_metadata agent.tune_metadata
+cd  <Overcooked-Demo-Root>/server/static/assets/agents/RllibMyAgent
+mkdir bc_params
+```
+
+The `train_bc_model` function `human_aware_rl.imitation.behavior_cloning_tf2` takes in a `model_dir` parameter. Find the saved bc_model at that location, and move everything to the bc_params directory we just created.
+
+For example, if the `model_dir="...../bc_results/model1"`, 
+```
+cp -r ...../bc_results/model1 <Overcooked-Demo-Root>/server/static/assets/agents/RllibMyAgent/bc_params
 ```
 
 Relaunching the Overcooked-Demo server, you should now see `RllibMyAgent` in the dropdown of available agents

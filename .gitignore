@@ -6,4 +6,3 @@ node_modules/
 **/old/
 **/master_agents/
 **/__pycache__/
-**/agents/

@@ -21,6 +21,29 @@ def _configure(max_game_time, agent_dir):
     MAX_GAME_TIME = max_game_time
     AGENT_DIR = agent_dir
 
+def fix_bc_path(path):
+    """
+    Loading a PPO agent trained with a BC agent requires loading the BC model as well when restoring the trainer, even though the BC model is not used in game
+    For now the solution is to include the saved BC model and fix the relative path to the model in the config.pkl file
+    """
+
+    import pickle 
+    #the path is the agents/Rllib.*/agent directory
+    agent_path = os.path.dirname(path)
+    with open(os.path.join(agent_path,"config.pkl"), "rb") as f:
+        data = pickle.load(f)
+    try:
+        bc_model_dir = data["bc_params"]["bc_config"]["model_dir"]
+        last_dir = os.path.basename(bc_model_dir)
+        bc_model_dir = os.path.join(agent_path,"bc_params",last_dir)
+        data["bc_params"]["bc_config"]["model_dir"]= bc_model_dir
+        with open(os.path.join(agent_path,"config.pkl"), "wb") as f:
+            pickle.dump(data,f)
+    except:
+        pass 
+            
+
+
 class Game(ABC):
 
     """
@@ -582,7 +605,8 @@ class OvercookedGame(Game):
         if npc_id.lower().startswith("rllib"):
             try:
                 # Loading rllib agents requires additional helpers
-                fpath = os.path.join(AGENT_DIR, npc_id, 'agent', 'agent')
+                fpath = os.path.join(AGENT_DIR, npc_id, 'agent')
+                fix_bc_path(fpath)
                 agent =  load_agent(fpath, agent_index=idx)
                 return agent
             except Exception as e:
