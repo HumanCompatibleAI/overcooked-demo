@@ -32,15 +32,12 @@ def fix_bc_path(path):
     agent_path = os.path.dirname(path)
     with open(os.path.join(agent_path,"config.pkl"), "rb") as f:
         data = pickle.load(f)
-    try:
-        bc_model_dir = data["bc_params"]["bc_config"]["model_dir"]
-        last_dir = os.path.basename(bc_model_dir)
-        bc_model_dir = os.path.join(agent_path,"bc_params",last_dir)
-        data["bc_params"]["bc_config"]["model_dir"]= bc_model_dir
-        with open(os.path.join(agent_path,"config.pkl"), "wb") as f:
-            pickle.dump(data,f)
-    except:
-        pass 
+    bc_model_dir = data["bc_params"]["bc_config"]["model_dir"]
+    last_dir = os.path.basename(bc_model_dir)
+    bc_model_dir = os.path.join(agent_path,"bc_params",last_dir)
+    data["bc_params"]["bc_config"]["model_dir"]= bc_model_dir
+    with open(os.path.join(agent_path,"config.pkl"), "wb") as f:
+        pickle.dump(data,f)
             
 
 
