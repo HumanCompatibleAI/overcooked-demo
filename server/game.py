@@ -588,6 +588,12 @@ class OvercookedGame(Game):
         state_dict = {}
         state_dict['potential'] = self.phi if self.show_potential else None
         state_dict['state'] = self.state.to_dict()
+        if hasattr(self.state, "orders_list"):
+            if not hasattr(state_dict['state'], "all_orders"):
+                state_dict['state']["all_orders"] = [order.to_dict() for order in self.state.all_orders]
+            if not hasattr(state_dict['state'], "bonus_orders"):
+                state_dict['state']["bonus_orders"] = [order.to_dict() for order in self.state.bonus_orders]
+
         state_dict['score'] = self.score
         state_dict['time_left'] = max(self.max_time - (time() - self.start_time), 0)
         return state_dict
